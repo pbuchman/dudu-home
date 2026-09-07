@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dudu Home</string>
+    <string name="gate_number_title">Ustaw numer bramy</string>
+    <string name="gate_number_description">Podaj numer, na który aplikacja ma zadzwonić. Zapiszemy go tylko w prywatnych ustawieniach tej aplikacji.</string>
+    <string name="gate_number_hint">Numer telefonu bramy</string>
+    <string name="gate_number_invalid">Wpisz od 3 do 15 cyfr. Możesz użyć znaku +, spacji, nawiasów i myślników.</string>
+    <string name="gate_number_save_failed">Nie udało się zapisać numeru. Spróbuj ponownie.</string>
+    <string name="save_and_continue">Zapisz numer</string>
+    <string name="gate_number_saved_title">Numer zapisany</string>
+    <string name="gate_number_saved_description">Uruchom aplikację ponownie, aby wysłać sygnał.</string>
+    <string name="retry_too_soon_title">Odczekaj chwilę</string>
+    <string name="retry_too_soon_description">Dla bezpieczeństwa kolejna próba będzie dostępna za około %1$d s.</string>
+    <string name="state_starting">Sprawdzam telefon</string>
+    <string name="state_starting_description">Przygotowuję bezpieczną próbę.</string>
+    <string name="state_error">Nie udało się wysłać sygnału</string>
+    <string name="retry">Ponów</string>
+    <string name="close">Zamknij</string>
+    <string name="success_icon_description">Sukces</string>
+    <string name="error_icon_description">Błąd</string>
+    <string name="error_message_format">%1$s\n\nKod: %2$s</string>
+</resources>

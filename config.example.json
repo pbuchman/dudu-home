@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "gate_number": null,
+  "gate_number_verified_on_current_device": false,
+  "points": {
+    "parking": {"lat": null, "lon": null},
+    "gate": {"lat": null, "lon": null},
+    "approach": {"lat": null, "lon": null},
+    "junction": {"lat": null, "lon": null}
+  }
+}
