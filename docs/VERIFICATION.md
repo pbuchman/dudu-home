@@ -24,13 +24,13 @@ This ledger separates executable evidence from pending physical acceptance.
 | Real private config | `configure-device.py --dry-run` with both private files passed; does not validate server authorization or current radio number |
 | UI visual review | Landscape emulator menu inspected, both tiles/settings visible; only a sanitized menu screenshot is public |
 | Privacy | Working tree/index/history scanned against private phone/GPS/terms and Roborock fields; inspect again before each commit/push |
-| APK privacy/signing | Uncompressed APK entries checked against private values; none found. Local signing certificate matches the preserved baseline certificate; installed-radio comparison still pending |
-| Radio availability | No physical radio in ADB; bounded connection to last recorded address unsuccessful. No device write or real cleaning command made |
+| APK privacy/signing | Uncompressed APK entries checked against private values; none found. Certificate matched the installed radio APK before the update |
+| Radio deployment | DUDU7 Android 13 updated from versionCode 1 to 3 with matching certificate and checksum-backed APK/data archive; phone/GPS/Roborock imported |
 
 The emulator transport tests use a test-only in-memory `HttpsURLConnection`, not a fake DUDU
 service and not the real Roborock API. UI renderer tests are not a full cloud end-to-end check.
-Timeout settings/IO failure are covered; vendor network behavior and actual TLS/cloud acceptance
-still need radio evidence. The bootstrap extraction helper is tested locally; a fresh email
+Timeout settings/IO failure are covered; real TLS/cloud acceptance is now recorded below,
+while adverse vendor network behavior remains untested. The bootstrap extraction helper is tested locally; a fresh email
 login through the newly published helper was not requested/performed because a private bundle exists.
 
 Earlier local location-monitor experiments on Android 16 showed background dispatch and
@@ -54,15 +54,41 @@ also passed again. This patch changes tooling/docs only, not the APK or radio ac
 
 ## Physical acceptance still required
 
-- [ ] Radio identity and current phone checked; matching signing certificate; checksum-backed update without uninstall/data clearing.
-- [ ] All phone/GPS/Roborock data installed and staging removed; correct grants/GPS; menu start and save trigger nothing.
-- [ ] Manual gate on radio: own dial/outgoing/hangup/idle; return to menu; no duplicate or interruption of existing call.
-- [ ] Manual Full Cleaning on radio: one routine request, accepted UI, proper routine observable in phone app; **no automatic stop**.
+- [x] Radio identity and current phone checked; matching signing certificate; checksum-backed update without uninstall/data clearing.
+- [x] All phone/GPS/Roborock data installed and staging removed; correct grants and fresh GPS deliveries, including after hiding UI; import/menu start caused no action.
+- [x] Manual gate on radio: one own dial/outgoing/hangup/idle success; return to menu.
+- [x] Manual Full Cleaning on radio: one tile invocation, native HTTPS result `ACCEPTED`, return to menu; **no stop command**. Manual action did not consume daily quota.
+- [ ] Physical robot/routine confirmation in phone app; accepted response alone does not prove robot movement.
+- [ ] Radio number-form save/restart cooldown and existing-call refusal in the combined build (local tests and historical executor evidence are separate).
 - [ ] Departure: early gate action, later outward checkpoint cleaning, expected automatic screen/hide behavior.
 - [ ] Return: gate only, correct approach, adjacent parking accepted.
 - [ ] Second same-day outward checkpoint: no second automatic cleaning; manual tile independent.
 - [ ] Radio restart, both ignition sequences and vendor wake task: monitoring returns, quota persists, no startup action/replayed call.
 - [ ] Sanitized record of physical results, then publication/final tag. Until then keep public baseline unchanged.
+
+## Radio session — 2026-09-08
+
+Installed the unchanged `0.2.0-local` APK (SHA-256
+`886e11dba7075290049cf9cca45fa4fb62d4016c976ad2a7ead147e586c17e7c`).
+The owner explicitly requested remote installation and both manual tile tests during the trip,
+without driver interaction. This was not a parked ignition/journey acceptance session.
+No radio reboot, uninstall or data clearing was performed. Automation was disabled for the
+two controlled manual tests, then explicitly enabled with the existing private geometry.
+
+Gate log: STARTING → BINDING → CHECKING_PHONE → READY → DIAL_REQUESTED → OUTGOING →
+WAITING_BEFORE_HANGUP → HANGING_UP → SUCCESS. No coordinator error; subsequent UI dump
+confirmed the menu. Full Cleaning produced `ACCEPTED`, then the menu, without a second
+invocation or stop. No claim of physical gate opening or robot movement follows from these logs.
+
+After enabling automation, foreground location service and fine/background/notification/overlay
+grants were verified. Android recorded 124 GPS deliveries to the app by the final check;
+the service remained active after UI dismissal. No action event or crash appeared in that
+background observation. This does not validate future route events or vendor wake behavior.
+No app-specific wake target was found in the three standard Android settings namespaces;
+vendor-managed wake configuration remains unverified, not proven absent.
+
+Raw logs, UI XML, location diagnostics, backup checksums and session summary remain outside Git
+in the owner's private archive; see the private handoff for their exact paths.
 
 ## Baseline evidence
 

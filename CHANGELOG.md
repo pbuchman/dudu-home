@@ -2,6 +2,14 @@
 
 ## 0.2.0-local — local implementation, not released
 
+### First combined radio deployment
+
+- Same-signature update with verified private APK/data backup and full private configuration.
+- Both manual tiles exercised on DUDU7: gate call SUCCESS and native Full Cleaning ACCEPTED,
+  with return to menu. No stop command; manual cleaning did not consume the daily quota.
+- Automation enabled; permissions and continuing GPS delivery after UI dismissal verified.
+- Route-triggered actions, physical robot confirmation and ignition/vendor wake remain pending.
+
 ### Installer safety correction
 
 - Fresh-install helper now stops on ADB errors and empty/unrecognized package lists, checks
@@ -31,7 +39,8 @@
 - Synthetic instrumentation/transport/crypto/quota/UI/import tests, real installer exercised on
   emulator, computer-only credential bootstrap and configuration tests, updated CI local checks.
 - Functional contract, protocol, installation/recovery, test ledger and agent handoff.
-- Actual radio installation and complete acceptance are pending; no public automation APK/tag.
+- Radio installation/manual acceptance now recorded above; complete acceptance remains pending;
+  no public automation APK/tag.
 
 ## 0.1.0-baseline — published source baseline
 

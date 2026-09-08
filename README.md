@@ -36,7 +36,10 @@ or Google Home dependency. Roborock requires Internet; gate calls use the paired
 
 The original gate executor was exercised on **DUDU7, Android 13, DUDUOS 3.7 build 260210**,
 with one connected phone: idle → dial → outgoing → delay → hangup → idle. The disconnected
-phone path was also checked. This evidence does not certify the new combined APK.
+phone path was also checked. On 2026-09-08 the combined APK was installed on that radio:
+both manual tiles returned to the menu after gate-call success / Roborock cloud acceptance,
+and background GPS delivery was verified. Automatic journeys and ignition/wake acceptance
+remain pending; see the [verification ledger](docs/VERIFICATION.md).
 
 The implementation uses undocumented DUDU/SYU IPC; other firmware and two-phone setups are not
 certified. It cannot detect the first ringback, reception by the controller, or physical gate
