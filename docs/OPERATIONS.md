@@ -108,6 +108,13 @@ formularz numeru na postoju. Helper odmawia aktualizacji już istniejącej aplik
 radia używamy aktualizacji z kopią, nie ścieżki świeżej instalacji. Nie uruchamiaj baseline'u
 automatycznie po instalacji — stary baseline po starcie z zapisanym numerem dzwoni.
 
+Helper świeżej instalacji wymaga dokładnie jednego jawnego DEVICE_SERIAL. Przed buildem
+odczytuje listę pakietów, również tych z zachowanymi danymi (`pm list packages -u`). Błąd ADB,
+pusta lista lub nierozpoznany format przerywają pracę, zamiast oznaczać brak aplikacji.
+Instalacja nie używa `-r`: pojawienie się pakietu po sprawdzeniu nie pozwala na jego cichą
+aktualizację. Nie ma automatycznego ponowienia ani uruchomienia aplikacji. Regresję sprawdza
+`python3 scripts/test-fresh-installer.py` na atrapach ADB/Gradle, bez operacji na urządzeniu.
+
 ## Minimalna sesja akceptacyjna na radiu
 
 Zanim kierowca ruszy, operator ma potwierdzony dostęp do logów i gotowość konfiguracji.

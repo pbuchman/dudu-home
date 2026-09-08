@@ -37,6 +37,21 @@ Earlier local location-monitor experiments on Android 16 showed background dispa
 BOOT_COMPLETED recovery with synthetic fixes. That is historical emulator evidence, not proof
 of the current combined build on DUDU Android 13. Full calibration replay does not exercise services.
 
+## Fresh-install safety regression — 2026-09-08
+
+The review reproduced a fail-open bug in the old `pm path | grep` condition: an ADB query
+failure could fall through to `install -r`. Fixed by checking command status separately,
+validating the full package-list response (including retained data), requiring one explicit
+target and removing replacement mode from the fresh installer.
+
+`python3 scripts/test-fresh-installer.py` passed five test methods / thirteen scenarios:
+ADB errors with/without output, empty/malformed output, stderr diagnostics, existing package,
+missing/empty/ambiguous target, confirmed absence, failed build, failed install and a package
+appearing after preflight. Tests execute the complete shell script using offline ADB/Gradle
+fixtures. They verify call order, no install after a failed check/build, no `-r`, retry or launch,
+and no success message after a failed install. Six private-tool tests and shell syntax checks
+also passed again. This patch changes tooling/docs only, not the APK or radio acceptance status.
+
 ## Physical acceptance still required
 
 - [ ] Radio identity and current phone checked; matching signing certificate; checksum-backed update without uninstall/data clearing.

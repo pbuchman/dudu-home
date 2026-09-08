@@ -53,6 +53,7 @@ There are no external Android runtime libraries.
 ./gradlew assembleDebug assembleDebugAndroidTest lintDebug
 bash scripts/check-detector.sh
 python3 scripts/test-private-tools.py
+python3 scripts/test-fresh-installer.py
 ./scripts/run-emulator-check.sh
 python3 scripts/test-install-emulator.py emulator-5554
 python3 scripts/check-public-tree.py --working-tree --all-history
@@ -81,6 +82,8 @@ python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
 configured number against the radio, stages data via stdin, and never launches an action.
 Open the app **while parked** to consume the import. Do not update during a call or other action.
 The fresh-install helper refuses to update an existing app; use the backed-up path above.
+It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
+with retained data, and never passes the replacement flag `-r` to installation.
 
 No GPS configuration disables automation, not the manual tiles. No gate number blocks calls;
 no Roborock bundle blocks cleaning. Saving a number imposes a persistent 60-second call block.

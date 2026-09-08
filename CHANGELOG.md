@@ -2,6 +2,13 @@
 
 ## 0.2.0-local — local implementation, not released
 
+### Installer safety correction
+
+- Fresh-install helper now stops on ADB errors and empty/unrecognized package lists, checks
+  retained-data packages, requires an explicit device and never invokes replacement mode.
+- Offline whole-script regression tests cover thirteen success/error/race scenarios and run in CI.
+- Updated installation instructions and verification ledger. No application behavior or APK change.
+
 ### Preserved development checkpoint
 
 - `e91b342`: preserved previously local menu/location work before the Roborock extension.
