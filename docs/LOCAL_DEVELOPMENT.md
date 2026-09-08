@@ -9,8 +9,9 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 Newest local work is `0.3.0-local` / versionCode 4: manual-only Full Mop, optional private
 `full_mop_routine_id`, three illustrated tiles and 5000 ms successes. The real Mop identifier
 was retrieved through fresh email login and read-only discovery on the same robot; the updated
-owner-only bundle is outside Git. No routine was executed during discovery. This APK has not been installed/tested
-on the radio. Preserve that distinction from the preceding version's hardware evidence below.
+owner-only bundle is outside Git. No routine was executed during discovery. Version 4 is now
+installed on the radio: one manual Full Mop request returned ACCEPTED and then the menu.
+The subsequent presentation-only patch removes redundant subtitles; no robot stop/repeated Mop.
 See [DESIGN.md](DESIGN.md) for generated assets/prompts and [ROADMAP.md](ROADMAP.md) for the
 queued Yanosik hook; do not accidentally implement Mop as an automatic action.
 
@@ -19,9 +20,9 @@ queued Yanosik hook; do not accidentally implement Mop as an automatic action.
 - Local branch: `codex/home-automation`. The menu/GPS/cooldown predecessor was preserved in
   `e91b342` before adding Full Cleaning. See `git log` and [CHANGELOG](../CHANGELOG.md) for later milestones.
 - `39eca9d`: app integration and its tests; `d813550`: private deployment/bootstrap tooling and tests.
-- Installed radio APK: `0.2.0-local`, versionCode 3; current local APK: `0.3.0-local`, versionCode 4.
+- Installed radio APK and current local APK: `0.3.0-local`, versionCode 4.
   Same `pl.piotrbuchman.dudugate` ID and debug-signing scheme.
-- Code includes two tiles, native Roborock, daily reservation, encrypted credentials, settings,
+- Code includes three tiles, native Roborock, daily reservation, encrypted credentials, settings,
   one-time private import, safe update tooling, tests and handoff documentation.
 - **Radio deployment and both manual tiles passed on 2026-09-08:** gate SUCCESS and Roborock
   ACCEPTED, both returning to menu. Full journey/ignition acceptance remains incomplete.

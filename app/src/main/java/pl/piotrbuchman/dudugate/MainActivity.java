@@ -353,7 +353,6 @@ public final class MainActivity extends Activity {
         boolean narrow = getResources().getConfiguration().screenWidthDp < 600;
         if (narrow) {
             row.setOrientation(android.widget.LinearLayout.VERTICAL);
-            findViewById(R.id.home_subtitle).setVisibility(View.GONE);
             Button settings = findViewById(R.id.settings_button);
             settings.setTextSize(14);
             int padding = Math.round(12 * getResources().getDisplayMetrics().density);

@@ -38,8 +38,6 @@
                             android:maxLines="1" android:autoSizeTextType="uniform" android:autoSizeMinTextSize="20sp"
                             android:autoSizeMaxTextSize="32sp" android:autoSizeStepGranularity="2sp"
                             android:textColor="@color/text_primary" />
-                        <TextView android:id="@+id/home_subtitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="@string/home_subtitle" android:textSize="17sp" android:textColor="@color/text_secondary" />
                     </LinearLayout>
                     <Button android:id="@+id/settings_button" android:layout_width="wrap_content"
                         android:layout_height="56dp" android:paddingHorizontal="24dp" android:background="@drawable/button_secondary"
@@ -52,21 +50,18 @@
                         android:background="@drawable/tile_gate" android:contentDescription="@string/open_gate">
                         <ImageView style="@style/TileIllustration" android:src="@drawable/art_gate" />
                         <TextView style="@style/TileTitle" android:text="@string/open_gate" />
-                        <TextView style="@style/TileSubtitle" android:text="@string/gate_tile_detail" />
                     </LinearLayout>
                     <LinearLayout android:id="@+id/full_cleaning_button" style="@style/ActionTile"
                         android:layout_marginStart="16dp" android:background="@drawable/tile_cleaning"
                         android:contentDescription="@string/full_cleaning">
                         <ImageView style="@style/TileIllustration" android:src="@drawable/art_cleaning" />
                         <TextView style="@style/TileTitle" android:text="@string/cleaning_name" />
-                        <TextView style="@style/TileSubtitle" android:text="@string/cleaning_tile_detail" />
                     </LinearLayout>
                     <LinearLayout android:id="@+id/full_mop_button" style="@style/ActionTile"
                         android:layout_marginStart="16dp" android:background="@drawable/tile_mop"
                         android:contentDescription="@string/full_mop">
                         <ImageView style="@style/TileIllustration" android:src="@drawable/art_mop" />
                         <TextView style="@style/TileTitle" android:text="@string/mop_name" />
-                        <TextView style="@style/TileSubtitle" android:text="@string/mop_tile_detail" />
                     </LinearLayout>
                 </LinearLayout>
                 <TextView

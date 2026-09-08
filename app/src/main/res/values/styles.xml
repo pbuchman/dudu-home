@@ -23,7 +23,7 @@
     <style name="ActionTile">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_height">300dp</item>
+        <item name="android:layout_height">280dp</item>
         <item name="android:orientation">vertical</item>
         <item name="android:gravity">center</item>
         <item name="android:padding">16dp</item>
@@ -45,15 +45,6 @@
         <item name="android:gravity">center</item>
         <item name="android:textSize">26sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textColor">@color/tile_ink</item>
-        <item name="android:importantForAccessibility">no</item>
-    </style>
-    <style name="TileSubtitle">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">6dp</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textSize">17sp</item>
         <item name="android:textColor">@color/tile_ink</item>
         <item name="android:importantForAccessibility">no</item>
     </style>

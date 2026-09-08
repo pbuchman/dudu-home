@@ -2,12 +2,8 @@
 <resources>
     <string name="full_cleaning">Full Cleaning\nUruchom sprzątanie</string>
     <string name="full_mop">Full Mop. Uruchom ręcznie mopowanie</string>
-    <string name="home_subtitle">Brama i sprzątanie</string>
     <string name="cleaning_name">Full Cleaning</string>
     <string name="mop_name">Full Mop</string>
-    <string name="gate_tile_detail">Zadzwoń do bramy</string>
-    <string name="cleaning_tile_detail">Uruchom sprzątanie</string>
-    <string name="mop_tile_detail">Mopowanie na żądanie</string>
     <string name="mop_setup_missing">Brak rutyny Full Mop w konfiguracji. Wklej uzupełniony pakiet Roborock. Nie uruchomiono żadnej rutyny.</string>
     <string name="mop_starting">Zlecam Full Mop</string>
     <string name="mop_accepted">Zlecono Full Mop</string>

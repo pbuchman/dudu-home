@@ -16,8 +16,14 @@ menu/result screenshots use synthetic data; the result screenshot is not cloud a
 The actual Full Mop identifier was retrieved using the computer bootstrap after email login,
 alongside the unchanged Full Cleaning identifier on the same device. The full bundle was
 saved outside Git with owner-only access and the previous bundle preserved.
-Still outstanding: install the updated APK/configuration and run a single owner-authorized manual Mop test on the radio. No real Mop
-request or stop command was sent while implementing this change. Yanosik remains queued.
+Radio acceptance update: installed versionCode 4 as a same-signature update, with checksum-backed
+previous APK/data and complete private phone/GPS/Roborock import. A single owner-authorized tap
+on Full Mop produced exactly one new `MOP result ACCEPTED` log and returned to the menu.
+No stop or second routine request was sent. This proves cloud acceptance, not physical robot movement.
+The owner then requested removal of the header and tile subtitles. The presentation-only patch
+was rebuilt/linted and installed with the same backup/import procedure; no repeated Mop test.
+README's new image is a real radio capture. Journey/ignition checks below remain pending.
+Yanosik remains queued.
 
 ## Current implementation — 2026-09-08
 

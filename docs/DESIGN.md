@@ -9,11 +9,12 @@ Dom z rozbłyskiem zastępuje dawny symbol listy: łączy wjazd do domu z jego s
 Paleta: tło `#101B27`, głęboki błękit `#172C3A`, tekst kafelków `#162934`, piaskowa brama
 `#F0D5AE`, miętowe Cleaning `#C0E8D8`, błękitne Mop `#BDDAF4`. Kolor rozróżnia akcje, ale nie
 zastępuje nazwy. Roborock Mop ma dodatkowo własną ilustrację z wyraźną kroplą.
-Platformowy sans-serif / sans-serif-medium: nagłówek 32 sp, kafelki 26 sp, opisy 17 sp.
+Platformowy sans-serif / sans-serif-medium: nagłówek 32 sp, kafelki 26 sp.
 Bez pobierania fontów, zależności UI i logotypów Google/Roborock.
 
 Układ: nagłówek z ikoną po lewej, ustawienia po prawej; poniżej trzy równe cele dotykowe
-o wysokości 300 dp. Ilustracja nad nazwą i krótkim opisem. Status automatyzacji pod akcjami,
+o wysokości 280 dp. Ilustracja nad nazwą, razem wyśrodkowane w pionie. Na prośbę właściciela
+usunięto podpis nagłówka i opisy powielające nazwy akcji. Status automatyzacji pod akcjami,
 bez udawania potwierdzonej pozycji czy działania robota. Poniżej 600 dp szerokości kafelki
 układają się pionowo w przewijanej zawartości. Ekrany postępu/sukcesu używają ilustracji akcji.
 
@@ -36,6 +37,7 @@ Nie dodano ozdobnych liczników, wykresów, dekoracyjnych etykiet ani kolejnych 
 - `app/src/main/res/drawable-nodpi/art_cleaning.png`: wygenerowany robot dla Full Cleaning.
 - `app/src/main/res/drawable-nodpi/art_mop.png`: wariant tego robota z wodną kroplą dla Full Mop.
 - `docs/images/menu-v3.png`: rzeczywisty zrzut emulatora, bez prywatnej konfiguracji.
+- `docs/images/menu-dudu7.png`: finalny zrzut z fizycznego radia DUDU7, użyty w README.
 - `docs/images/routine-success-v3.png`: ekran wyniku z testu syntetycznego, nie dowód wykonania rutyny na robocie.
 
 Grafiki rasterowe powstały wbudowanym narzędziem image generation (nie CLI), zachowują kanał

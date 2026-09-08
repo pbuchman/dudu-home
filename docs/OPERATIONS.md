@@ -202,6 +202,7 @@ python3 scripts/check-public-tree.py --working-tree --all-history \
 git diff --cached --check
 ```
 
-Nie publikuj automatyzacji ani tagu finalnej wersji przed ukończeniem realnych testów.
-Publiczny baseline pozostaje punktem powrotu. Nowe commity lokalne są pamięcią pracy,
-nie deklaracją odbioru hardware.
+Właściciel zatwierdził publikację kodu rozwojowego po audycie prywatności i bieżącej
+weryfikacji na radiu. Nie oznaczaj go jako finalnej wersji przed ukończeniem wszystkich
+prób przejazdów/rozruchu. Publiczny baseline pozostaje punktem powrotu; dokumentuj
+osobno wykonane testy i brakujące próby sprzętowe. Nie publikuj APK ani danych prywatnych.

@@ -1,6 +1,11 @@
 # Change history
 
-## 0.3.0-local — manual Mop and visual refresh, not deployed to radio
+## 0.3.0-local — manual Mop and visual refresh
+
+- Installed as a backed-up, same-signature update on DUDU7; full private configuration imported.
+- One owner-authorized manual Full Mop request returned ACCEPTED and the menu reappeared.
+- Removed redundant header/tile subtitles at the owner's request; centered artwork/title groups
+  in equal 280 dp tiles. README uses the actual radio screenshot. No robot stop or repeat request.
 
 - Work began after publication of `78d1da8` to public main.
 - Manual-only Full Mop tile with an optional, separately validated private routine ID.
