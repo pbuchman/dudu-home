@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="full_cleaning">Full Cleaning\nUruchom sprzątanie</string>
+    <string name="settings">Ustawienia</string>
+    <string name="back_to_menu">Wróć do menu</string>
+    <string name="roborock_setup_title">Dane dostępowe Roborock</string>
+    <string name="roborock_setup_description">Wklej prywatny pakiet konfiguracji. Zapis nie uruchamia sprzątania.</string>
+    <string name="roborock_setup_rejected">Roborock odrzucił autoryzację. Wklej nowy pakiet danych.</string>
+    <string name="roborock_setup_invalid">Nie udało się zapisać pakietu. Sprawdź format, rutynę i adres API.</string>
+    <string name="save_roborock">Zapisz dane</string>
+    <string name="cleaning_starting">Zlecam Full Cleaning</string>
+    <string name="cleaning_description">Wysyłanie rutyny do Roborock. Sprzątaniem zarządzasz w aplikacji na telefonie.</string>
+    <string name="cleaning_accepted">Zlecono Full Cleaning</string>
+    <string name="cleaning_accepted_description">Chmura przyjęła polecenie. To nie jest potwierdzenie zakończenia sprzątania.</string>
+    <string name="cleaning_unknown">Nie potwierdzono wyniku. Polecenie mogło zostać przyjęte. Sprawdź aplikację Roborock przed ponowieniem.</string>
+    <string name="cleaning_error">Roborock nie potwierdził zlecenia. Brak automatycznego ponowienia.</string>
+    <string name="cleaning_failed_title">Nie potwierdzono Full Cleaning</string>
+    <string name="operation_busy">Inna operacja jest w toku. Nie uruchomiono kolejnej.</string>
+    <string name="import_failed">Import konfiguracji nie został zakończony. Automatyzacja pozostaje wstrzymana.</string>
     <string name="app_name">Dudu Home</string>
     <string name="open_gate">Otwórz bramę</string>
-    <string name="automation_not_configured">Automatyzacja nie jest skonfigurowana. Możesz otworzyć bramę ręcznie.</string>
+    <string name="automation_not_configured">Automatyzacja nie jest skonfigurowana. Możesz korzystać z przycisków ręcznych.</string>
     <string name="automation_enabled">Automatyzacja włączona</string>
     <string name="automation_permissions_missing">Automatyzacja wymaga uprawnień systemowych. Otwieranie ręczne jest dostępne.</string>
     <string name="gate_number_title">Ustaw numer bramy</string>

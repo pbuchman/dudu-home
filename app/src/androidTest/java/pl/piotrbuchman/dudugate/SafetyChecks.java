@@ -38,7 +38,7 @@ public final class SafetyChecks extends Instrumentation {
                     "saving returns to menu");
             require(!HomeActions.consume(new Intent(HomeActions.ACTION).putExtra("request_token", "forged")),
                     "external intent cannot request a call");
-            require(!HomeActions.callsGate(HomeEvent.OUTBOUND_CHECKPOINT), "future checkpoint has no action");
+            require(!HomeActions.callsGate(HomeEvent.OUTBOUND_CHECKPOINT), "vacuum checkpoint never calls gate");
             runOnMainSync(() -> screen.findViewById(R.id.open_gate_button).performClick());
             require(!prefs.contains("last_dial_started_at"), "manual request blocked during setup cooldown");
             runOnMainSync(screen::finish);
@@ -67,8 +67,21 @@ public final class SafetyChecks extends Instrumentation {
             runOnMainSync(() -> manual.findViewById(R.id.close_button).performClick());
             require(manual.findViewById(R.id.menu_content).getVisibility() == android.view.View.VISIBLE, "automatic action preserves open menu");
             runOnMainSync(manual::finish);
+            require(HomeActions.begin(), "reserve shared gate lease");
+            java.util.concurrent.CountDownLatch cleaned = new java.util.concurrent.CountDownLatch(1);
+            GateCallCoordinator closed = new GateCallCoordinator(getTargetContext(), "000000000", store,
+                    new GateCallCoordinator.Listener() {
+                        @Override public void onStateChanged(GateCallState s, String title, String description) { }
+                        @Override public void onSuccess() { }
+                        @Override public void onError(GateError error, String detail) { }
+                        @Override public void onFinished() { HomeActions.end(); cleaned.countDown(); }
+                    });
+            closed.start(); closed.close();
+            require(cleaned.await(5, java.util.concurrent.TimeUnit.SECONDS) && !HomeActions.busy(),
+                    "lifecycle close releases shared lease only after cleanup");
+            RoborockChecks.run(this);
             store.reserveDial();
-            result.putString("result", "PASS: setup cooldown, no dial, menu, manual/automatic errors, internal intents, persistence, rollback, expiry");
+            result.putString("result", "PASS: gate safety, Roborock signing/transport/encryption, daily quota, two tiles, setup, result UI, private import; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());

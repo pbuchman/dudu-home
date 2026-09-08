@@ -15,7 +15,7 @@ final class HomeConfiguration {
     final String revision;
 
     private HomeConfiguration(JSONObject json, String revision) throws Exception {
-        if (json.getInt("schema_version") != 1) throw new IllegalArgumentException("schema");
+        if (json.getInt("schema_version") != 1 && json.getInt("schema_version") != 2) throw new IllegalArgumentException("schema");
         JSONObject points = json.getJSONObject("points");
         JSONObject parking = points.getJSONObject("parking");
         latitude = latitude(parking);
@@ -38,11 +38,19 @@ final class HomeConfiguration {
             File file = new File(context.getNoBackupFilesDir(), "home-config.json");
             if (!file.isFile() || file.length() > 16384) return null;
             byte[] bytes = Files.readAllBytes(file.toPath());
-            byte[] hash = java.security.MessageDigest.getInstance("SHA-256").digest(bytes);
+            JSONObject parsed = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
+            // Credentials and phone edits must not reset consumed location evidence.
+            byte[] hash = java.security.MessageDigest.getInstance("SHA-256").digest(
+                    parsed.getJSONObject("points").toString().getBytes(StandardCharsets.UTF_8));
             StringBuilder revision = new StringBuilder();
             for (byte b : hash) revision.append(String.format(java.util.Locale.ROOT, "%02x", b & 255));
-            return new HomeConfiguration(new JSONObject(new String(bytes, StandardCharsets.UTF_8)), revision.toString());
+            return new HomeConfiguration(parsed, revision.toString());
         } catch (Exception ignored) { return null; }
+    }
+
+    static void validateImport(JSONObject json) throws Exception {
+        if (!json.isNull("points")) new HomeConfiguration(json, "validation");
+        else if (json.optBoolean("automation_enabled", false)) throw new IllegalArgumentException("missing geometry");
     }
 
     HomeDetector.Point project(double lat, double lon) {

@@ -2,6 +2,10 @@
 
 > Dudu Home uses the hardware-tested calling implementation described below.
 > Private calibration tools and location data are not distributed in this repository.
+> The IPC protocol below is preserved in `0.2.0-local`. The current menu, setup and background
+> service extend the original baseline; see [functional contract](FUNCTIONAL.md) and
+> [Roborock architecture](ROBOROCK.md). A cleanup notification now releases the shared action
+> lease only after Binder cleanup; dial/hangup protocol and safety rules are unchanged.
 
 ## Pochodzenie ustaleń
 
@@ -271,14 +275,16 @@ rozmowy.
 
 APK nie zawiera numeru bramy. `GateNumberStore` przyjmuje opcjonalny początkowy `+`, od 3
 do 15 cyfr oraz typowe separatory wizualne. Przed zapisem usuwa spacje, nawiasy i myślniki.
-Niepoprawny lub brakujący numer zatrzymuje aplikację na formularzu i nie tworzy
-`GateCallCoordinator`. Poprawny zapis także nie tworzy koordynatora: wyświetla
-potwierdzenie i zamyka Activity. Pierwszy dial wymaga kolejnego uruchomienia aplikacji.
+Niepoprawny lub brakujący numer blokuje `GateCallCoordinator` i pokazuje formularz.
+W baseline poprawny zapis wyświetlał potwierdzenie i zamykał Activity; kolejny start dzwonił.
+W aktualnym menu zapis wraca do menu, narzuca trwałą blokadę 60 sekund i nie tworzy koordynatora.
+Upływ czasu niczego nie uruchamia: wymaga nowego kliknięcia lub nowego zdarzenia.
 
 Znormalizowany numer jest zapisany w prywatnym `SharedPreferences` o nazwie
 `gate_settings`. `android:allowBackup="false"` oraz reguły data extraction wykluczają ten
-plik z backupu i transferu urządzenia. Ponowną konfigurację uruchamia usunięcie danych
-aplikacji, nie samo wyczyszczenie cache. Logi nie pokazują numeru ani jego fragmentów.
+plik z backupu i transferu urządzenia. W aktualnej wersji numer zmienia się przez Ustawienia;
+nie czyścimy danych radia, ponieważ usunęłoby to również pozostałą konfigurację i blokady.
+Logi nie pokazują numeru ani jego fragmentów.
 
 Ten sam prywatny plik przechowuje czas ostatniego rozpoczęcia dial. Przed transaction
 `GateNumberStore.reserveDial()` synchronicznie rezerwuje próbę albo ją odrzuca. Blokada
@@ -356,7 +362,8 @@ procesowa blokada zwalniana.
 
 Przy zwykłym `onDestroy` po własnym dial koordynator próbuje hangup przed cleanup. Nagłe
 ubicie procesu, restart radia i odcięcie zasilania nie dają gwarancji wykonania tej ścieżki.
-PoC celowo nie używa trwałej ani foreground service.
+Sam koordynator rozmowy nie jest foreground service. Obecne rozszerzenie ma oddzielną
+`HomeMonitorService` dla lokalizacji; nie zmienia to ograniczeń cleanup rozmowy.
 
 `getRemoteModule` oraz komendy dial i hangup są synchronicznymi transakcjami Binder
 wykonywanymi poza głównym wątkiem. Android nie udostępnia limitu czasu pojedynczego

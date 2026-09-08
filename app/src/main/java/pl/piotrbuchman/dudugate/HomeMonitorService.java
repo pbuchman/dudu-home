@@ -34,7 +34,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private long lastFix;
     private final Runnable watchdog = new Runnable() {
         @Override public void run() {
-            if (!ready(HomeMonitorService.this) || new GateNumberStore(HomeMonitorService.this).read() == null) {
+            if (!ready(HomeMonitorService.this) || PrivateImport.pending(HomeMonitorService.this)) {
                 stopSelf();
                 return;
             }
@@ -58,14 +58,9 @@ public final class HomeMonitorService extends Service implements LocationListene
 
     static void ensureStarted(Context context) {
         HomeConfiguration c = HomeConfiguration.load(context);
-        if (c == null || !c.enabled || !ready(context) || !phoneMatches(context, c)) return;
+        if (c == null || !c.enabled || !ready(context) || PrivateImport.pending(context)) return;
         try { context.startForegroundService(new Intent(context, HomeMonitorService.class)); }
         catch (RuntimeException ignored) { Log.w("DuduHome", "Monitor start blocked by system; manual calls remain available"); }
-    }
-
-    private static boolean phoneMatches(Context context, HomeConfiguration c) {
-        String phone = new GateNumberStore(context).read();
-        return phone != null && (c.verifiedPhone == null || c.verifiedPhone.equals(phone));
     }
 
     @Override public void onCreate() {
@@ -86,7 +81,7 @@ public final class HomeMonitorService extends Service implements LocationListene
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         HomeConfiguration next = HomeConfiguration.load(this);
-        if (state == null || next == null || !next.enabled || !ready(this) || !phoneMatches(this, next)) {
+        if (state == null || next == null || !next.enabled || !ready(this) || PrivateImport.pending(this)) {
             stopSelf(); return START_NOT_STICKY;
         }
         if (config == null || !next.revision.equals(config.revision)) {
@@ -128,7 +123,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         for (HomeEvent event : events) {
             HomeConfiguration current = HomeConfiguration.load(this);
             if (current == null || !current.enabled || !current.revision.equals(config.revision)
-                    || !phoneMatches(this, current)) { stopSelf(); return; }
+                    || PrivateImport.pending(this)) { stopSelf(); return; }
             Log.i("DuduHome", "Event " + event.name());
             HomeActions.dispatch(this, event);
         }

@@ -10,7 +10,10 @@ Private local denylist verification must also be performed by the maintainer bef
 Do not copy the predecessor's calibration module into this repository.
 
 Preserve Java 17, platform Android Views/XML, the existing application ID and local signing key.
-No AndroidX, dependency injection framework, analytics, cloud service, or fake DUDU backend.
+No AndroidX, dependency injection framework, analytics, intermediary cloud server, or fake DUDU backend.
+The owner explicitly authorized direct native HTTPS to Roborock for the existing Full Cleaning
+routine. No Python runtime on Android, MQTT, status polling, stop/pause/dock, Google Home or
+Home Assistant dependency. Computer-only Python bootstrap is read-only after email login.
 Use the raw SYU Binder implementation. No ACTION_CALL, Accessibility, UI dialing or radio SIM.
 Register callbacks before dial; dial only on fresh idle. Never hang up a pre-existing call.
 One dial per attempt, no protocol fallback after dial, persistent 60-second reservation before
@@ -22,3 +25,16 @@ Verify with ./gradlew assembleDebug lintDebug and scripts/run-emulator-check.sh.
 Hardware verification is separate from emulator checks. Do not claim unavailable radio tests.
 Keep new automation local until replay and hardware verification; public main is the baseline.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
+
+Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.
+Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
+docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
+Automatic cleaning reserves one attempt per Europe/Warsaw day BEFORE execution; failure, missing
+configuration or a busy action consume that opportunity. No automatic retry or queue. Manual
+cleaning remains independent. Saving any configuration must never execute an action or reset quota.
+Preserve shared action exclusion until actual Binder/HTTP cleanup, not just until the UI closes.
+Stage complete private configuration outside Git; compare radio phone and APK signature before
+update, back up with checksums, keep maintenance until one-time import completes. Do not print
+headers, account payloads, routine IDs, connection addresses or raw firmware logs.
+Do not bypass a browser security refusal to store secrets. Google Password Manager backup is
+not completed; the local owner-only credential bundle is the working source of configuration.

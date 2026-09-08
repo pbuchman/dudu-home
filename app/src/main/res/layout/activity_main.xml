@@ -33,9 +33,12 @@
                     android:text="@string/app_name"
                     android:textColor="@color/text_primary"
                     android:textSize="30sp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:gravity="center" android:baselineAligned="false">
                 <Button
                     android:id="@+id/open_gate_button"
-                    android:layout_width="360dp"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="150dp"
                     android:layout_marginTop="28dp"
                     android:background="@drawable/button_primary"
@@ -43,6 +46,15 @@
                     android:textAllCaps="false"
                     android:textColor="@color/background_top"
                     android:textSize="28sp" />
+                <Button android:id="@+id/full_cleaning_button"
+                    android:layout_width="0dp" android:layout_weight="1" android:layout_height="150dp"
+                    android:layout_marginTop="28dp" android:layout_marginStart="16dp"
+                    android:background="@drawable/button_primary" android:text="@string/full_cleaning"
+                    android:textAllCaps="false" android:textColor="@color/background_top" android:textSize="28sp" />
+                </LinearLayout>
+                <Button android:id="@+id/settings_button" android:layout_width="wrap_content"
+                    android:layout_height="48dp" android:layout_marginTop="16dp"
+                    android:text="@string/settings" android:textAllCaps="false" />
                 <TextView
                     android:id="@+id/automation_status"
                     android:layout_width="wrap_content"
@@ -51,6 +63,21 @@
                     android:gravity="center"
                     android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/roborock_setup_content" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/roborock_setup_title" android:textColor="@color/text_primary" android:textSize="30sp" />
+                <TextView android:id="@+id/roborock_setup_message" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/roborock_setup_description" android:textColor="@color/text_secondary" android:textSize="17sp" />
+                <EditText android:id="@+id/roborock_input" android:layout_width="match_parent" android:layout_height="64dp"
+                    android:inputType="textPassword" android:importantForAutofill="no" android:saveEnabled="false"
+                    android:hint="@string/roborock_setup_title" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
+                <Button android:id="@+id/save_roborock_button" android:layout_width="wrap_content" android:layout_height="52dp"
+                    android:text="@string/save_roborock" android:textAllCaps="false" />
+                <Button android:id="@+id/cancel_roborock_button" android:layout_width="wrap_content" android:layout_height="48dp"
+                    android:text="@string/back_to_menu" android:textAllCaps="false" />
             </LinearLayout>
 
             <LinearLayout
@@ -94,6 +121,7 @@
                     android:hint="@string/gate_number_hint"
                     android:imeOptions="actionDone"
                     android:importantForAutofill="no"
+                    android:saveEnabled="false"
                     android:inputType="phone"
                     android:maxWidth="560dp"
                     android:maxLines="1"
@@ -129,6 +157,8 @@
                     android:textAllCaps="false"
                     android:textColor="@color/background_top"
                     android:textSize="16sp" />
+                <Button android:id="@+id/cancel_number_button" android:layout_width="wrap_content"
+                    android:layout_height="48dp" android:text="@string/back_to_menu" android:textAllCaps="false" />
             </LinearLayout>
 
             <LinearLayout

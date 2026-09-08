@@ -38,6 +38,11 @@ public final class MainActivity extends Activity {
     private boolean returnToMenu = true;
     private boolean resumed;
     private boolean configurationSaved = true;
+    private HomeAction currentAction = HomeAction.GATE;
+    private boolean gateLease;
+    private View roborockSetup;
+    private EditText roborockInput;
+    private TextView roborockMessage;
 
     private final Runnable finishAfterSuccess = this::finishAction;
     private final Runnable finishAfterInformation = this::finishAction;
@@ -60,6 +65,9 @@ public final class MainActivity extends Activity {
         numberSetupContent = findViewById(R.id.number_setup_content);
         callStatusContent = findViewById(R.id.call_status_content);
         menuContent = findViewById(R.id.menu_content);
+        roborockSetup = findViewById(R.id.roborock_setup_content);
+        roborockInput = findViewById(R.id.roborock_input);
+        roborockMessage = findViewById(R.id.roborock_setup_message);
         automationStatus = findViewById(R.id.automation_status);
         gateNumberInput = findViewById(R.id.gate_number_input);
         gateNumberError = findViewById(R.id.gate_number_error);
@@ -67,12 +75,34 @@ public final class MainActivity extends Activity {
         Button closeButton = findViewById(R.id.close_button);
         Button saveNumberButton = findViewById(R.id.save_number_button);
 
-        retryButton.setOnClickListener(view -> startAttempt());
+        retryButton.setOnClickListener(view -> { returnToMenu = true; startSelected(); });
         closeButton.setOnClickListener(view -> finishAction());
         findViewById(R.id.open_gate_button).setOnClickListener(view -> {
             if (actionRunning) return;
             returnToMenu = true;
+            currentAction = HomeAction.GATE;
             startAttempt();
+        });
+        findViewById(R.id.full_cleaning_button).setOnClickListener(view -> {
+            returnToMenu = true; currentAction = HomeAction.CLEANING; startCleaning();
+        });
+        findViewById(R.id.settings_button).setOnClickListener(view -> {
+            if (busyNotice()) return;
+            new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
+                    .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja"}, (dialog, which) -> {
+                        if (which == 0) { returnToMenu = true; showNumberSetup(); }
+                        else if (which == 1) showRoborockSetup(false);
+                        else new android.app.AlertDialog.Builder(this).setTitle("Lokalizacja")
+                                .setMessage(HomeConfiguration.load(this) == null ? "Brak konfiguracji GPS. Dostarcz prywatny plik instalatorem."
+                                        : "Konfiguracja GPS zainstalowana. Zmiany przez prywatny plik instalatora.")
+                                .setPositiveButton("OK", null).show();
+                    }).show();
+        });
+        findViewById(R.id.cancel_number_button).setOnClickListener(view -> { hideKeyboard(); showMenu(); });
+        findViewById(R.id.cancel_roborock_button).setOnClickListener(view -> showMenu());
+        findViewById(R.id.save_roborock_button).setOnClickListener(view -> {
+            if (new RoborockStore(this).save(roborockInput.getText().toString())) { showMenu(); HomeMonitorService.ensureStarted(this); }
+            else roborockMessage.setText(R.string.roborock_setup_invalid);
         });
         saveNumberButton.setOnClickListener(view -> saveGateNumber());
         gateNumberInput.setOnEditorActionListener((view, actionId, event) -> {
@@ -84,17 +114,16 @@ public final class MainActivity extends Activity {
         });
 
         gateNumberStore = new GateNumberStore(this);
-        HomeConfiguration config = HomeConfiguration.load(this);
-        if (config != null && config.verifiedPhone != null && !config.verifiedPhone.equals(gateNumberStore.read())) {
-            configurationSaved = gateNumberStore.save(config.verifiedPhone);
-        }
+        configurationSaved = PrivateImport.apply(this);
+        PrivateImport.migrateLegacyPhone(this);
         gateNumber = configurationSaved ? gateNumberStore.read() : null;
-        if (gateNumber == null) {
+        HomeAction requested = HomeActions.consumeAction(getIntent());
+        if (requested != null && configurationSaved) {
+            currentAction = requested; returnToMenu = false; startSelected();
+        } else if (gateNumber == null) {
             showNumberSetup();
-        } else if (HomeActions.consume(getIntent())) {
-            returnToMenu = false;
-            startAttempt();
         } else showMenu();
+        if (!configurationSaved) automationStatus.setText(R.string.import_failed);
         HomeMonitorService.ensureStarted(this);
     }
 
@@ -102,10 +131,11 @@ public final class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (HomeActions.consume(intent)) automaticAction();
+        HomeAction requested = HomeActions.consumeAction(intent);
+        if (requested != null) automaticAction(requested);
         else if (Intent.ACTION_MAIN.equals(intent.getAction())) {
             returnToMenu = true;
-            if (!actionRunning && configurationSaved && gateNumberStore.read() != null) showMenu();
+            if (!HomeActions.busy()) showMenu();
         }
     }
 
@@ -114,7 +144,6 @@ public final class MainActivity extends Activity {
         resumed = true;
         HomeActions.visible(this);
         HomeMonitorService.ensureStarted(this);
-        if (!actionRunning && configurationSaved && gateNumberStore != null && gateNumberStore.read() != null) showMenu();
     }
 
     @Override protected void onPause() {
@@ -124,18 +153,32 @@ public final class MainActivity extends Activity {
     }
 
     void automaticAction() {
-        if (!configurationSaved || actionRunning || gateNumberStore.read() == null || gateNumberStore.cooldownRemainingMillis() > 0) return;
+        automaticAction(HomeAction.GATE);
+    }
+    void automaticAction(HomeAction action) {
+        if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) return;
+        if (actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
+                || roborockSetup.getVisibility() == View.VISIBLE
+                || (callStatusContent.getVisibility() == View.VISIBLE && errorActions.getVisibility() == View.VISIBLE)) return;
         returnToMenu = resumed && menuContent.getVisibility() == View.VISIBLE;
-        startAttempt();
+        currentAction = action;
+        startSelected();
     }
 
+    private void startSelected() { if (currentAction == HomeAction.CLEANING) startCleaning(); else startAttempt(); }
+
     private void showMenu() {
+        hideKeyboard();
+        roborockSetup.setVisibility(View.GONE);
+        roborockInput.setText("");
+        gateNumberInput.setText("");
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         actionRunning = false;
         menuContent.setVisibility(View.VISIBLE);
         numberSetupContent.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.GONE);
         HomeConfiguration config = HomeConfiguration.load(this);
-        automationStatus.setText(config == null || !config.enabled ? R.string.automation_not_configured
+        automationStatus.setText(PrivateImport.pending(this) ? R.string.import_failed : config == null || !config.enabled ? R.string.automation_not_configured
                 : HomeMonitorService.ready(this) ? R.string.automation_enabled : R.string.automation_permissions_missing);
     }
 
@@ -154,6 +197,7 @@ public final class MainActivity extends Activity {
 
     private void handleBack() {
         if (actionRunning) finishAction();
+        else if (menuContent.getVisibility() != View.VISIBLE) showMenu();
         else finishAndRemoveTask();
     }
 
@@ -168,6 +212,8 @@ public final class MainActivity extends Activity {
     }
 
     private void startAttempt() {
+        if (busyNotice()) return;
+        currentAction = HomeAction.GATE;
         actionRunning = true;
         menuContent.setVisibility(View.GONE);
         gateNumber = gateNumberStore.read();
@@ -189,6 +235,9 @@ public final class MainActivity extends Activity {
         }
 
         int generation = ++uiGeneration;
+        if (!HomeActions.begin()) return;
+        gateLease = true;
+        roborockSetup.setVisibility(View.GONE);
         numberSetupContent.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.VISIBLE);
         resetUi();
@@ -197,6 +246,8 @@ public final class MainActivity extends Activity {
                 gateNumber,
                 gateNumberStore,
                 new GateCallCoordinator.Listener() {
+                    @Override public void onFinished() { releaseGateLease(); }
+
                     @Override
                     public void onStateChanged(
                             GateCallState state,
@@ -232,6 +283,10 @@ public final class MainActivity extends Activity {
     }
 
     private void showNumberSetup() {
+        ++uiGeneration;
+        statusIcon.removeCallbacks(finishAfterSuccess); statusIcon.removeCallbacks(finishAfterInformation);
+        roborockSetup.setVisibility(View.GONE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         actionRunning = false;
         menuContent.setVisibility(View.GONE);
         numberSetupContent.setVisibility(View.VISIBLE);
@@ -346,6 +401,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showError(GateError error) {
+        actionRunning = false;
         progress.setVisibility(View.GONE);
         statusIcon.animate().cancel();
         statusIcon.setImageResource(R.drawable.ic_error);
@@ -377,5 +433,72 @@ public final class MainActivity extends Activity {
                 .setInterpolator(new OvershootInterpolator(1.2f))
                 .start();
         statusIcon.postDelayed(finishAfterSuccess, SUCCESS_DISPLAY_MS);
+    }
+
+    private void releaseGateLease() { if (gateLease) { gateLease = false; HomeActions.end(); } }
+
+    private void showRoborockSetup(boolean rejected) {
+        ++uiGeneration;
+        statusIcon.removeCallbacks(finishAfterSuccess); statusIcon.removeCallbacks(finishAfterInformation);
+        actionRunning = false;
+        menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); callStatusContent.setVisibility(View.GONE);
+        roborockSetup.setVisibility(View.VISIBLE); roborockInput.setText("");
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        roborockMessage.setText(rejected ? R.string.roborock_setup_rejected : R.string.roborock_setup_description);
+    }
+
+    private void startCleaning() {
+        if (busyNotice()) return;
+        RoborockStore store = new RoborockStore(this);
+        RoborockCredentials credentials = store.read();
+        if (credentials == null) { showRoborockSetup(store.rejected()); return; }
+        if (!HomeActions.begin()) return;
+        currentAction = HomeAction.CLEANING; actionRunning = true;
+        int generation = ++uiGeneration;
+        statusIcon.removeCallbacks(finishAfterSuccess); statusIcon.removeCallbacks(finishAfterInformation);
+        menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
+        callStatusContent.setVisibility(View.VISIBLE); resetUi();
+        statusTitle.setText(R.string.cleaning_starting); statusDescription.setText(R.string.cleaning_description);
+        RoborockClient client = new RoborockClient();
+        java.util.concurrent.atomic.AtomicBoolean delivered = new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.ScheduledExecutorService timer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        java.util.function.Consumer<RoborockClient.Result> complete = result -> {
+            if (!delivered.compareAndSet(false, true)) return;
+            runOnUiThread(() -> {
+                if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
+                renderCleaningResult(result);
+                android.util.Log.i("DuduHome", "Cleaning result " + result.name());
+            });
+        };
+        timer.schedule(() -> { complete.accept(RoborockClient.Result.NETWORK_UNKNOWN); client.cancelTransport(); }, 20, java.util.concurrent.TimeUnit.SECONDS);
+        new Thread(() -> {
+            try {
+                RoborockClient.Result result = client.execute(credentials);
+                if (result == RoborockClient.Result.AUTH_REJECTED) store.reject(credentials);
+                complete.accept(result);
+            } finally { timer.shutdownNow(); HomeActions.end(); }
+        }, "FullCleaning").start();
+    }
+
+    private void renderCleaningResult(RoborockClient.Result result) {
+        actionRunning = false;
+        if (result == RoborockClient.Result.AUTH_REJECTED) { showRoborockSetup(true); return; }
+        menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
+        callStatusContent.setVisibility(View.VISIBLE);
+        if (result == RoborockClient.Result.ACCEPTED) {
+            statusTitle.setText(R.string.cleaning_accepted); statusDescription.setText(R.string.cleaning_accepted_description);
+            showSuccessAnimation();
+        } else {
+            progress.setVisibility(View.GONE); statusIcon.setImageResource(R.drawable.ic_error);
+            statusIcon.setVisibility(View.VISIBLE); statusTitle.setText(R.string.cleaning_failed_title);
+            statusDescription.setText(result == RoborockClient.Result.NETWORK_UNKNOWN ? R.string.cleaning_unknown : R.string.cleaning_error);
+            errorActions.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private boolean busyNotice() {
+        if (!HomeActions.busy()) return false;
+        android.widget.Toast.makeText(this, R.string.operation_busy, android.widget.Toast.LENGTH_SHORT).show();
+        return true;
     }
 }

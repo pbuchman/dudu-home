@@ -25,6 +25,9 @@ final class GateCallCoordinator {
         void onSuccess();
 
         void onError(GateError error, String detail);
+
+        /** Called after Binder cleanup, including a lifecycle close without a result. */
+        default void onFinished() { }
     }
 
     private static final int UPDATE_DEVICE_MAPPING = 6;
@@ -723,6 +726,7 @@ final class GateCallCoordinator {
             ACTIVE_SESSION.set(false);
             lockHeld = false;
         }
+        main.post(listener::onFinished);
     }
 
     private void transition(GateCallState newState, String title, String description) {

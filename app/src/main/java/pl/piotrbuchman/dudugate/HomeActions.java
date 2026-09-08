@@ -11,6 +11,11 @@ final class HomeActions {
     static final String ACTION = "pl.piotrbuchman.dudugate.HOME_ACTION";
     private static String pendingToken;
     private static long pendingSince;
+    private static HomeAction pendingAction;
+    private static boolean busy;
+    static synchronized boolean begin() { if (busy) return false; busy = true; return true; }
+    static synchronized void end() { busy = false; }
+    static synchronized boolean busy() { return busy; }
     private static WeakReference<MainActivity> visible = new WeakReference<>(null);
 
     static void visible(MainActivity activity) { visible = new WeakReference<>(activity); }
@@ -21,17 +26,24 @@ final class HomeActions {
     }
 
     static void dispatch(Context context, HomeEvent event) {
-        if (!callsGate(event)) return; // Reserved checkpoints have no action in this version.
-        GateNumberStore store = new GateNumberStore(context);
-        if (store.read() == null || store.cooldownRemainingMillis() > 0) return;
+        HomeAction action;
+        if (callsGate(event)) action = HomeAction.GATE;
+        else if (event == HomeEvent.OUTBOUND_CHECKPOINT && DailyCleaning.reserve(context)) action = HomeAction.CLEANING;
+        else return;
+        if (busy() || PrivateImport.pending(context)) { android.util.Log.i("DuduHome", "Skipped " + action + ": busy or maintenance"); return; }
+        if (action == HomeAction.GATE) {
+            GateNumberStore store = new GateNumberStore(context);
+            if (store.read() == null || store.cooldownRemainingMillis() > 0) return;
+        } else if (new RoborockStore(context).read() == null) { android.util.Log.i("DuduHome", "Skipped CLEANING: configuration unavailable"); return; }
         MainActivity activity = visible.get();
         if (activity != null) {
-            activity.automaticAction();
+            activity.automaticAction(action);
             return;
         }
         long now = SystemClock.elapsedRealtime();
         if (pendingToken != null && now - pendingSince < 5000) return;
         pendingToken = UUID.randomUUID().toString();
+        pendingAction = action;
         pendingSince = now;
         try {
             context.startActivity(new Intent(context, MainActivity.class).setAction(ACTION)
@@ -46,4 +58,5 @@ final class HomeActions {
         if (valid) pendingToken = null;
         return valid;
     }
+    static HomeAction consumeAction(Intent intent) { return consume(intent) ? pendingAction : null; }
 }

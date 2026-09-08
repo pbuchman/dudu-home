@@ -7,7 +7,8 @@
 - **Compatibility:** retain the technical application ID and local Android signing key. The
   visible name is Dudu Home. No public APK or new release-signing scheme in this phase.
 - **Small Android implementation:** Java 17, Views/XML and platform APIs, without AndroidX,
-  analytics, network access or an imitation of the vendor Bluetooth service.
+  analytics or an imitation of the vendor Bluetooth service. The baseline had no Internet;
+  the approved Full Cleaning extension adds direct native HTTPS only for that routine.
 - **Calling safety:** keep raw Binder, pre-dial idle verification, one call per attempt,
   persistent 60-second cooldown and cleanup of only calls initiated by this attempt.
 - **Setup is not a call:** the baseline saves a number and closes without dial. A new launch
@@ -17,5 +18,32 @@
   remain until user action. The firmware dependency is documented, not hidden.
 - **Verification:** build, lint and small emulator checks. Real Binder behavior, power cycles
   and future location-triggered UI must be validated separately on the radio.
-- **Future architecture:** location events and manual commands are independent inputs to
-  one guarded action executor. No future vacuum or music implementation in this iteration.
+- **Current architecture:** location events and manual commands are independent inputs to
+  guarded executors. The approved scope now includes Full Cleaning, but no music/other devices.
+
+## Approved Full Cleaning extension — 2026-09-08
+
+- **Two real tiles:** gate and Full Cleaning. Small settings entry for phone and one-paste
+  Roborock bundle; location remains private installer configuration, no editor.
+- **Origin-aware result:** manual and explicit retry return to menu. Automatic work hides
+  afterward unless the menu was visible. Keep baseline success/information durations and
+  user-dismissed errors. Never interrupt configuration/error UI with another automation.
+- **One automatic attempt/day:** reserve Europe/Warsaw date on outbound checkpoint before
+  dispatch. Failure, missing credentials, busy UI/executor and offline state do not allow
+  another automatic attempt that day. No queue or automatic retry. Manual actions neither
+  consume nor obey this daily limit.
+- **No robot-state checks:** send the existing routine as requested. Never stop, pause or dock
+  after starting it, including during tests. Phone app remains responsible for robot control.
+- **Minimal credentials:** RRiot u/s/h + regional HTTPS host + routine ID/name, not a lone account
+  token. No documented expiry guarantee, no invented refresh flow. Known auth rejection opens
+  replacement setup; save is inert. No Python in the APK and no intermediary server.
+- **Defense in depth:** allowlisted HTTPS endpoints, strict IDs/header fields, system TLS,
+  no redirects, bounded requests, encrypted Keystore storage and no secret logs/backups.
+- **Ambiguous network result:** report uncertainty, never interpret timeout as “did not start”.
+  Do not replay automatically. Shared lease lasts through transport/Binder cleanup after UI closure.
+- **Safe updates:** verify current radio number and signing certificate, private backup with
+  checksums, maintenance before install, atomic one-time staging and cleanup after import.
+  Keep existing daily and location state. Never reinstall by uninstalling to bypass signature checks.
+- **Handoff and release:** commit local milestones and factual verification. The public baseline
+  remains unchanged until real radio installation, gate, vacuum, journey and wake tests pass.
+  No public APK. Google Password Manager storage remains uncompleted; never bypass its security refusal.
