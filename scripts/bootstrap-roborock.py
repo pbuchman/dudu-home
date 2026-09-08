@@ -15,10 +15,13 @@ installer = module_from_spec(spec)
 spec.loader.exec_module(installer)
 
 
-def minimal_bundle(user, scene):
+def minimal_bundle(user, scene, mop=None):
     r = user.rriot
     value = dict(schema_version=1, api_base_url=r.r.a, routine_id=scene.id,
                  routine_name=scene.name, auth=dict(u=r.u, s=r.s, h=r.h))
+    if mop is not None:
+        if mop.name != 'Full Mop': raise ValueError('Unexpected manual routine')
+        value['full_mop_routine_id'] = mop.id
     return installer.validate(dict(schema_version=2), value, False)['roborock']
 
 
@@ -34,10 +37,14 @@ async def collect():
         home = await api.get_home_data(user)
         matches = []
         for device in home.get_all_devices():
-            matches.extend(scene for scene in await api.get_scenes(user, device.duid) if scene.name == 'Full Cleaning')
+            scenes = await api.get_scenes(user, device.duid)
+            matches.extend((scene, scenes) for scene in scenes if scene.name == 'Full Cleaning')
         if len(matches) != 1:
             raise ValueError('Expected exactly one Full Cleaning routine; resolve ambiguity in the Roborock app')
-        return minimal_bundle(user, matches[0])
+        cleaning, scenes = matches[0]
+        mops = [scene for scene in scenes if scene.name == 'Full Mop']
+        if len(mops) > 1: raise ValueError('Ambiguous Full Mop routine')
+        return minimal_bundle(user, cleaning, mops[0] if mops else None)
 
 
 def main():

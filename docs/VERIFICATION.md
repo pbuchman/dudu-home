@@ -1,5 +1,24 @@
 # Verification ledger
 
+## Manual Mop and visual refresh — local versionCode 4
+
+Separate from the earlier versionCode 3 radio session below. Full Mop has its own optional
+private identifier and manual tile. Synthetic Android checks cover exact endpoint selection,
+no Cleaning fallback, invalid/duplicate ID rejection, encrypted persistence/import, automatic
+Mop refusal, unchanged daily quota and five-second result presentation. Seven private-tool
+test methods cover installer/bootstrap validation. New illustrations are original generated
+assets, not photographs or maps of the owner's home. Menu reviewed on a landscape emulator.
+
+Build, lint, Android safety checks, detector checks and the real update/import installer on
+the emulator passed. The installer preserved the synthetic Mop ID and daily quota. Public
+menu/result screenshots use synthetic data; the result screenshot is not cloud acceptance.
+
+The actual Full Mop identifier was retrieved using the computer bootstrap after email login,
+alongside the unchanged Full Cleaning identifier on the same device. The full bundle was
+saved outside Git with owner-only access and the previous bundle preserved.
+Still outstanding: install the updated APK/configuration and run a single owner-authorized manual Mop test on the radio. No real Mop
+request or stop command was sent while implementing this change. Yanosik remains queued.
+
 ## Current implementation — 2026-09-08
 
 Scope: local `0.2.0-local` / versionCode 3 on `codex/home-automation`.

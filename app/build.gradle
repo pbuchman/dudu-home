@@ -10,8 +10,8 @@ android {
         applicationId 'pl.piotrbuchman.dudugate'
         minSdk 26
         targetSdk 36
-        versionCode 3
-        versionName '0.2.0-local'
+        versionCode 4
+        versionName '0.3.0-local'
         testInstrumentationRunner 'pl.piotrbuchman.dudugate.SafetyChecks'
     }
 

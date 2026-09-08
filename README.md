@@ -1,18 +1,20 @@
 # Dudu Home
 
-**Your gate. Your cleaning routine. Two big buttons — or the right moment on your journey.**
+**Your gate. Your cleaning routines. One touch — or the right moment on your journey.**
 
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
-**phone** to make a short call, and sends an existing **Full Cleaning** routine to Roborock.
+**phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
 
-> **Version status:** `main` contains the current development implementation (`0.2.0-local`):
-> menu, location automation and Roborock. Both manual actions and background GPS have been
-> checked on DUDU7, but **the complete automatic journey/ignition acceptance is still pending**.
+> **Version status:** published `main` checkpoint `78d1da8` contains `0.2.0-local`.
+> This next development version (`0.3.0-local`) adds manual-only Full Mop, illustrated tiles
+> and five-second success screens. These additions are locally tested, not yet tested on the radio.
+> The preceding version's gate/Cleaning manual actions and background GPS passed on DUDU7;
+> **complete automatic journey/ignition acceptance is still pending**.
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
 > fully verified production release. No public APK is provided.
 
-![Dudu Home menu — sanitized landscape emulator preview](docs/images/menu.png)
+![Dudu Home menu — sanitized landscape emulator preview](docs/images/menu-v3.png)
 
 ## What it does
 
@@ -20,6 +22,8 @@ Private, locally configured route detection connects those actions to leaving an
   and confirm idle. Never use the head unit's SIM or interrupt a pre-existing conversation.
 - **Full Cleaning:** send the saved Roborock routine. This is not a generic “clean” command;
   the routine's rooms and settings remain managed in the Roborock phone app.
+- **Full Mop:** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
+  Missing Mop configuration never starts Full Cleaning instead.
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
@@ -28,7 +32,8 @@ Private, locally configured route detection connects those actions to leaving an
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
-hide after the result unless the menu was already open. Errors stay until user action.
+hide after the result unless the menu was already open. Success stays for five seconds.
+Errors stay until user action.
 
 No robot stop, pause, docking, status polling, Python runtime on Android, analytics, Home Assistant
 or Google Home dependency. Roborock requires Internet; gate calls use the paired phone's network.
@@ -113,6 +118,7 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 - [Installation, recovery and credential renewal](docs/OPERATIONS.md).
 - [Implementation and acceptance plan](docs/PLAN.md), [verification evidence](docs/VERIFICATION.md).
 - [Decisions](docs/DECISIONS.md), [change history](CHANGELOG.md), [handoff](docs/LOCAL_DEVELOPMENT.md).
+- [Design and illustration prompts](docs/DESIGN.md), [next queued work](docs/ROADMAP.md).
 
 ## License
 

@@ -23,6 +23,12 @@ identyfikatora istniejącej rutyny. Nie jest wymagany podczas działania radia.
 
 Pakiet JSON ma `schema_version: 1`, `api_base_url`, dodatni całkowity `routine_id`,
 `routine_name: "Full Cleaning"` i obiekt `auth` z polami `u`, `s`, `h` z RRiot.
+Opcjonalny dodatni całkowity `full_mop_routine_id` wskazuje osobną rutynę **Full Mop** i musi
+różnić się od `routine_id`. Starszy pakiet bez tego pola nadal obsługuje Full Cleaning.
+`RoborockCredentials.forAction` wybiera właściwy ID wyłącznie dla jawnej akcji; brak Mop
+jest błędem konfiguracji, nigdy fallbackiem. `serialized()` zachowuje tożsamość całego pakietu,
+więc odrzucenie autoryzacji i szyfrowanie pozostają wspólne dla obu rutyn.
+Automatyczny dispatch nie mapuje żadnego zdarzenia na MOP; Activity również odrzuca automatyczne MOP.
 Nie potrzebujemy tokenu logowania konta, RRiot `k`, hasła, kodu email, identyfikatora urządzenia,
 map pomieszczeń ani adresu MQTT. Cały pakiet jest sekretem, nawet jeśli UI skrótowo nazywa go danymi dostępowymi.
 
@@ -61,6 +67,8 @@ Dozwolone adresy to wyłącznie `https://api-eu.roborock.com`, `https://api-us.r
 userinfo, query, fragmentu i dodatkowej ścieżki. Nie podmieniamy regionu po błędzie.
 TLS używa systemowej walidacji certyfikatów, cleartext jest wyłączony, przekierowania są wyłączone.
 Identyfikator jest dodatnią liczbą całkowitą, a pola podpisu nie dopuszczają wstrzyknięcia nagłówków.
+Obie rutyny używają tego samego endpointu wykonania z odrębnym identyfikatorem. Nie wysyłamy
+ogólnego polecenia mopowania, zmiany trybu robota ani komendy stop.
 
 `HttpsURLConnection`, POST o stałej długości 0 i brak pętli retry. Connect timeout 5 s,
 read timeout 10 s, limit odpowiedzi 16 KiB. UI ma granicę oczekiwania 20 s i rozłącza transport,

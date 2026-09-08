@@ -162,6 +162,16 @@ o tej nazwie nie zgaduje urządzenia. Zweryfikuj wybrany pakiet przez dry-run i 
 instalatorem lub wklej w ustawieniach. Zapis nie ponawia wcześniej nieudanej próby.
 Nowy helper ma test ekstrakcji i walidacji; pełnego nowego logowania nie uruchamiamy bez potrzeby.
 
+### Uzupełnienie Full Mop
+
+Od `0.3.0-local` helper szuka także dokładnej nazwy `Full Mop` na tym samym urządzeniu,
+na którym znalazł jedyną rutynę `Full Cleaning`. Więcej niż jeden pasujący Mop jest błędem,
+nie wyborem pierwszej pozycji. Brak Mop zachowuje zgodny starszy pakiet tylko do Cleaning.
+Identyfikator zapisuje jako `full_mop_routine_id` w prywatnym JSON. Nie wpisuj ID do kodu,
+testów ani dokumentacji. Pełny import zapisuje oba ID zaszyfrowane i nie uruchamia rutyn.
+Próba sprzętowa Mop wymaga świadomego ręcznego wybrania kafelka, jednego polecenia, wyniku
+i powrotu do menu po pięciu sekundach. Nie zatrzymuj robota po teście i nie resetuj limitu dziennego.
+
 ## Diagnostyka i odzyskiwanie
 
 - Brak automatyzacji: sprawdź maintenance/staging, włączenie, GPS, uprawnienia i autostart.

@@ -1,5 +1,15 @@
 # Change history
 
+## 0.3.0-local — manual Mop and visual refresh, not deployed to radio
+
+- Work began after publication of `78d1da8` to public main.
+- Manual-only Full Mop tile with an optional, separately validated private routine ID.
+- Shared encrypted bundle, explicit routine selection, no fallback to Cleaning and no automatic Mop path.
+- Computer bootstrap discovers exact Full Mop on the same robot; ambiguity is rejected.
+- Three illustrated tiles, scalable home icon, coordinated action screens and five-second successes.
+- Regression checks for Mop selection/absence, encrypted persistence/import, automatic rejection,
+  unchanged daily quota, and result duration. Yanosik movement hook recorded in the roadmap only.
+
 ## 0.2.0-local — published development source, not a final release
 
 ### Source publication review

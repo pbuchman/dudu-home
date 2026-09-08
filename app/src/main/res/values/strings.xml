@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="full_cleaning">Full Cleaning\nUruchom sprzątanie</string>
+    <string name="full_mop">Full Mop. Uruchom ręcznie mopowanie</string>
+    <string name="home_subtitle">Brama i sprzątanie</string>
+    <string name="cleaning_name">Full Cleaning</string>
+    <string name="mop_name">Full Mop</string>
+    <string name="gate_tile_detail">Zadzwoń do bramy</string>
+    <string name="cleaning_tile_detail">Uruchom sprzątanie</string>
+    <string name="mop_tile_detail">Mopowanie na żądanie</string>
+    <string name="mop_setup_missing">Brak rutyny Full Mop w konfiguracji. Wklej uzupełniony pakiet Roborock. Nie uruchomiono żadnej rutyny.</string>
+    <string name="mop_starting">Zlecam Full Mop</string>
+    <string name="mop_accepted">Zlecono Full Mop</string>
+    <string name="mop_failed_title">Nie potwierdzono Full Mop</string>
     <string name="settings">Ustawienia</string>
     <string name="back_to_menu">Wróć do menu</string>
     <string name="roborock_setup_title">Dane dostępowe Roborock</string>
@@ -9,9 +20,9 @@
     <string name="roborock_setup_invalid">Nie udało się zapisać pakietu. Sprawdź format, rutynę i adres API.</string>
     <string name="save_roborock">Zapisz dane</string>
     <string name="cleaning_starting">Zlecam Full Cleaning</string>
-    <string name="cleaning_description">Wysyłanie rutyny do Roborock. Sprzątaniem zarządzasz w aplikacji na telefonie.</string>
+    <string name="cleaning_description">Wysyłam polecenie do Roborock.</string>
     <string name="cleaning_accepted">Zlecono Full Cleaning</string>
-    <string name="cleaning_accepted_description">Chmura przyjęła polecenie. To nie jest potwierdzenie zakończenia sprzątania.</string>
+    <string name="cleaning_accepted_description">Polecenie przyjęte. Postęp sprawdzisz w aplikacji Roborock.</string>
     <string name="cleaning_unknown">Nie potwierdzono wyniku. Polecenie mogło zostać przyjęte. Sprawdź aplikację Roborock przed ponowieniem.</string>
     <string name="cleaning_error">Roborock nie potwierdził zlecenia. Brak automatycznego ponowienia.</string>
     <string name="cleaning_failed_title">Nie potwierdzono Full Cleaning</string>

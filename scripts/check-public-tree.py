@@ -31,6 +31,7 @@ if args.private_roborock:
     robot = json.loads(args.private_roborock.read_text())
     private += [str(v).encode().lower() for v in robot.get('auth', {}).values() if len(str(v)) >= 4]
     if robot.get('routine_id'): private.append(str(robot['routine_id']).encode())
+    if robot.get('full_mop_routine_id'): private.append(str(robot['full_mop_routine_id']).encode())
 def inspect(name, data):
     path = Path(name)
     if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf', '.enc'}

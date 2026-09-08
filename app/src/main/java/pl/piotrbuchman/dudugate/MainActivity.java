@@ -16,7 +16,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
-    private static final long SUCCESS_DISPLAY_MS = 1350L;
+    static final long SUCCESS_DISPLAY_MS = 5000L;
     private static final long INFORMATION_DISPLAY_MS = 2500L;
 
     private ProgressBar progress;
@@ -52,6 +52,7 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
+        prepareActionTiles();
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
@@ -85,6 +86,9 @@ public final class MainActivity extends Activity {
         });
         findViewById(R.id.full_cleaning_button).setOnClickListener(view -> {
             returnToMenu = true; currentAction = HomeAction.CLEANING; startCleaning();
+        });
+        findViewById(R.id.full_mop_button).setOnClickListener(view -> {
+            returnToMenu = true; currentAction = HomeAction.MOP; startCleaning();
         });
         findViewById(R.id.settings_button).setOnClickListener(view -> {
             if (busyNotice()) return;
@@ -156,6 +160,7 @@ public final class MainActivity extends Activity {
         automaticAction(HomeAction.GATE);
     }
     void automaticAction(HomeAction action) {
+        if (action == HomeAction.MOP) return; // Manual-only, including future internal callers.
         if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) return;
         if (actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
                 || roborockSetup.getVisibility() == View.VISIBLE
@@ -165,7 +170,7 @@ public final class MainActivity extends Activity {
         startSelected();
     }
 
-    private void startSelected() { if (currentAction == HomeAction.CLEANING) startCleaning(); else startAttempt(); }
+    private void startSelected() { if (currentAction != HomeAction.GATE) startCleaning(); else startAttempt(); }
 
     private void showMenu() {
         hideKeyboard();
@@ -325,6 +330,7 @@ public final class MainActivity extends Activity {
     }
 
     private void resetUi() {
+        updateActionIllustration();
         progress.setVisibility(View.VISIBLE);
         statusIcon.animate().cancel();
         statusIcon.setVisibility(View.GONE);
@@ -334,6 +340,40 @@ public final class MainActivity extends Activity {
         errorActions.setVisibility(View.GONE);
         statusTitle.setText(R.string.state_starting);
         statusDescription.setText(R.string.state_starting_description);
+    }
+
+    private void updateActionIllustration() {
+        ((ImageView) findViewById(R.id.action_illustration)).setImageResource(
+                currentAction == HomeAction.GATE ? R.drawable.art_gate
+                        : currentAction == HomeAction.MOP ? R.drawable.art_mop : R.drawable.art_cleaning);
+    }
+
+    private void prepareActionTiles() {
+        android.widget.LinearLayout row = findViewById(R.id.action_tiles);
+        boolean narrow = getResources().getConfiguration().screenWidthDp < 600;
+        if (narrow) {
+            row.setOrientation(android.widget.LinearLayout.VERTICAL);
+            findViewById(R.id.home_subtitle).setVisibility(View.GONE);
+            Button settings = findViewById(R.id.settings_button);
+            settings.setTextSize(14);
+            int padding = Math.round(12 * getResources().getDisplayMetrics().density);
+            settings.setPaddingRelative(padding, 0, padding, 0);
+        }
+        for (int index = 0; index < row.getChildCount(); index++) {
+            View tile = row.getChildAt(index);
+            tile.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+                @Override public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(host, info);
+                    info.setClassName(Button.class.getName());
+                }
+            });
+            if (narrow) {
+                android.widget.LinearLayout.LayoutParams params = (android.widget.LinearLayout.LayoutParams) tile.getLayoutParams();
+                params.width = android.widget.LinearLayout.LayoutParams.MATCH_PARENT; params.weight = 0;
+                params.setMarginStart(0); params.topMargin = index == 0 ? 0 : Math.round(16 * getResources().getDisplayMetrics().density);
+                tile.setLayoutParams(params);
+            }
+        }
     }
 
     private void showCooldownAndFinish(long remainingMillis) {
@@ -452,13 +492,20 @@ public final class MainActivity extends Activity {
         RoborockStore store = new RoborockStore(this);
         RoborockCredentials credentials = store.read();
         if (credentials == null) { showRoborockSetup(store.rejected()); return; }
+        if (currentAction == HomeAction.MOP && credentials.fullMopRoutine == 0) {
+            showRoborockSetup(false);
+            roborockMessage.setText(R.string.mop_setup_missing);
+            return;
+        }
+        RoborockCredentials selected = credentials.forAction(currentAction);
         if (!HomeActions.begin()) return;
-        currentAction = HomeAction.CLEANING; actionRunning = true;
+        actionRunning = true;
         int generation = ++uiGeneration;
         statusIcon.removeCallbacks(finishAfterSuccess); statusIcon.removeCallbacks(finishAfterInformation);
         menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.VISIBLE); resetUi();
-        statusTitle.setText(R.string.cleaning_starting); statusDescription.setText(R.string.cleaning_description);
+        statusTitle.setText(currentAction == HomeAction.MOP ? R.string.mop_starting : R.string.cleaning_starting);
+        statusDescription.setText(R.string.cleaning_description);
         RoborockClient client = new RoborockClient();
         java.util.concurrent.atomic.AtomicBoolean delivered = new java.util.concurrent.atomic.AtomicBoolean();
         java.util.concurrent.ScheduledExecutorService timer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
@@ -467,30 +514,33 @@ public final class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
                 renderCleaningResult(result);
-                android.util.Log.i("DuduHome", "Cleaning result " + result.name());
+                android.util.Log.i("DuduHome", currentAction.name() + " result " + result.name());
             });
         };
         timer.schedule(() -> { complete.accept(RoborockClient.Result.NETWORK_UNKNOWN); client.cancelTransport(); }, 20, java.util.concurrent.TimeUnit.SECONDS);
         new Thread(() -> {
             try {
-                RoborockClient.Result result = client.execute(credentials);
+                RoborockClient.Result result = client.execute(selected);
                 if (result == RoborockClient.Result.AUTH_REJECTED) store.reject(credentials);
                 complete.accept(result);
             } finally { timer.shutdownNow(); HomeActions.end(); }
-        }, "FullCleaning").start();
+        }, "RoborockRoutine").start();
     }
 
     private void renderCleaningResult(RoborockClient.Result result) {
+        updateActionIllustration();
         actionRunning = false;
         if (result == RoborockClient.Result.AUTH_REJECTED) { showRoborockSetup(true); return; }
         menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.VISIBLE);
         if (result == RoborockClient.Result.ACCEPTED) {
-            statusTitle.setText(R.string.cleaning_accepted); statusDescription.setText(R.string.cleaning_accepted_description);
+            statusTitle.setText(currentAction == HomeAction.MOP ? R.string.mop_accepted : R.string.cleaning_accepted);
+            statusDescription.setText(R.string.cleaning_accepted_description);
             showSuccessAnimation();
         } else {
             progress.setVisibility(View.GONE); statusIcon.setImageResource(R.drawable.ic_error);
-            statusIcon.setVisibility(View.VISIBLE); statusTitle.setText(R.string.cleaning_failed_title);
+            statusIcon.setVisibility(View.VISIBLE);
+            statusTitle.setText(currentAction == HomeAction.MOP ? R.string.mop_failed_title : R.string.cleaning_failed_title);
             statusDescription.setText(result == RoborockClient.Result.NETWORK_UNKNOWN ? R.string.cleaning_unknown : R.string.cleaning_error);
             errorActions.setVisibility(View.VISIBLE);
         }

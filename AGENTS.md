@@ -11,8 +11,10 @@ Do not copy the predecessor's calibration module into this repository.
 
 Preserve Java 17, platform Android Views/XML, the existing application ID and local signing key.
 No AndroidX, dependency injection framework, analytics, intermediary cloud server, or fake DUDU backend.
-The owner explicitly authorized direct native HTTPS to Roborock for the existing Full Cleaning
-routine. No Python runtime on Android, MQTT, status polling, stop/pause/dock, Google Home or
+The owner explicitly authorized direct native HTTPS to Roborock for Full Cleaning and manual-only
+Full Mop. No location hook may dispatch Mop. Missing Mop configuration must never fall back to
+Full Cleaning. Success screens now last five seconds; errors remain user-dismissed.
+No Python runtime on Android, MQTT, status polling, stop/pause/dock, Google Home or
 Home Assistant dependency. Computer-only Python bootstrap is read-only after email login.
 Use the raw SYU Binder implementation. No ACTION_CALL, Accessibility, UI dialing or radio SIM.
 Register callbacks before dial; dial only on fresh idle. Never hang up a pre-existing call.
@@ -30,6 +32,7 @@ tag before the remaining journey/ignition checks pass. Never publish APKs.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
 
 Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.
+Design/assets: docs/DESIGN.md. Next queued hook: docs/ROADMAP.md (Yanosik after sustained movement).
 Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
 Automatic cleaning reserves one attempt per Europe/Warsaw day BEFORE execution; failure, missing

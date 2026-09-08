@@ -6,12 +6,21 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
+Newest local work is `0.3.0-local` / versionCode 4: manual-only Full Mop, optional private
+`full_mop_routine_id`, three illustrated tiles and 5000 ms successes. The real Mop identifier
+was retrieved through fresh email login and read-only discovery on the same robot; the updated
+owner-only bundle is outside Git. No routine was executed during discovery. This APK has not been installed/tested
+on the radio. Preserve that distinction from the preceding version's hardware evidence below.
+See [DESIGN.md](DESIGN.md) for generated assets/prompts and [ROADMAP.md](ROADMAP.md) for the
+queued Yanosik hook; do not accidentally implement Mop as an automatic action.
+
 - Preserved baseline: `v0.1.0-baseline`, commit `bde6c0a`. Public `main` now carries the
   development implementation by the owner's explicit publication instruction.
 - Local branch: `codex/home-automation`. The menu/GPS/cooldown predecessor was preserved in
   `e91b342` before adding Full Cleaning. See `git log` and [CHANGELOG](../CHANGELOG.md) for later milestones.
 - `39eca9d`: app integration and its tests; `d813550`: private deployment/bootstrap tooling and tests.
-- Current local APK: `0.2.0-local`, versionCode 3, same `pl.piotrbuchman.dudugate` ID and debug-signing scheme.
+- Installed radio APK: `0.2.0-local`, versionCode 3; current local APK: `0.3.0-local`, versionCode 4.
+  Same `pl.piotrbuchman.dudugate` ID and debug-signing scheme.
 - Code includes two tiles, native Roborock, daily reservation, encrypted credentials, settings,
   one-time private import, safe update tooling, tests and handoff documentation.
 - **Radio deployment and both manual tiles passed on 2026-09-08:** gate SUCCESS and Roborock

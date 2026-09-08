@@ -54,7 +54,11 @@ def validate(data, robot, enabled):
         for key in ('u', 's', 'h'):
             value = robot['auth'].get(key)
             if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_+=/.:-]{1,512}', value): raise ValueError('Invalid credentials')
+        mop = robot.get('full_mop_routine_id')
+        if 'full_mop_routine_id' in robot and (type(mop) is not int or mop <= 0 or mop == robot['routine_id']):
+            raise ValueError('Invalid Full Mop routine identifier')
         robot = {k: robot[k] for k in ('schema_version', 'api_base_url', 'routine_id', 'routine_name', 'auth')}
+        if mop is not None: robot['full_mop_routine_id'] = mop
         robot['auth'] = {key: robot['auth'][key] for key in ('u', 's', 'h')}
     result = dict(schema_version=2, gate_number=phone,
                   gate_number_verified_on_current_device=bool(data.get('gate_number_verified_on_current_device')),

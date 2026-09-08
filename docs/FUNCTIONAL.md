@@ -3,20 +3,20 @@
 ## Cel
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
-**Full Cleaning** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
-Obecny zakres obejmuje dwa duże kafelki. Odkurzacz jest już częścią tego zakresu; Spotify,
-inne urządzenia i kolejne rutyny pozostają poza nim.
+**Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
+Obecny zakres obejmuje trzy duże kafelki. Full Mop działa wyłącznie ręcznie; Spotify i inne
+urządzenia pozostają poza nim. Następny hook Yanosika jest opisany osobno w [ROADMAP.md](ROADMAP.md).
 
 ## Menu i akcje
 
 | Sytuacja | Zachowanie |
 |---|---|
-| Otwarcie aplikacji | Menu „Otwórz bramę” i „Full Cleaning”; brak numeru przypomina formularzem, który można opuścić do menu |
+| Otwarcie aplikacji | Menu „Otwórz bramę”, „Full Cleaning”, „Full Mop”; brak numeru przypomina formularzem, który można opuścić do menu |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |
 | Automatyczne zdarzenie przy schowanej aplikacji | Ten sam ekran postępu → wynik → schowanie aplikacji; monitor pozostaje aktywny |
 | Automatyczne zdarzenie przy otwartym menu | Ten sam ekran postępu → wynik → poprzednio otwarte menu |
 | Formularz lub błąd czeka na użytkownika | Nowa automatyzacja nie przerywa tego widoku; nie ma kolejki |
-| Sukces | Dotychczasowa animacja i 1350 ms prezentacji |
+| Sukces | Animacja i 5000 ms prezentacji dla bramy oraz obu rutyn |
 | Informacja o blokadzie bramy | Dotychczasowe 2500 ms |
 | Błąd wykonania | Pozostaje do „Ponów” albo „Zamknij”; brak samoczynnego ponowienia |
 | „Ponów” | Nowa, świadoma próba ręczna; po wyniku powrót do menu |
@@ -36,6 +36,9 @@ lokalizacji. GPS nie ma edytora w UI. Instalator dostarcza prywatny plik.
 - Roborock: jedno pole do wklejenia pakietu JSON, nie pojedynczego tokenu konta. Zapis szyfruje
   dane i wraca do menu. Bez testowego wywołania, bez resetu limitu dziennego. Formularz nie
   pokazuje zapisanego sekretu; ma ochronę zrzutu ekranu i wyłączony autofill/zapis widoku.
+- Full Mop: opcjonalny `full_mop_routine_id` w tym samym prywatnym pakiecie. Bez niego kafelek
+  prowadzi do informacji o brakującej konfiguracji. Nie uruchamia zastępczo Full Cleaning.
+  Ręczne „Ponów” zachowuje wybraną rutynę. Full Mop nigdy nie zużywa limitu automatycznego.
 - Brak telefonu nie blokuje ręcznego Roborock; brak Roborock nie blokuje bramy. Brak GPS lub
   wymaganych uprawnień wyłącza automatyzację, ale nie ręczne akcje z ich poprawną konfiguracją.
 - Import działa raz. Kolejne uruchomienia nie nadpisują ręcznie zmienionych danych starym plikiem.

@@ -1,3 +1,3 @@
 package pl.piotrbuchman.dudugate;
 
-enum HomeAction { GATE, CLEANING }
+enum HomeAction { GATE, CLEANING, MOP }

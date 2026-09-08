@@ -55,11 +55,24 @@ class PrivateToolsTests(unittest.TestCase):
     def test_outside_repo(self):
         with self.assertRaises(ValueError): installer.private_path(Path(__file__).parent/'configuration.json')
 
+    def test_manual_mop(self):
+        both = dict(self.robot, full_mop_routine_id=8)
+        self.assertEqual(installer.validate(self.config, both, True)['roborock']['full_mop_routine_id'], 8)
+        for value in (None, True, 0, -1, 7, 8.5, '8'):
+            with self.assertRaises(ValueError):
+                installer.validate(self.config, dict(self.robot, full_mop_routine_id=value), True)
+
     def test_minimal_bundle(self):
         r = SimpleNamespace(u='example-user', s='example-session', h='example-secret', k='unneeded-key',
                             r=SimpleNamespace(a='https://api-eu.roborock.com', m='unneeded-mqtt'))
         bundle = bootstrap.minimal_bundle(SimpleNamespace(rriot=r, token='unneeded-token'), SimpleNamespace(id=7, name='Full Cleaning'))
         self.assertEqual(bundle, self.robot)
+        both = bootstrap.minimal_bundle(SimpleNamespace(rriot=r), SimpleNamespace(id=7, name='Full Cleaning'),
+                                        SimpleNamespace(id=8, name='Full Mop'))
+        self.assertEqual(both['full_mop_routine_id'], 8)
+        with self.assertRaises(ValueError):
+            bootstrap.minimal_bundle(SimpleNamespace(rriot=r), SimpleNamespace(id=7, name='Full Cleaning'),
+                                     SimpleNamespace(id=8, name='Other'))
 
 
 if __name__ == '__main__': unittest.main()

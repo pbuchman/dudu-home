@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background_top">#0A1020</color>
-    <color name="background_bottom">#111D33</color>
+    <color name="background_top">#101B27</color>
+    <color name="background_bottom">#172C3A</color>
+    <color name="tile_ink">#162934</color>
+    <color name="gate_sand">#F0D5AE</color>
+    <color name="cleaning_mint">#C0E8D8</color>
+    <color name="mop_sky">#BDDAF4</color>
     <color name="surface">#1A2944</color>
     <color name="text_primary">#F4F7FC</color>
     <color name="text_secondary">#A9B6CB</color>

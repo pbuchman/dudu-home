@@ -81,7 +81,7 @@ public final class SafetyChecks extends Instrumentation {
                     "lifecycle close releases shared lease only after cleanup");
             RoborockChecks.run(this);
             store.reserveDial();
-            result.putString("result", "PASS: gate safety, Roborock signing/transport/encryption, daily quota, two tiles, setup, result UI, private import; no real robot or DUDU IPC");
+            result.putString("result", "PASS: gate safety, Roborock signing/transport/encryption, manual-only Mop, daily quota, three tiles, setup, five-second result UI, private import; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());

@@ -1,5 +1,18 @@
 # Design decisions
 
+## Manual Mop and visual refresh — after source publication
+
+- Public source checkpoint `78d1da8` was pushed before beginning these changes.
+- Add Full Mop as a third, manual-only tile. No automatic dispatch or daily quota for Mop.
+- Keep the existing bundle compatible; optional distinct Mop ID, no fallback to another routine.
+- Three illustrated touch targets, a home/spark launcher mark and cohesive dark surroundings.
+- Gate and routine success display now lasts 5000 ms; errors and cooldown behavior are unchanged.
+- Yanosik after roughly ten seconds of sustained GPS movement is the next queued hook,
+  not implemented as part of this visual/routine change. No UI setting for that future hook.
+
+The following records describe earlier milestones; the approved five-second duration above
+supersedes their original success timing.
+
 - **Stable baseline first:** preserve the hardware-tested gate-call behavior, changing only
   public branding, removal of number fragments from logs and safe install tooling.
 - **Privacy boundary:** a fresh Git history, no calibration module, no actual installation

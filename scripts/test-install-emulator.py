@@ -30,7 +30,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='dudu-home-install-check-') as temporary:
         private = Path(temporary)
         robot = dict(schema_version=1, api_base_url='https://api-eu.roborock.com', routine_id=7,
-                     routine_name='Full Cleaning', auth=dict(u='example-user', s='example-session', h='example-secret'))
+                     routine_name='Full Cleaning', full_mop_routine_id=8,
+                     auth=dict(u='example-user', s='example-session', h='example-secret'))
         config = dict(schema_version=2, gate_number='0000', points=None, roborock=robot)
         source = private/'input.json'; source.write_text(json.dumps(config))
         command = [sys.executable, str(ROOT/'scripts/configure-device.py'), a.serial, str(source),
