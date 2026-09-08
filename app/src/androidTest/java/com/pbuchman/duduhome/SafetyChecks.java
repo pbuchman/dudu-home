@@ -90,6 +90,7 @@ public final class SafetyChecks extends Instrumentation {
             require(cleaned.await(5, java.util.concurrent.TimeUnit.SECONDS) && !HomeActions.busy(),
                     "lifecycle close releases shared lease only after cleanup");
             RoborockChecks.run(this);
+            NavigationChecks.run(this);
             store.reserveDial();
             result.putString("result", "PASS: gate safety, Roborock signing/transport/encryption, manual-only Mop, daily quota, three tiles, setup, five-second result UI, private import; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);

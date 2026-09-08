@@ -28,6 +28,9 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
+import com.pbuchman.duduhome.automation.JourneySession;
+import com.pbuchman.duduhome.automation.YanosikLauncher;
+import com.pbuchman.duduhome.automation.MotionHook;
 
 public final class HomeMonitorService extends Service implements LocationListener {
     private static final String CHANNEL = "home_monitor";
@@ -38,6 +41,9 @@ public final class HomeMonitorService extends Service implements LocationListene
     private boolean registered;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long lastFix;
+    private YanosikLauncher yanosik;
+    private final MotionHook motion = new MotionHook(() -> yanosik.attempt());
+    private Location motionOrigin;
     private final Runnable watchdog = new Runnable() {
         @Override public void run() {
             if (!ready(HomeMonitorService.this) || PrivateImport.pending(HomeMonitorService.this)) {
@@ -45,7 +51,8 @@ public final class HomeMonitorService extends Service implements LocationListene
                 return;
             }
             if (SystemClock.elapsedRealtime() - lastFix > 15000) {
-                detector.clearEvidence();
+                if (detector != null) detector.clearEvidence();
+                motion.clear(); motionOrigin = null;
                 if (registered) locations.removeUpdates(HomeMonitorService.this);
                 registered = false;
                 subscribe();
@@ -63,8 +70,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     }
 
     public static void ensureStarted(Context context) {
-        HomeConfiguration c = HomeConfiguration.load(context);
-        if (c == null || !c.enabled || !ready(context) || PrivateImport.pending(context)) return;
+        if (!ready(context) || PrivateImport.pending(context)) return;
         try { context.startForegroundService(new Intent(context, HomeMonitorService.class)); }
         catch (RuntimeException ignored) { Log.w("DuduHome", "Monitor start blocked by system; manual calls remain available"); }
     }
@@ -83,14 +89,17 @@ public final class HomeMonitorService extends Service implements LocationListene
         } catch (RuntimeException denied) { stopSelf(); return; }
         state = getSharedPreferences("home_detector", 0);
         locations = getSystemService(LocationManager.class);
+        yanosik = new YanosikLauncher(this);
+        new JourneySession(this).ensureBoot();
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         HomeConfiguration next = HomeConfiguration.load(this);
-        if (state == null || next == null || !next.enabled || !ready(this) || PrivateImport.pending(this)) {
+        if (state == null || !ready(this) || PrivateImport.pending(this)) {
             stopSelf(); return START_NOT_STICKY;
         }
-        if (config == null || !next.revision.equals(config.revision)) {
+        if (next == null || !next.enabled) { config = next; detector = null; }
+        else if (config == null || detector == null || !next.revision.equals(config.revision)) {
             config = next;
             int saved = config.revision.equals(state.getString("revision", "")) ? state.getInt("flags", 0) : 0;
             detector = new HomeDetector(config.geometry, saved);
@@ -114,9 +123,24 @@ public final class HomeMonitorService extends Service implements LocationListene
     }
 
     @Override public void onLocationChanged(Location location) {
-        if (detector == null) return;
+        if (!ready(this) || PrivateImport.pending(this)) { stopSelf(); return; }
         lastFix = SystemClock.elapsedRealtime();
         long fixTime = location.getElapsedRealtimeNanos() / 1000000;
+        if (motionOrigin == null) motionOrigin = new Location(location);
+        float[] distance = new float[2];
+        Location.distanceBetween(motionOrigin.getLatitude(), motionOrigin.getLongitude(),
+                location.getLatitude(), location.getLongitude(), distance);
+        double bearing = Math.toRadians(distance[1]);
+        MotionDetector.Fix motionFix = new MotionDetector.Fix(fixTime, distance[0] * Math.sin(bearing),
+                distance[0] * Math.cos(bearing), location.hasAccuracy() ? location.getAccuracy() : Double.POSITIVE_INFINITY,
+                location.getSpeed(), location.hasSpeed(), lastFix - fixTime, location.isFromMockProvider());
+        // Home actions get first opportunity on the same fix; Yanosik never masks their result.
+        if (detector != null && !acceptHome(location, fixTime)) return;
+        motion.accept(motionFix, HomeActions.allowsExternalLaunch() && !PrivateImport.pending(this));
+        if (!motion.fresh(lastFix)) motionOrigin = null;
+    }
+
+    private boolean acceptHome(Location location, long fixTime) {
         java.util.List<HomeEvent> events = detector.accept(new HomeDetector.Fix(fixTime,
                 config.project(location.getLatitude(), location.getLongitude()),
                 location.hasAccuracy() ? location.getAccuracy() : Double.POSITIVE_INFINITY,
@@ -124,17 +148,21 @@ public final class HomeMonitorService extends Service implements LocationListene
                 lastFix - fixTime, location.isFromMockProvider()));
         int flags = detector.flags();
         if (flags != state.getInt("flags", 0) && !state.edit().putInt("flags", flags).commit()) {
-            stopSelf(); return; // Persist consumed events before any side effect.
+            stopSelf(); return false; // Persist consumed events before any side effect.
         }
         for (HomeEvent event : events) {
             HomeConfiguration current = HomeConfiguration.load(this);
             if (current == null || !current.enabled || !current.revision.equals(config.revision)
-                    || PrivateImport.pending(this)) { stopSelf(); return; }
+                    || PrivateImport.pending(this)) { stopSelf(); return false; }
             Log.i("DuduHome", "Event " + event.name());
             HomeActions.dispatch(this, event);
         }
+        return true;
     }
-    @Override public void onProviderDisabled(String provider) { if (detector != null) detector.clearEvidence(); }
+    @Override public void onProviderDisabled(String provider) {
+        if (detector != null) detector.clearEvidence();
+        motion.clear(); motionOrigin = null;
+    }
     @Override public void onProviderEnabled(String provider) { }
     @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
     @Override public void onDestroy() {

@@ -173,6 +173,10 @@ public final class MainActivity extends Activity {
     public void automaticAction() {
         automaticAction(HomeAction.GATE);
     }
+    public boolean allowsExternalLaunch() {
+        return isFinishing() || (!actionRunning && menuContent.getVisibility() == View.VISIBLE
+                && (!resumed || getWindow().getDecorView().hasWindowFocus()));
+    }
     public void automaticAction(HomeAction action) {
         if (action == HomeAction.MOP) return; // Manual-only, including future internal callers.
         if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) return;

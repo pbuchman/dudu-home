@@ -34,7 +34,9 @@ tag before the remaining journey/ignition checks pass. Never publish APKs.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
 
 Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.
-Design/assets: docs/DESIGN.md. Next queued hook: docs/ROADMAP.md (Yanosik after sustained movement).
+Design/assets: docs/DESIGN.md. Yanosik progress/blocker: docs/YANOSIK.md.
+Migration and feature boundaries: docs/MIGRATION.md and docs/PACKAGES.md.
+Do not wire an unverified screen/GPS-gap signal to ignition rearming or claim wake support.
 Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
 Automatic cleaning reserves one attempt per Europe/Warsaw day BEFORE execution; failure, missing

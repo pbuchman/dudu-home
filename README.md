@@ -3,6 +3,9 @@
 > Local development: `0.4.0-local` moves to `com.pbuchman.duduhome`; see
 > [package boundaries and migration identity](docs/PACKAGES.md). It is not installed on
 > the radio or published yet. The version 0.3 evidence below concerns the old application ID.
+> [Migration](docs/MIGRATION.md) is emulator-tested. The [Yanosik hook](docs/YANOSIK.md)
+> has local movement/cold-boot support; the manufacturer wake adapter remains blocked on
+> radio observations. Do not claim readiness for the full ignition/wake behavior yet.
 
 **Your gate. Your cleaning routines. One touch — or the right moment on your journey.**
 
@@ -76,12 +79,14 @@ Start an emulator first for the last installation check. Emulator checks use syn
 never contact a real robot. They cannot certify Bluetooth IPC, GNSS reception or vendor wake behavior.
 
 Local artifact: `app/build/outputs/apk/debug/app-debug.apk`. Source only is published under MIT:
-**no public APK, credentials or signing key**. The package remains `pl.piotrbuchman.dudugate`;
-an update must have the same signing certificate as the installed app.
+**no public APK, credentials or signing key**. The local package is `com.pbuchman.duduhome`;
+the installed predecessor is `pl.piotrbuchman.dudugate`. Use the explicit migration runbook
+for that transition, not an ordinary update. Keep the matching signing certificate.
 
 ## Install safely
 
-Use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
+Use the [migration runbook](docs/MIGRATION.md) for the old radio package. For an already
+migrated installation, use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
 signature comparison and all three configuration sections. For an existing radio installation:
 
 ```sh
@@ -98,7 +103,8 @@ The fresh-install helper refuses to update an existing app; use the backed-up pa
 It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
 with retained data, and never passes the replacement flag `-r` to installation.
 
-No GPS configuration disables automation, not the manual tiles. No gate number blocks calls;
+No home GPS configuration disables home-route automation, not the independent movement hook
+or manual tiles. No gate number blocks calls;
 no Roborock bundle blocks cleaning. Saving a number imposes a persistent 60-second call block.
 Saving Roborock credentials never starts cleaning or resets the daily limit.
 

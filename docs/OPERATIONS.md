@@ -1,5 +1,10 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
+Wersja lokalna 0.4 zmienia identyfikator na `com.pbuchman.duduhome`. Przejście ze starej
+instalacji wymaga [MIGRATION.md](MIGRATION.md), nie komendy aktualizacji poniżej.
+Nowy komponent menu to `.ui.MainActivity`, wybudzenia `.startup.HomeWakeActivity`.
+Opis wybudzenia nie oznacza gotowej integracji Yanosika: ograniczenia w [YANOSIK.md](YANOSIK.md).
+
 ## Zasady dla operatora i kolejnego agenta
 
 Pracuj w tym repozytorium, nie w prywatnym poprzedniku. Nie potrzebujesz starej sesji czatu:

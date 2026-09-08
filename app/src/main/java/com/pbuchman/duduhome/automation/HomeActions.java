@@ -22,9 +22,16 @@ public final class HomeActions {
     public static synchronized void end() { busy = false; }
     public static synchronized boolean busy() { return busy; }
     private static WeakReference<MainActivity> visible = new WeakReference<>(null);
+    private static WeakReference<MainActivity> screen = new WeakReference<>(null);
 
-    public static void visible(MainActivity activity) { visible = new WeakReference<>(activity); }
+    public static void visible(MainActivity activity) { visible = new WeakReference<>(activity); screen = new WeakReference<>(activity); }
     public static void hidden(MainActivity activity) { if (visible.get() == activity) visible.clear(); }
+
+    public static boolean allowsExternalLaunch() {
+        MainActivity activity = screen.get();
+        boolean pending = pendingToken != null && SystemClock.elapsedRealtime() - pendingSince < 5000;
+        return !busy() && !pending && (activity == null || activity.allowsExternalLaunch());
+    }
 
     public static boolean callsGate(HomeEvent event) {
         return event == HomeEvent.DEPARTURE_STARTED || event == HomeEvent.RETURN_APPROACH;

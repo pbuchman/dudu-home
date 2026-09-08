@@ -1,5 +1,13 @@
 # Change history
 
+## 0.4.0-local — not installed or published
+
+- Functional Java packages and new application ID `com.pbuchman.duduhome`.
+- Explicit guarded legacy migration with emulator-backed state/import/resume tests.
+- Independent sustained-motion hook, Yanosik launcher and persistent cold-boot reservation.
+- No new UI setting; existing actions/setup/result screens take priority.
+- Manufacturer wake adapter still requires actual radio evidence; full ignition support is pending.
+
 ## 0.3.0-local — manual Mop and visual refresh
 
 - Installed as a backed-up, same-signature update on DUDU7; full private configuration imported.

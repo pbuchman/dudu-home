@@ -1,5 +1,10 @@
 # Kolejka rozwoju
 
+Aktualizacja lokalna 0.4: refaktoryzacja i migracja są zaimplementowane i sprawdzone
+lokalnie. Hook ruchu Yanosika działa dla sesji pełnego startu systemu; integracja sygnału
+wybudzenia DUDU pozostaje do wykonania po odczycie radia. Szczegóły i dokładny następny
+krok: [YANOSIK.md](YANOSIK.md). Poniżej zachowano pierwotną kolejność wymagań.
+
 ## Teraz: Full Mop i nowy wygląd
 
 - Full Mop uruchamiane wyłącznie z ręcznego kafelka albo świadomego „Ponów”.

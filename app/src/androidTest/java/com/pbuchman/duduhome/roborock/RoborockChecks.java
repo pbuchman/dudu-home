@@ -130,6 +130,7 @@ public final class RoborockChecks {
         i.runOnMainSync(() -> screen.findViewById(R.id.full_mop_button).performClick());
         require(screen.findViewById(R.id.roborock_setup_content).isShown() && !HomeActions.busy(),
                 "missing Mop opens setup without fallback request");
+        require(!((MainActivity) screen).allowsExternalLaunch(), "navigation must not cover setup");
         require(!DailyCleaning.reserve(c, 101), "manual Mop leaves daily quota unchanged");
         i.runOnMainSync(() -> screen.findViewById(R.id.cancel_roborock_button).performClick());
         java.lang.reflect.Method numberForm = MainActivity.class.getDeclaredMethod("showNumberSetup"); numberForm.setAccessible(true);
@@ -142,6 +143,7 @@ public final class RoborockChecks {
         render.setAccessible(true);
         i.runOnMainSync(() -> invoke(render, screen, RoborockClient.Result.NETWORK_UNKNOWN));
         require(screen.findViewById(R.id.error_actions).getVisibility() == View.VISIBLE, "unknown result remains actionable");
+        require(!((MainActivity) screen).allowsExternalLaunch(), "navigation must not cover error");
         i.runOnMainSync(() -> screen.findViewById(R.id.close_button).performClick());
         require(screen.findViewById(R.id.menu_content).getVisibility() == View.VISIBLE, "manual cleaning result returns to menu");
         i.runOnMainSync(() -> invoke(render, screen, RoborockClient.Result.AUTH_REJECTED));
@@ -150,6 +152,7 @@ public final class RoborockChecks {
         i.runOnMainSync(() -> invoke(render, screen, RoborockClient.Result.ACCEPTED));
         android.os.SystemClock.sleep(1600); i.waitForIdleSync();
         require(screen.findViewById(R.id.call_status_content).isShown(), "success remains visible longer than old delay");
+        require(!((MainActivity) screen).allowsExternalLaunch(), "navigation waits for five-second success");
         require(MainActivity.SUCCESS_DISPLAY_MS == 5000, "shared gate/routine success duration is five seconds");
         android.graphics.Bitmap preview = i.getUiAutomation().takeScreenshot();
         if (preview != null) {

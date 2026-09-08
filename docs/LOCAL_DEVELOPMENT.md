@@ -6,6 +6,12 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
+LOCAL 0.4 update: functional packages and new installation ID `com.pbuchman.duduhome`;
+see PACKAGES.md and MIGRATION.md. Migration passed on an emulator with synthetic data.
+Movement-based Yanosik launch and cold-boot deduplication are implemented locally. The verified
+manufacturer wake adapter is NOT implemented; see YANOSIK.md before claiming readiness.
+No 0.4 installation on the radio and no publication. The following describes version 0.3 history.
+
 Newest local work is `0.3.0-local` / versionCode 4: manual-only Full Mop, optional private
 `full_mop_routine_id`, three illustrated tiles and 5000 ms successes. The real Mop identifier
 was retrieved through fresh email login and read-only discovery on the same robot; the updated

@@ -1,5 +1,14 @@
 # Design decisions
 
+## Local 0.4 — approved namespace migration and navigation
+
+- Owner explicitly chose new application ID and functional packages `com.pbuchman.duduhome`.
+- Preserve private state via backed-up migration, new Keystore encryption, old package disabled
+  until new functional/wake verification; only then explicit removal. No radio changes in this stage.
+- Yanosik: sustained GPS motion, one attempt per ignition/wake, home actions and result UI first.
+- Cold boot is implemented; manufacturer wake must be observed, not inferred from screen/GPS gaps.
+- Do not publish this local stage or claim full readiness while the wake adapter is unresolved.
+
 ## Manual Mop and visual refresh — after source publication
 
 - Public source checkpoint `78d1da8` was pushed before beginning these changes.

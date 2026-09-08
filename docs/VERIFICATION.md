@@ -1,5 +1,24 @@
 # Verification ledger
 
+## Local 0.4 — separate application ID, not installed on radio
+
+Functional package refactor passed build/lint, existing Android safety/Roborock tests,
+detector checks and Python installer checks. The real migration CLI passed on an emulator:
+allowlisted state copying, disabled predecessor, interrupted staging/resume, encrypted
+private import, preserved daily quota, refusal to reset a live target and guarded removal.
+All emulator configuration is synthetic. No robot request or call is part of these tests.
+
+Motion checks cover ten-second evidence, minimum displacement, stop/gap/jump/bad fixes and
+deferred/cancelled action. Android checks cover session persistence, boot change, duplicate
+verified-cycle IDs, missing app and failed launch without retry. UI checks cover setup,
+error and the five-second result taking priority over navigation.
+
+The actual Yanosik package is present in earlier radio location-service captures. Current
+launcher resolution/background presentation and manufacturer wake were not checked: radio
+read-only connection unavailable. `verifiedWake` is a tested seam without a production
+adapter, NOT completed ignition support. See YANOSIK.md. Published/radio version 0.3 below
+remains unchanged; this stage is not ready for full ignition/wake acceptance.
+
 ## Manual Mop and visual refresh — local versionCode 4
 
 Separate from the earlier versionCode 3 radio session below. Full Mop has its own optional
