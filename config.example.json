@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "automation_enabled": false,
   "gate_number": null,
   "gate_number_verified_on_current_device": false,
   "points": {

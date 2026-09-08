@@ -9,6 +9,7 @@ import sys
 
 p = argparse.ArgumentParser()
 p.add_argument('--all-history', action='store_true')
+p.add_argument('--working-tree', action='store_true')
 p.add_argument('--private-config', type=Path)
 args = p.parse_args()
 root = Path(__file__).resolve().parents[1]
@@ -56,6 +57,12 @@ for entry in entries:
     count += 1
 if not count:
     sys.exit('No staged/tracked files to inspect.')
+if args.working_tree:
+    for raw in git('ls-files', '--cached', '--others', '--exclude-standard', '-z').split(b'\0'):
+        if raw:
+            name = raw.decode()
+            path = root / name
+            if path.is_file(): inspect(name, path.read_bytes())
 if args.all_history:
     for rev in git('rev-list', '--all').decode().splitlines():
         for entry in git('ls-tree', '-r', '-z', rev).split(b'\0'):

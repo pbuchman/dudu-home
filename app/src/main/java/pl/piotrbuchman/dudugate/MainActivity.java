@@ -26,21 +26,31 @@ public final class MainActivity extends Activity {
     private View errorActions;
     private View numberSetupContent;
     private View callStatusContent;
+    private View menuContent;
+    private TextView automationStatus;
     private EditText gateNumberInput;
     private TextView gateNumberError;
     private GateNumberStore gateNumberStore;
     private String gateNumber;
     private GateCallCoordinator coordinator;
     private int uiGeneration;
+    private boolean actionRunning;
+    private boolean returnToMenu = true;
+    private boolean resumed;
+    private boolean configurationSaved = true;
 
-    private final Runnable finishAfterSuccess = this::finishAndRemoveTask;
-    private final Runnable finishAfterInformation = this::finishAndRemoveTask;
+    private final Runnable finishAfterSuccess = this::finishAction;
+    private final Runnable finishAfterInformation = this::finishAction;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
+        }
 
         progress = findViewById(R.id.progress);
         statusIcon = findViewById(R.id.status_icon);
@@ -49,6 +59,8 @@ public final class MainActivity extends Activity {
         errorActions = findViewById(R.id.error_actions);
         numberSetupContent = findViewById(R.id.number_setup_content);
         callStatusContent = findViewById(R.id.call_status_content);
+        menuContent = findViewById(R.id.menu_content);
+        automationStatus = findViewById(R.id.automation_status);
         gateNumberInput = findViewById(R.id.gate_number_input);
         gateNumberError = findViewById(R.id.gate_number_error);
         Button retryButton = findViewById(R.id.retry_button);
@@ -56,7 +68,12 @@ public final class MainActivity extends Activity {
         Button saveNumberButton = findViewById(R.id.save_number_button);
 
         retryButton.setOnClickListener(view -> startAttempt());
-        closeButton.setOnClickListener(view -> finishAndRemoveTask());
+        closeButton.setOnClickListener(view -> finishAction());
+        findViewById(R.id.open_gate_button).setOnClickListener(view -> {
+            if (actionRunning) return;
+            returnToMenu = true;
+            startAttempt();
+        });
         saveNumberButton.setOnClickListener(view -> saveGateNumber());
         gateNumberInput.setOnEditorActionListener((view, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -67,18 +84,77 @@ public final class MainActivity extends Activity {
         });
 
         gateNumberStore = new GateNumberStore(this);
-        gateNumber = gateNumberStore.read();
+        HomeConfiguration config = HomeConfiguration.load(this);
+        if (config != null && config.verifiedPhone != null && !config.verifiedPhone.equals(gateNumberStore.read())) {
+            configurationSaved = gateNumberStore.save(config.verifiedPhone);
+        }
+        gateNumber = configurationSaved ? gateNumberStore.read() : null;
         if (gateNumber == null) {
             showNumberSetup();
-        } else {
+        } else if (HomeActions.consume(getIntent())) {
+            returnToMenu = false;
             startAttempt();
-        }
+        } else showMenu();
+        HomeMonitorService.ensureStarted(this);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        if (HomeActions.consume(intent)) automaticAction();
+        else if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+            returnToMenu = true;
+            if (!actionRunning && configurationSaved && gateNumberStore.read() != null) showMenu();
+        }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        resumed = true;
+        HomeActions.visible(this);
+        HomeMonitorService.ensureStarted(this);
+        if (!actionRunning && configurationSaved && gateNumberStore != null && gateNumberStore.read() != null) showMenu();
+    }
+
+    @Override protected void onPause() {
+        resumed = false;
+        HomeActions.hidden(this);
+        super.onPause();
+    }
+
+    void automaticAction() {
+        if (!configurationSaved || actionRunning || gateNumberStore.read() == null || gateNumberStore.cooldownRemainingMillis() > 0) return;
+        returnToMenu = resumed && menuContent.getVisibility() == View.VISIBLE;
+        startAttempt();
+    }
+
+    private void showMenu() {
+        actionRunning = false;
+        menuContent.setVisibility(View.VISIBLE);
+        numberSetupContent.setVisibility(View.GONE);
+        callStatusContent.setVisibility(View.GONE);
+        HomeConfiguration config = HomeConfiguration.load(this);
+        automationStatus.setText(config == null || !config.enabled ? R.string.automation_not_configured
+                : HomeMonitorService.ready(this) ? R.string.automation_enabled : R.string.automation_permissions_missing);
+    }
+
+    private void finishAction() {
+        ++uiGeneration;
+        statusIcon.removeCallbacks(finishAfterSuccess);
+        statusIcon.removeCallbacks(finishAfterInformation);
+        if (coordinator != null) { coordinator.close(); coordinator = null; }
+        actionRunning = false;
+        if (returnToMenu) showMenu();
+        else finishAndRemoveTask();
+    }
+
+    @android.annotation.SuppressLint("GestureBackNavigation") // Legacy devices; API 33+ uses platform callback above.
+    @Override public void onBackPressed() { handleBack(); }
+
+    private void handleBack() {
+        if (actionRunning) finishAction();
+        else finishAndRemoveTask();
     }
 
     @Override
@@ -92,6 +168,9 @@ public final class MainActivity extends Activity {
     }
 
     private void startAttempt() {
+        actionRunning = true;
+        menuContent.setVisibility(View.GONE);
+        gateNumber = gateNumberStore.read();
         if (gateNumber == null) {
             showNumberSetup();
             return;
@@ -153,6 +232,8 @@ public final class MainActivity extends Activity {
     }
 
     private void showNumberSetup() {
+        actionRunning = false;
+        menuContent.setVisibility(View.GONE);
         numberSetupContent.setVisibility(View.VISIBLE);
         callStatusContent.setVisibility(View.GONE);
         gateNumberError.setVisibility(View.GONE);
@@ -173,9 +254,12 @@ public final class MainActivity extends Activity {
         }
 
         gateNumber = normalized;
+        configurationSaved = true;
         gateNumberError.setVisibility(View.GONE);
         hideKeyboard();
-        showNumberSavedAndFinish();
+        returnToMenu = true;
+        showMenu();
+        HomeMonitorService.ensureStarted(this);
     }
 
     private void hideKeyboard() {
@@ -195,14 +279,6 @@ public final class MainActivity extends Activity {
         errorActions.setVisibility(View.GONE);
         statusTitle.setText(R.string.state_starting);
         statusDescription.setText(R.string.state_starting_description);
-    }
-
-    private void showNumberSavedAndFinish() {
-        showInformation(
-                R.string.gate_number_saved_title,
-                getString(R.string.gate_number_saved_description),
-                R.drawable.ic_success,
-                R.string.success_icon_description);
     }
 
     private void showCooldownAndFinish(long remainingMillis) {

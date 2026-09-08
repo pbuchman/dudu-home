@@ -33,7 +33,16 @@ public final class SafetyChecks extends Instrumentation {
             waitForIdleSync();
             require("000000000".equals(store.read()), "UI saved synthetic number");
             require(!prefs.contains("last_dial_started_at"), "saving must never reserve a dial");
+            require(store.reserveDial() == GateNumberStore.DialReservation.COOLDOWN, "configuration cooldown");
+            require(screen.findViewById(R.id.menu_content).getVisibility() == android.view.View.VISIBLE,
+                    "saving returns to menu");
+            require(!HomeActions.consume(new Intent(HomeActions.ACTION).putExtra("request_token", "forged")),
+                    "external intent cannot request a call");
+            require(!HomeActions.callsGate(HomeEvent.OUTBOUND_CHECKPOINT), "future checkpoint has no action");
+            runOnMainSync(() -> screen.findViewById(R.id.open_gate_button).performClick());
+            require(!prefs.contains("last_dial_started_at"), "manual request blocked during setup cooldown");
             runOnMainSync(screen::finish);
+            prefs.edit().remove("configured_at").commit();
             require(store.reserveDial() == GateNumberStore.DialReservation.RESERVED, "first reservation");
             require(store.reserveDial() == GateNumberStore.DialReservation.COOLDOWN, "duplicate blocked");
             require(new GateNumberStore(getTargetContext()).cooldownRemainingMillis() > 0,
@@ -42,7 +51,24 @@ public final class SafetyChecks extends Instrumentation {
             require(store.reserveDial() == GateNumberStore.DialReservation.COOLDOWN, "clock rollback blocked");
             prefs.edit().putLong("last_dial_started_at", System.currentTimeMillis() - 61000).commit();
             require(store.reserveDial() == GateNumberStore.DialReservation.RESERVED, "expired reservation");
-            result.putString("result", "PASS: setup without dial, validation, persistent reservation, rollback, expiry");
+            // No private SYU service exists on this emulator: exercising error UI cannot dial.
+            prefs.edit().remove("last_dial_started_at").commit();
+            Activity manual = startActivitySync(launch);
+            require(manual.findViewById(R.id.menu_content).getVisibility() == android.view.View.VISIBLE,
+                    "launcher opens menu, not call");
+            runOnMainSync(() -> manual.findViewById(R.id.open_gate_button).performClick());
+            android.os.SystemClock.sleep(4000);
+            require(manual.findViewById(R.id.error_actions).getVisibility() == android.view.View.VISIBLE, "manual error visible");
+            runOnMainSync(() -> manual.findViewById(R.id.close_button).performClick());
+            require(manual.findViewById(R.id.menu_content).getVisibility() == android.view.View.VISIBLE, "manual error close returns to menu");
+            runOnMainSync(() -> ((MainActivity) manual).automaticAction());
+            android.os.SystemClock.sleep(4000);
+            require(manual.findViewById(R.id.error_actions).getVisibility() == android.view.View.VISIBLE, "automatic error visible");
+            runOnMainSync(() -> manual.findViewById(R.id.close_button).performClick());
+            require(manual.findViewById(R.id.menu_content).getVisibility() == android.view.View.VISIBLE, "automatic action preserves open menu");
+            runOnMainSync(manual::finish);
+            store.reserveDial();
+            result.putString("result", "PASS: setup cooldown, no dial, menu, manual/automatic errors, internal intents, persistence, rollback, expiry");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());

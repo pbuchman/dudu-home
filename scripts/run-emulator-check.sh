@@ -43,6 +43,7 @@ cd "$PROJECT_DIR"
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell settings put system accelerometer_rotation 0
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell settings put system user_rotation 1
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear pl.piotrbuchman.dudugate >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 DUDU_SAFETY="$($DUDU_ADB -s "$DUDU_SERIAL" shell am instrument -w \
     pl.piotrbuchman.dudugate.test/pl.piotrbuchman.dudugate.SafetyChecks)"
@@ -53,10 +54,10 @@ if [[ "$DUDU_SAFETY" != *"PASS:"* || "$DUDU_SAFETY" == *"FAIL:"* ]]; then
 fi
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop pl.piotrbuchman.dudugate
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell am start -n pl.piotrbuchman.dudugate/.MainActivity >/dev/null
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell uiautomator dump /sdcard/dudu-cooldown.xml >/dev/null
-DUDU_COOLDOWN="$($DUDU_ADB -s "$DUDU_SERIAL" shell cat /sdcard/dudu-cooldown.xml)"
-if [[ "$DUDU_COOLDOWN" != *"Odczekaj"* ]]; then
-    echo "Cooldown was not visible after restarting the process." >&2
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell uiautomator dump /sdcard/dudu-menu.xml >/dev/null
+DUDU_MENU="$($DUDU_ADB -s "$DUDU_SERIAL" shell cat /sdcard/dudu-menu.xml)"
+if [[ "$DUDU_MENU" != *"open_gate_button"* ]]; then
+    echo "Menu was not visible after restarting the process." >&2
     exit 1
 fi
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear pl.piotrbuchman.dudugate >/dev/null

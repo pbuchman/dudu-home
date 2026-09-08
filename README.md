@@ -1,5 +1,10 @@
 # Dudu Home
 
+> **Local automation work in progress.** The published baseline is `v0.1.0-baseline`.
+> This working branch adds the menu and external-config location monitoring; hardware
+> verification is still pending. See [local development status](docs/LOCAL_DEVELOPMENT.md).
+> The baseline description below is retained as the record of the published version.
+
 **One tap. Your paired phone. A short call to your gate.**
 
 A small Android application for DUDU7 head units. Dudu Home asks the Bluetooth-paired

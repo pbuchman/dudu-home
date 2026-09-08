@@ -13,6 +13,7 @@ final class GateNumberStore {
     private static final String PREFERENCES_NAME = "gate_settings";
     private static final String KEY_GATE_NUMBER = "gate_number";
     private static final String KEY_LAST_DIAL_STARTED_AT = "last_dial_started_at";
+    private static final String KEY_CONFIGURED_AT = "configured_at";
     private static final int MIN_DIGITS = 3;
     private static final int MAX_DIGITS = 15;
 
@@ -31,10 +32,11 @@ final class GateNumberStore {
         return normalized;
     }
 
-    boolean save(String number) {
+    synchronized boolean save(String number) {
         String normalized = normalize(number);
         return normalized != null
-                && preferences.edit().putString(KEY_GATE_NUMBER, normalized).commit();
+                && preferences.edit().putString(KEY_GATE_NUMBER, normalized)
+                .putLong(KEY_CONFIGURED_AT, System.currentTimeMillis()).commit();
     }
 
     synchronized long cooldownRemainingMillis() {
@@ -52,12 +54,16 @@ final class GateNumberStore {
     }
 
     private long cooldownRemainingMillis(long now) {
-        long lastDialStartedAt = preferences.getLong(KEY_LAST_DIAL_STARTED_AT, 0L);
+        return Math.max(remainingFor(KEY_LAST_DIAL_STARTED_AT, now), remainingFor(KEY_CONFIGURED_AT, now));
+    }
+
+    private long remainingFor(String key, long now) {
+        long lastDialStartedAt = preferences.getLong(key, 0L);
         if (lastDialStartedAt <= 0L) {
             return 0L;
         }
         if (lastDialStartedAt > now) {
-            preferences.edit().putLong(KEY_LAST_DIAL_STARTED_AT, now).commit();
+            preferences.edit().putLong(key, now).commit();
             return GateConfig.REATTEMPT_COOLDOWN_MS;
         }
         return Math.max(
