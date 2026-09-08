@@ -14,7 +14,7 @@ import tarfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = 'pl.piotrbuchman.dudugate'
+PACKAGE = 'com.pbuchman.duduhome'
 
 
 def private_path(value):

@@ -20,8 +20,8 @@ if args[2:] == ['shell', 'pm', 'list', 'packages', '-u']:
     if case == 'empty': raise SystemExit(0)
     if case == 'malformed': print('Error: package manager unavailable'); raise SystemExit(0)
     print('package:android\r')
-    print('package:pl.piotrbuchman.dudugate.test')
-    if case == 'installed': print('package:pl.piotrbuchman.dudugate')
+    print('package:com.pbuchman.duduhome.test')
+    if case == 'installed': print('package:com.pbuchman.duduhome')
     if case == 'warning': print('untrusted diagnostic', file=sys.stderr)
     raise SystemExit(0)
 if args[2:3] == ['install']:

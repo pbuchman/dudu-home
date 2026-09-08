@@ -34,7 +34,7 @@ while IFS= read -r DUDU_PACKAGE; do
         echo "Nie można jednoznacznie odczytać listy aplikacji. Instalacja przerwana." >&2
         exit 1
     fi
-    if [[ "$DUDU_PACKAGE" == package:pl.piotrbuchman.dudugate ]]; then
+    if [[ "$DUDU_PACKAGE" == package:com.pbuchman.duduhome ]]; then
         DUDU_INSTALLED=true
     fi
 done <<< "$DUDU_PACKAGES"

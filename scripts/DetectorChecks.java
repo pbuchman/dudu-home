@@ -1,4 +1,5 @@
-package pl.piotrbuchman.dudugate;
+package com.pbuchman.duduhome.location;
+import com.pbuchman.duduhome.automation.HomeEvent;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -13,7 +13,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = 'pl.piotrbuchman.dudugate'
+PACKAGE = 'com.pbuchman.duduhome'
 
 
 def main():
@@ -43,7 +43,7 @@ def main():
         subprocess.run(command, check=True, capture_output=True)
         if not run('exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/pending-config.json'):
             raise RuntimeError('No staged configuration')
-        run('shell', 'am', 'start', '-n', PACKAGE+'/.MainActivity')
+        run('shell', 'am', 'start', '-n', PACKAGE+'/.ui.MainActivity')
         for _ in range(40):
             # shell protocol propagates exit status; exec-out may return zero for a failed cat.
             staged = subprocess.run(adb+['shell', 'run-as', PACKAGE, 'test', '-e', 'no_backup/pending-config.json'], capture_output=True)
@@ -58,7 +58,7 @@ def main():
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Update reset daily quota')
         run('shell', 'am', 'force-stop', PACKAGE)
-        run('shell', 'am', 'start', '-n', PACKAGE+'/.MainActivity')
+        run('shell', 'am', 'start', '-n', PACKAGE+'/.ui.MainActivity')
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Restart reset daily quota')
     # Clear only synthetic robot credentials, preserving a safe menu for visual inspection.

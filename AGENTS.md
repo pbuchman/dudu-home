@@ -9,7 +9,9 @@ Before every commit/push, inspect the staged tree and run the public-tree privac
 Private local denylist verification must also be performed by the maintainer before publication.
 Do not copy the predecessor's calibration module into this repository.
 
-Preserve Java 17, platform Android Views/XML, the existing application ID and local signing key.
+Preserve Java 17, platform Android Views/XML and local signing key. The owner approved
+the new application ID com.pbuchman.duduhome with explicit migration from the old package.
+Current work is local only: no radio installation or publication until separately requested.
 No AndroidX, dependency injection framework, analytics, intermediary cloud server, or fake DUDU backend.
 The owner explicitly authorized direct native HTTPS to Roborock for Full Cleaning and manual-only
 Full Mop. No location hook may dispatch Mop. Missing Mop configuration must never fall back to

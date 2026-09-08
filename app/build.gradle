@@ -3,16 +3,16 @@ plugins {
 }
 
 android {
-    namespace 'pl.piotrbuchman.dudugate'
+    namespace 'com.pbuchman.duduhome'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'pl.piotrbuchman.dudugate'
+        applicationId 'com.pbuchman.duduhome'
         minSdk 26
         targetSdk 36
-        versionCode 4
-        versionName '0.3.0-local'
-        testInstrumentationRunner 'pl.piotrbuchman.dudugate.SafetyChecks'
+        versionCode 5
+        versionName '0.4.0-local'
+        testInstrumentationRunner 'com.pbuchman.duduhome.SafetyChecks'
     }
 
     buildTypes {

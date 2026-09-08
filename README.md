@@ -1,5 +1,9 @@
 # Dudu Home
 
+> Local development: `0.4.0-local` moves to `com.pbuchman.duduhome`; see
+> [package boundaries and migration identity](docs/PACKAGES.md). It is not installed on
+> the radio or published yet. The version 0.3 evidence below concerns the old application ID.
+
 **Your gate. Your cleaning routines. One touch — or the right moment on your journey.**
 
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired

@@ -43,28 +43,28 @@ cd "$PROJECT_DIR"
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell settings put system accelerometer_rotation 0
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell settings put system user_rotation 1
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear pl.piotrbuchman.dudugate >/dev/null
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear com.pbuchman.duduhome >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 DUDU_SAFETY="$($DUDU_ADB -s "$DUDU_SERIAL" shell am instrument -w \
-    pl.piotrbuchman.dudugate.test/pl.piotrbuchman.dudugate.SafetyChecks)"
+    com.pbuchman.duduhome.test/com.pbuchman.duduhome.SafetyChecks)"
 echo "$DUDU_SAFETY"
 if [[ "$DUDU_SAFETY" != *"PASS:"* || "$DUDU_SAFETY" == *"FAIL:"* ]]; then
     echo "Safety checks failed." >&2
     exit 1
 fi
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop pl.piotrbuchman.dudugate
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell am start -n pl.piotrbuchman.dudugate/.MainActivity >/dev/null
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop com.pbuchman.duduhome
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell am start -n com.pbuchman.duduhome/.ui.MainActivity >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell uiautomator dump /sdcard/dudu-menu.xml >/dev/null
 DUDU_MENU="$($DUDU_ADB -s "$DUDU_SERIAL" shell cat /sdcard/dudu-menu.xml)"
 if [[ "$DUDU_MENU" != *"open_gate_button"* ]]; then
     echo "Menu was not visible after restarting the process." >&2
     exit 1
 fi
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear pl.piotrbuchman.dudugate >/dev/null
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear com.pbuchman.duduhome >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" logcat -c
-"$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop pl.piotrbuchman.dudugate
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop com.pbuchman.duduhome
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell am start \
-    -n pl.piotrbuchman.dudugate/.MainActivity
+    -n com.pbuchman.duduhome/.ui.MainActivity
 
 sleep 2
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell uiautomator dump \
@@ -72,7 +72,7 @@ sleep 2
 DUDU_UI="$($DUDU_ADB -s "$DUDU_SERIAL" shell cat /sdcard/dudu-gate-first-run.xml)"
 DUDU_LOGS="$($DUDU_ADB -s "$DUDU_SERIAL" logcat -d -s DuduGate:I '*:S')"
 
-if [[ "$DUDU_UI" != *"pl.piotrbuchman.dudugate:id/gate_number_input"* ]]; then
+if [[ "$DUDU_UI" != *"com.pbuchman.duduhome:id/gate_number_input"* ]]; then
     echo "Brak formularza numeru po wyczyszczeniu danych aplikacji." >&2
     exit 1
 fi

@@ -25,16 +25,16 @@
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DuduGate">
-        <activity android:name=".HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleInstance" />
-        <service android:name=".HomeMonitorService" android:exported="false" android:foregroundServiceType="location" />
-        <receiver android:name=".HomeBootReceiver" android:exported="false">
+        <activity android:name="com.pbuchman.duduhome.startup.HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleInstance" />
+        <service android:name="com.pbuchman.duduhome.location.HomeMonitorService" android:exported="false" android:foregroundServiceType="location" />
+        <receiver android:name="com.pbuchman.duduhome.startup.HomeBootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
         <activity
-            android:name=".MainActivity"
+            android:name="com.pbuchman.duduhome.ui.MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize"
             android:exported="true"
             android:launchMode="singleTask"
