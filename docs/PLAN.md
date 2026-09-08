@@ -9,7 +9,8 @@ Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jaw
 - Prywatny poprzednik, APK, podpis i pełne dane kalibracji poza nowym repozytorium; oryginałów nie usuwać.
 - Nowa, czysta historia `pbuchman/dudu-home`, MIT, source only, `v0.1.0-baseline`.
 - Lokalne zmiany menu/detektora/cooldown zabezpieczone osobnym commitem przed Roborock.
-- Rozwój na `codex/home-automation`; publiczny main nie jest nadpisywany lokalnym prototypem.
+- Rozwój na `codex/home-automation`; pierwotna wersja zachowana pod tagiem `v0.1.0-baseline`.
+  Na późniejsze polecenie właściciela aktualny kod udostępniamy na main jako wersję rozwojową.
 
 ## 2. Natywne wykonanie Full Cleaning — zaimplementowane, lokalnie testowane
 
@@ -32,7 +33,7 @@ Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jaw
 - Podpiąć Full Cleaning tylko do `OUTBOUND_CHECKPOINT`. Brama pozostaje przy rozpoczęciu
   wyjazdu i dojeździe powrotnym. Nie zmieniać kalibracji bez brakującego dowodu.
 
-## 4. Pełny prywatny deployment — zaimplementowany; hardware nadal do wykonania
+## 4. Pełny prywatny deployment — wykonany na radiu
 
 - Weryfikacja formatu poza radiem; numer potwierdzony porównaniem na radiu, nie historycznym opisem.
 - Sprawdzenie pakietu i zgodności certyfikatu, prywatny backup APK/danych z sumami, `install -r`.
@@ -52,7 +53,11 @@ Commity logiczne: wykonawca/UI; narzędzia instalacji i konfiguracji; dokumentac
 Każdy wynik zapisujemy w [VERIFICATION.md](VERIFICATION.md), zmiany w [CHANGELOG.md](../CHANGELOG.md),
 punkt kontynuacji w [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Szczegóły prywatne pozostają poza Git.
 
-## 6. Odbiór na radiu — nie wykonano
+## 6. Odbiór na radiu — częściowo wykonany
+
+Instalacja pełnego pakietu, ręczna brama (SUCCESS), ręczny Full Cleaning (ACCEPTED), powrót
+do menu i GPS w tle są potwierdzone. Szczegóły w [VERIFICATION.md](VERIFICATION.md).
+Nie powtarzać tych akcji tylko dla ponownego zaliczenia; poniżej zakres pełnego odbioru.
 
 Wykonać [sesję operacyjną](OPERATIONS.md#minimalna-sesja-akceptacyjna-na-radiu): instalacja pełnego
 pakietu, brama i Full Cleaning z ręcznych kafelków na radiu, start/wybudzenie bez akcji, wyjazd
@@ -66,6 +71,7 @@ mogą pozostać testami syntetycznymi; nie manipulować datą ani prawdziwym kon
 
 Cały komplet konfiguracji zainstalowany, realne akcje wykonane z radia, brama bez naruszenia rozmów,
 odkurzacz realizuje właściwą rutynę, automatyzacja nie duplikuje prób, błędy i UI zgodne z kontraktem,
-boot/wake potwierdzone. Dopiero wtedy opublikować kolejne zmiany i finalny tag, bez ponownej bramki
-akceptacji zatwierdzonych decyzji. Jeśli radio/kierowca są niedostępni, zakończyć prace lokalne,
+boot/wake potwierdzone. Dopiero wtedy oznaczyć pełny odbiór i finalny tag.
+Właściciel osobno zatwierdził wcześniejszą publikację kodu rozwojowego po audycie prywatności
+i dokumentacji; nie oznacza to zaliczenia brakujących prób. Jeśli radio/kierowca są niedostępni, zakończyć prace lokalne,
 wskazać brakujące próby i **nie oznaczać pełnej funkcjonalności jako sprawdzonej produkcyjnie**.

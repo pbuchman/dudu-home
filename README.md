@@ -6,10 +6,11 @@ A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetoo
 **phone** to make a short call, and sends an existing **Full Cleaning** routine to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
 
-> **Version status:** public `main` / `v0.1.0-baseline` is the original gate-call baseline.
-> This local `codex/home-automation` branch is `0.2.0-local`: menu, location automation and
-> Roborock implementation. It passes local checks, but **has not passed the complete radio
-> acceptance session**. No automation release or public APK is claimed.
+> **Version status:** `main` contains the current development implementation (`0.2.0-local`):
+> menu, location automation and Roborock. Both manual actions and background GPS have been
+> checked on DUDU7, but **the complete automatic journey/ignition acceptance is still pending**.
+> The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
+> fully verified production release. No public APK is provided.
 
 ![Dudu Home menu — sanitized landscape emulator preview](docs/images/menu.png)
 

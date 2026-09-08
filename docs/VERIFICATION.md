@@ -5,6 +5,14 @@
 Scope: local `0.2.0-local` / versionCode 3 on `codex/home-automation`.
 This ledger separates executable evidence from pending physical acceptance.
 
+Publication audit repeated on 2026-09-08: tracked/working files and all reachable history
+passed the private-value scan, including an additional check of commit metadata, phone suffix,
+rounded coordinates and the device connection address. Both documentation images were visually
+reviewed and contained no text/EXIF metadata chunks. Local documentation links resolved.
+Build/lint, Android test compilation, six private-tool tests, five fresh-installer test methods
+and synthetic detector checks passed again. No new emulator instrumentation or radio action was
+performed during this source-publication audit; earlier runtime evidence remains below.
+
 | Check | Evidence / outcome |
 |---|---|
 | Build, lint, instrumentation compilation | `assembleDebug assembleDebugAndroidTest lintDebug` passed with JDK 17 / SDK 36; no external Android dependencies |
@@ -64,7 +72,8 @@ also passed again. This patch changes tooling/docs only, not the APK or radio ac
 - [ ] Return: gate only, correct approach, adjacent parking accepted.
 - [ ] Second same-day outward checkpoint: no second automatic cleaning; manual tile independent.
 - [ ] Radio restart, both ignition sequences and vendor wake task: monitoring returns, quota persists, no startup action/replayed call.
-- [ ] Sanitized record of physical results, then publication/final tag. Until then keep public baseline unchanged.
+- [x] Sanitized record of completed physical results; owner authorized development-source publication after privacy/documentation audit.
+- [ ] Final acceptance/release tag after the outstanding physical checks. Source availability does not imply full hardware verification.
 
 ## Radio session — 2026-09-08
 

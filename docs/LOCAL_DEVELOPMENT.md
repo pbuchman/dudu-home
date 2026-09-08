@@ -6,7 +6,8 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
-- Public baseline: `main`, `v0.1.0-baseline`, commit `bde6c0a`.
+- Preserved baseline: `v0.1.0-baseline`, commit `bde6c0a`. Public `main` now carries the
+  development implementation by the owner's explicit publication instruction.
 - Local branch: `codex/home-automation`. The menu/GPS/cooldown predecessor was preserved in
   `e91b342` before adding Full Cleaning. See `git log` and [CHANGELOG](../CHANGELOG.md) for later milestones.
 - `39eca9d`: app integration and its tests; `d813550`: private deployment/bootstrap tooling and tests.
@@ -15,7 +16,8 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
   one-time private import, safe update tooling, tests and handoff documentation.
 - **Radio deployment and both manual tiles passed on 2026-09-08:** gate SUCCESS and Roborock
   ACCEPTED, both returning to menu. Full journey/ignition acceptance remains incomplete.
-  No push of this extension or final release tag as fully verified before that evidence exists.
+  Source publication is authorized after privacy/documentation review; a final release tag
+  or full hardware-verification claim still requires the remaining evidence.
 
 ## Private state — do not copy into this repo
 
@@ -53,8 +55,9 @@ or repeat eight drives when only a particular hardware check is missing.
    busy-call protection. Do not reboot the radio while the owner is driving.
 4. Record results privately, add only sanitized summaries to VERIFICATION. Fix actual failures
    with scoped changes; rerun relevant checks. Never add stop/pause/status polling as a testing convenience.
-5. Publish the verified commits and tag only once radio criteria pass. Do not alter the original
-   private repository, upload an APK or leak calibration/account data.
+5. Keep public documentation explicit about pending checks; create a final release tag only
+   once radio criteria pass. Do not alter the original private repository, upload an APK or
+   leak calibration/account data.
 
 If unavailable, distinguish completed installation/manual calls/cloud acceptance from outstanding
 journeys, automatic background presentation and vendor boot/wake. Do not equate a green emulator

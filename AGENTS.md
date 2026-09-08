@@ -23,7 +23,10 @@ Do not launch the baseline app during installation: launching with a saved numbe
 
 Verify with ./gradlew assembleDebug lintDebug and scripts/run-emulator-check.sh.
 Hardware verification is separate from emulator checks. Do not claim unavailable radio tests.
-Keep new automation local until replay and hardware verification; public main is the baseline.
+The owner authorized publication of the current development source on 2026-09-08 after the
+privacy/documentation audit. Public main may include automation with explicitly pending hardware
+checks; the baseline remains tagged. Do not claim full acceptance or create a final release
+tag before the remaining journey/ignition checks pass. Never publish APKs.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
 
 Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.

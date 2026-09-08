@@ -45,5 +45,7 @@
   checksums, maintenance before install, atomic one-time staging and cleanup after import.
   Keep existing daily and location state. Never reinstall by uninstalling to bypass signature checks.
 - **Handoff and release:** commit local milestones and factual verification. The public baseline
-  remains unchanged until real radio installation, gate, vacuum, journey and wake tests pass.
+  was initially kept unchanged pending full acceptance. The owner subsequently authorized current
+  development source publication on 2026-09-08 after a privacy/documentation audit. Preserve
+  `v0.1.0-baseline`; publish current main with pending journey/wake checks, not a final release claim.
   No public APK. Google Password Manager storage remains uncompleted; never bypass its security refusal.

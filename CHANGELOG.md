@@ -1,6 +1,14 @@
 # Change history
 
-## 0.2.0-local — local implementation, not released
+## 0.2.0-local — published development source, not a final release
+
+### Source publication review
+
+- Audited tracked files, all reachable history/commit metadata and documentation images against
+  private configuration, credentials and location values; no private matches found.
+- Updated README, implementation plan and handoff to distinguish public development source,
+  completed manual radio tests and pending automatic journey/ignition acceptance.
+- Original baseline tag preserved; no APK, private archives or configuration published.
 
 ### First combined radio deployment
 
