@@ -16,4 +16,6 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - run: python3 scripts/check-public-tree.py --all-history
-      - run: ./gradlew assembleDebug lintDebug
+      - run: python3 scripts/test-private-tools.py
+      - run: bash scripts/check-detector.sh
+      - run: ./gradlew assembleDebug assembleDebugAndroidTest lintDebug

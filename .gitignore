@@ -24,5 +24,8 @@ captures/
 private/
 local-config/
 config.json
+*credentials*.json
+*session*.json
+*.enc
 output/
 __pycache__/

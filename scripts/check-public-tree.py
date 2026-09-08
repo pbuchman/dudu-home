@@ -11,6 +11,7 @@ p = argparse.ArgumentParser()
 p.add_argument('--all-history', action='store_true')
 p.add_argument('--working-tree', action='store_true')
 p.add_argument('--private-config', type=Path)
+p.add_argument('--private-roborock', type=Path)
 args = p.parse_args()
 root = Path(__file__).resolve().parents[1]
 def git(*a):
@@ -26,9 +27,13 @@ if args.private_config:
     private = [v.encode().lower() for v in private if len(v) >= 5]
 
 errors = set()
+if args.private_roborock:
+    robot = json.loads(args.private_roborock.read_text())
+    private += [str(v).encode().lower() for v in robot.get('auth', {}).values() if len(str(v)) >= 4]
+    if robot.get('routine_id'): private.append(str(robot['routine_id']).encode())
 def inspect(name, data):
     path = Path(name)
-    if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf'}
+    if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf', '.enc'}
             or name.startswith(('private/', 'calibration/', 'output/')) or path.name in {'config.json', '.env', 'local.properties'}):
         errors.add((name, 'private/generated file type'))
     for value in private:
@@ -65,6 +70,7 @@ if args.working_tree:
             if path.is_file(): inspect(name, path.read_bytes())
 if args.all_history:
     for rev in git('rev-list', '--all').decode().splitlines():
+        inspect('commit-message', git('show', '-s', '--format=%B', rev))
         for entry in git('ls-tree', '-r', '-z', rev).split(b'\0'):
             if not entry:
                 continue

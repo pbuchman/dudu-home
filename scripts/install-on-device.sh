@@ -20,8 +20,13 @@ if [[ -n "$DUDU_SERIAL" ]]; then
     DUDU_TARGET=(-s "$DUDU_SERIAL")
 fi
 
+if "$DUDU_ADB" "${DUDU_TARGET[@]}" shell pm path pl.piotrbuchman.dudugate 2>/dev/null | grep -q '^package:'; then
+    echo "Aktualizacja wymaga kopii i prywatnej konfiguracji: użyj scripts/configure-device.py z --apk i --backup-dir." >&2
+    exit 1
+fi
+
 "$DUDU_ADB" "${DUDU_TARGET[@]}" install -r \
     app/build/outputs/apk/debug/app-debug.apk
 echo "Dudu Home zainstalowane. Nie uruchomiono aplikacji ani połączenia."
-echo "Otwórz aplikację świadomie: przy zapisanym numerze rozpocznie próbę połączenia."
+echo "Otwórz aplikację na postoju: zobaczysz formularz bez automatycznej akcji."
 echo "Logi: $DUDU_ADB ${DUDU_TARGET[*]} logcat -s DuduGate"
