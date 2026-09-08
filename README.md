@@ -1,121 +1,116 @@
 # Dudu Home
 
-> **Local automation work in progress.** The published baseline is `v0.1.0-baseline`.
-> This working branch adds the menu and external-config location monitoring; hardware
-> verification is still pending. See [local development status](docs/LOCAL_DEVELOPMENT.md).
-> The baseline description below is retained as the record of the published version.
+**Your gate. Your cleaning routine. Two big buttons — or the right moment on your journey.**
 
-**One tap. Your paired phone. A short call to your gate.**
+A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
+**phone** to make a short call, and sends an existing **Full Cleaning** routine to Roborock.
+Private, locally configured route detection connects those actions to leaving and returning home.
 
-A small Android application for DUDU7 head units. Dudu Home asks the Bluetooth-paired
-phone to call your configured gate number, observes the outgoing call, hangs up after
-five seconds, and closes after confirmation. It uses the **phone's SIM**, never the
-head unit's SIM.
+> **Version status:** public `main` / `v0.1.0-baseline` is the original gate-call baseline.
+> This local `codex/home-automation` branch is `0.2.0-local`: menu, location automation and
+> Roborock implementation. It passes local checks, but **has not passed the complete radio
+> acceptance session**. No automation release or public APK is claimed.
 
-![Dudu Home — first-run configuration, with no private data](docs/images/setup.png)
+![Dudu Home menu — sanitized landscape emulator preview](docs/images/menu.png)
 
-## Available today
+## What it does
 
-- A one-time phone-number setup, stored only in private app settings.
-- Launch-to-call flow with visible progress, success animation and actionable errors.
-- Protection against duplicate calls: one attempt at a time and a persistent 60-second cooldown.
-- No location collection, analytics, accounts, Internet permission or external app libraries.
-- Java 17, Android Views/XML and a small, inspectable Binder implementation.
+- **Otwórz bramę:** use the paired phone's SIM, observe outgoing, wait five seconds, hang up
+  and confirm idle. Never use the head unit's SIM or interrupt a pre-existing conversation.
+- **Full Cleaning:** send the saved Roborock routine. This is not a generic “clean” command;
+  the routine's rooms and settings remain managed in the Roborock phone app.
+- **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
+- **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
+  calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
+  attempt. No automatic retry or offline queue.** Manual cleaning remains independent.
+- A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 
-**Saving the number does not place a call.** In this baseline, setup confirms the save
-and closes. Subsequent deliberate launches start the calling flow. The cooldown applies
-after a dial attempt, not after the initial number save.
+Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
+does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
+hide after the result unless the menu was already open. Errors stay until user action.
 
-## Hardware verification and limits
+No robot stop, pause, docking, status polling, Python runtime on Android, analytics, Home Assistant
+or Google Home dependency. Roborock requires Internet; gate calls use the paired phone's network.
 
-The calling implementation was exercised on a physical **DUDU7, Android 13,
-DUDUOS 3.7 build 260210**, with one connected phone: idle → dial → outgoing →
-five-second delay → hangup → idle. The disconnected-phone path was also verified.
+## Hardware evidence, not promises
 
-This is device-specific software using undocumented DUDU/SYU IPC, not a universal
-Android dialer. Other firmware, two connected phones and vendor updates are not certified.
-The app cannot detect the first ringback tone, reception by the gate controller, or the
-physical opening of the gate. “Sygnał wysłany” reports the observed call sequence only.
-The public baseline retains that implementation with branding and privacy changes;
-those changes do not constitute a new hardware certification.
+The original gate executor was exercised on **DUDU7, Android 13, DUDUOS 3.7 build 260210**,
+with one connected phone: idle → dial → outgoing → delay → hangup → idle. The disconnected
+phone path was also checked. This evidence does not certify the new combined APK.
 
-## Build
+The implementation uses undocumented DUDU/SYU IPC; other firmware and two-phone setups are not
+certified. It cannot detect the first ringback, reception by the controller, or physical gate
+opening. Roborock's accepted response confirms the cloud request, **not completed cleaning or
+even physical robot movement**. Previous computer-side routine experiments are not radio tests.
 
-Install JDK 17 and Android SDK Platform 36. Set `ANDROID_HOME` to your SDK, or create an
-untracked `local.properties` with `sdk.dir` pointing to it. Then run:
+## Build and verification
 
-```sh
-./gradlew assembleDebug lintDebug
-```
-
-APK: `app/build/outputs/apk/debug/app-debug.apk`.
-Minimum Android version: 8.0 (API 26). Compilation/target API: 36.
-
-This repository publishes **source code only**, not signed release APKs. Local builds
-use your existing Android debug key. Android requires the same application ID and signing
-certificate to update an existing installation. Keep your key private; never uninstall
-an existing installation merely to bypass a signature mismatch without backing up settings.
-The internal ID remains `pl.piotrbuchman.dudugate` for update compatibility.
-
-## Install and configure
-
-With an authorized ADB connection:
+JDK 17, Android SDK Platform 36 and Build Tools 35.0.0 are required. Set `ANDROID_HOME`
+(or an untracked `local.properties`). Java 17, platform Views/XML, minimum API 26, target API 36.
+There are no external Android runtime libraries.
 
 ```sh
-./scripts/install-on-device.sh DEVICE_SERIAL
-```
-
-The installer **does not launch the app or place a call**. Alternatively, install the
-locally built APK from a USB drive using the head unit's file manager.
-
-1. Open **Dudu Home** while safely parked.
-2. Enter your gate number and save. No call is made during setup.
-3. Ensure the intended phone is paired and connected to the radio.
-4. Launch Dudu Home again when you want to send the gate signal.
-
-The UI is in Polish. Errors stay visible until you select retry or close. There is no
-automatic redial. To reset the number, clear Dudu Home's app storage in Android settings;
-this removes its settings, unlike clearing the cache.
-
-## Safety and privacy
-
-- Dial only after fresh, unambiguous idle; never interrupt an existing conversation.
-- Register callbacks before dial; no protocol fallback after sending a dial command.
-- Hang up only after this attempt has initiated its own call.
-- Confirm outgoing and subsequent idle before reporting success.
-- Persist the dial reservation before sending the command, including across process restarts.
-- Backup of app settings is disabled. Phone numbers and their suffixes are not logged.
-- No real phone numbers, street names, home coordinates, traces or signing keys belong in Git.
-
-Abrupt power loss or a vendor Binder transaction that never returns can prevent cleanup.
-Do not treat this application as proof that a gate has opened. Operate the UI only when safe.
-
-## Verification
-
-```sh
-./gradlew assembleDebug lintDebug
+./gradlew assembleDebug assembleDebugAndroidTest lintDebug
+bash scripts/check-detector.sh
+python3 scripts/test-private-tools.py
 ./scripts/run-emulator-check.sh
-python3 scripts/check-public-tree.py
+python3 scripts/test-install-emulator.py emulator-5554
+python3 scripts/check-public-tree.py --working-tree --all-history
 ```
 
-The emulator check uses **only an emulator** and clears this app's emulator data. It checks
-first-run setup without a dial attempt, validation, cooldown persistence and clock rollback.
-An emulator cannot verify the private DUDU Bluetooth
-service. Before using a new build on hardware, check connected/disconnected phone behavior,
-busy-call protection, cooldown, outgoing/hangup/idle and recovery after power interruption.
+Start an emulator first for the last installation check. Emulator checks use synthetic data and
+never contact a real robot. They cannot certify Bluetooth IPC, GNSS reception or vendor wake behavior.
 
-See [technical notes](docs/TECHNICAL_NOTES.md), [design decisions](docs/DECISIONS.md)
-and the [implementation plan](docs/PLAN.md).
+Local artifact: `app/build/outputs/apk/debug/app-debug.apk`. Source only is published under MIT:
+**no public APK, credentials or signing key**. The package remains `pl.piotrbuchman.dudugate`;
+an update must have the same signing certificate as the installed app.
 
-## Next, not shipped in this baseline
+## Install safely
 
-A large-button menu and location-triggered gate calls, sharing the existing safe call
-executor. Location configuration will stay external to the code and APK. Other home actions
-are intentionally deferred. Calibration recordings are private and are not part of this repo.
+Use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
+signature comparison and all three configuration sections. For an existing radio installation:
 
-## License and acknowledgements
+```sh
+python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
+  --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
+  --apk app/build/outputs/apk/debug/app-debug.apk \
+  --backup-dir "$PRIVATE_DIR/radio-backups" --enable-automation
+```
 
-[MIT](LICENSE) — use, modify and redistribute, including commercially, with the license notice.
-DUDU/SYU firmware analysis informed the IPC contract. The independent
-[FytBt project](https://github.com/PimpinPumpkin/FytBt) corroborates the Binder approach on
-related FYT hardware. Dudu Home is an independent project, not an official DUDU product.
+`PRIVATE_DIR` is an owner-only directory outside every repository. The installer checks the
+configured number against the radio, stages data via stdin, and never launches an action.
+Open the app **while parked** to consume the import. Do not update during a call or other action.
+The fresh-install helper refuses to update an existing app; use the backed-up path above.
+
+No GPS configuration disables automation, not the manual tiles. No gate number blocks calls;
+no Roborock bundle blocks cleaning. Saving a number imposes a persistent 60-second call block.
+Saving Roborock credentials never starts cleaning or resets the daily limit.
+
+## Privacy and maintenance
+
+Real numbers (including fragments), home coordinates, street names, route recordings, account
+credentials, routine IDs, device addresses and signing keys stay outside Git and the APK.
+Roborock credentials are encrypted with Android Keystore in private no-backup storage. The
+short-lived import file is deleted after successful import. App backups are disabled.
+An authorized ADB/debug session is privileged access: keep it restricted and disconnect afterward.
+
+Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
+Check private archives and diagnostics before sharing: firmware-generated logs may contain data
+even when Dudu Home does not log it. Automated privacy scans supplement manual review.
+
+## Documentation for the next developer
+
+- [Functional contract](docs/FUNCTIONAL.md): buttons, triggers, once-a-day behavior and failure cases.
+- [Architecture and Roborock protocol](docs/ROBOROCK.md): native HTTPS, credentials and boundaries.
+- [DUDU/SYU technical notes](docs/TECHNICAL_NOTES.md): preserved calling safety and IPC details.
+- [Installation, recovery and credential renewal](docs/OPERATIONS.md).
+- [Implementation and acceptance plan](docs/PLAN.md), [verification evidence](docs/VERIFICATION.md).
+- [Decisions](docs/DECISIONS.md), [change history](CHANGELOG.md), [handoff](docs/LOCAL_DEVELOPMENT.md).
+
+## License
+
+[MIT](LICENSE): use, modify and redistribute, including commercially, with the license notice.
+The independent [FytBt project](https://github.com/PimpinPumpkin/FytBt) corroborates the Binder
+approach on related FYT hardware. Roborock request signing was ported from the
+[python-roborock implementation](https://github.com/Python-roborock/python-roborock).
+Dudu Home is not an official DUDU or Roborock product.

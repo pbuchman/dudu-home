@@ -1,0 +1,34 @@
+# Change history
+
+## 0.2.0-local — local implementation, not released
+
+### Preserved development checkpoint
+
+- `e91b342`: preserved previously local menu/location work before the Roborock extension.
+- External private geometry, pure Java detector, foreground GPS monitor, boot/wake entry,
+  internal event dispatch, manual menu and persistent number-setup cooldown.
+- Eight-capture private replay and explicit outstanding radio tests.
+
+### Full Cleaning
+
+- `39eca9d`: application, native executor, settings, daily reservation, tests and functional/protocol contract.
+- `d813550`: private bootstrap, verified backup/update/import, installer tests and privacy tooling.
+- Second large tile; manual and automatic origin-aware UI; small number/Roborock settings.
+- Native routine POST/Hawk signing, strict regional endpoint validation, no Android Python.
+- Keystore encrypted minimal credentials; rejected authorization returns to setup.
+- One automatic attempt per Europe/Warsaw day at outbound checkpoint, including failed/skipped
+  attempts; manual actions independent. No robot-state precheck, auto-retry, queue or stop commands.
+- Shared action lease through actual network/Binder cleanup, including lifecycle closure.
+- One-time private import; number verification against radio, signature comparison, private
+  checksum-backed update, maintenance during deployment, no action from installation/save.
+- Synthetic instrumentation/transport/crypto/quota/UI/import tests, real installer exercised on
+  emulator, computer-only credential bootstrap and configuration tests, updated CI local checks.
+- Functional contract, protocol, installation/recovery, test ledger and agent handoff.
+- Actual radio installation and complete acceptance are pending; no public automation APK/tag.
+
+## 0.1.0-baseline — published source baseline
+
+- Fresh clean repository `pbuchman/dudu-home`, MIT, visible Dudu Home branding.
+- Preserved single-phone DUDU/SYU calling protocol and package/signing compatibility.
+- Number configured outside APK; no number fragments in app logs; safe installer without launch.
+- Source-only publication, private predecessor/history/logs/signing key kept outside this repo.

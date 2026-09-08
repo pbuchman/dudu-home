@@ -34,7 +34,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="30sp" />
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="horizontal" android:gravity="center" android:baselineAligned="false">
+                    android:orientation="horizontal" android:gravity="top" android:baselineAligned="false">
                 <Button
                     android:id="@+id/open_gate_button"
                     android:layout_width="0dp"
