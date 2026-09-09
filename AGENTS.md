@@ -11,7 +11,8 @@ Do not copy the predecessor's calibration module into this repository.
 
 Preserve Java 17, platform Android Views/XML and local signing key. The owner approved
 the new application ID com.pbuchman.duduhome with explicit migration from the old package.
-Current work is local only: no radio installation or publication until separately requested.
+The owner authorized radio installation and source publication on 2026-09-09 after verification.
+Do not publish private configuration or APKs; outstanding wake checks must stay explicit.
 No AndroidX, dependency injection framework, analytics, intermediary cloud server, or fake DUDU backend.
 The owner explicitly authorized direct native HTTPS to Roborock for Full Cleaning and manual-only
 Full Mop. No location hook may dispatch Mop. Missing Mop configuration must never fall back to

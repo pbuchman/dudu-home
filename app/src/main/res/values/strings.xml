@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="full_cleaning">Full Cleaning\nUruchom sprzątanie</string>
-    <string name="full_mop">Full Mop. Uruchom ręcznie mopowanie</string>
-    <string name="cleaning_name">Full Cleaning</string>
-    <string name="mop_name">Full Mop</string>
+    <string name="full_cleaning">Pełne sprzątanie</string>
+    <string name="full_mop">Mopowanie</string>
+    <string name="cleaning_name">Pełne sprzątanie</string>
+    <string name="mop_name">Mopowanie</string>
     <string name="mop_setup_missing">Brak rutyny Full Mop w konfiguracji. Wklej uzupełniony pakiet Roborock. Nie uruchomiono żadnej rutyny.</string>
     <string name="mop_starting">Zlecam Full Mop</string>
     <string name="mop_accepted">Zlecono Full Mop</string>

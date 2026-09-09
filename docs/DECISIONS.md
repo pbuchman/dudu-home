@@ -1,15 +1,16 @@
 # Design decisions
 
-## Local 0.4 — approved namespace migration and navigation
+## Local 0.4 - approved namespace migration and navigation
 
 - Owner explicitly chose new application ID and functional packages `com.pbuchman.duduhome`.
 - Preserve private state via backed-up migration, new Keystore encryption, old package disabled
-  until new functional/wake verification; only then explicit removal. No radio changes in this stage.
+  until new functional/wake verification; only then explicit removal. Migration is now installed.
 - Yanosik: sustained GPS motion, one attempt per ignition/wake, home actions and result UI first.
 - Cold boot is implemented; manufacturer wake must be observed, not inferred from screen/GPS gaps.
-- Do not publish this local stage or claim full readiness while the wake adapter is unresolved.
+- Owner authorized source publication on 2026-09-09 after the radio/background check and
+  privacy audit. Do not claim full ignition/wake readiness while its adapter is unresolved.
 
-## Manual Mop and visual refresh — after source publication
+## Manual Mop and visual refresh - after source publication
 
 - Public source checkpoint `78d1da8` was pushed before beginning these changes.
 - Add Full Mop as a third, manual-only tile. No automatic dispatch or daily quota for Mop.
@@ -43,7 +44,7 @@ supersedes their original success timing.
 - **Current architecture:** location events and manual commands are independent inputs to
   guarded executors. The approved scope now includes Full Cleaning, but no music/other devices.
 
-## Approved Full Cleaning extension — 2026-09-08
+## Approved Full Cleaning extension - 2026-09-08
 
 - **Two real tiles:** gate and Full Cleaning. Small settings entry for phone and one-paste
   Roborock bundle; location remains private installer configuration, no editor.

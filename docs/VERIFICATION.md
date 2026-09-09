@@ -1,6 +1,41 @@
 # Verification ledger
 
-## Local 0.4 — separate application ID, not installed on radio
+## Yanosik cold-boot/background acceptance - 2026-09-09
+
+Corrected the installed Yanosik package identity and verified normal launch on the radio.
+Normal launching left the map in front, so the final variant uses Android behind-task launch.
+After its backed-up installation and completed import, a full radio reboot started the monitor
+without manual app opening. Real vehicle motion triggered Yanosik; its foreground service and
+small warning overlay were visible while the radio launcher remained on screen. No manual
+HOME command or app opening followed this reboot. The owner confirmed real movement as a
+passenger. The ten-second threshold is enforced by the tested detector, not a separately
+timed roadside measurement. The session reservation remained consumed after stopping.
+
+Installed APK bytes matched the local build. Build/lint, emulator safety/navigation checks,
+synthetic motion checks, seven private-tool tests and five fresh-installer tests passed.
+Private screenshots and APK analysis stay outside Git. Manufacturer sleep/wake, next-ignition
+rearming and automatic home journeys remain unverified; this is not full product acceptance.
+
+## Radio migration - 2026-09-09
+
+After the owner confirmed a parked installation session, versionCode 5 / 0.4.0-local
+was installed under the new application ID. The migration tool verified the matching
+certificate and phone, archived the predecessor APK/data with checksums, and disabled
+the predecessor without uninstalling it. Import verification passed: private storage,
+phone, non-regressed daily quota, exact installed APK and predecessor exclusion.
+The three menu tiles were present, HomeMonitorService was foreground, and the inspected
+recent logs contained no new-package fatal crash or dial/Cleaning/Mop execution markers.
+No physical action was deliberately triggered. This verifies installation/import/menu/service,
+not fresh GPS delivery, journeys, Yanosik presentation or ignition/wake. Those checks remain
+pending; the legacy package must not be finalized/removed yet. Current launcher resolution
+for the configured Yanosik package returned no activity and needs investigation.
+
+The subsequent label-only update passed build/lint and the backed-up installation/import
+procedure. Radio UI inspection confirmed “Pełne sprzątanie” and “Mopowanie”; the README
+menu screenshot was replaced with a visually reviewed actual radio capture. No call or
+robot command was needed for these presentation checks. Private-value source/history scan passed.
+
+## Historical local 0.4 checks before radio installation
 
 Functional package refactor passed build/lint, existing Android safety/Roborock tests,
 detector checks and Python installer checks. The real migration CLI passed on an emulator:
@@ -19,7 +54,7 @@ read-only connection unavailable. `verifiedWake` is a tested seam without a prod
 adapter, NOT completed ignition support. See YANOSIK.md. Published/radio version 0.3 below
 remains unchanged; this stage is not ready for full ignition/wake acceptance.
 
-## Manual Mop and visual refresh — local versionCode 4
+## Manual Mop and visual refresh - local versionCode 4
 
 Separate from the earlier versionCode 3 radio session below. Full Mop has its own optional
 private identifier and manual tile. Synthetic Android checks cover exact endpoint selection,
@@ -44,7 +79,7 @@ was rebuilt/linted and installed with the same backup/import procedure; no repea
 README's new image is a real radio capture. Journey/ignition checks below remain pending.
 Yanosik remains queued.
 
-## Current implementation — 2026-09-08
+## Current implementation - 2026-09-08
 
 Scope: local `0.2.0-local` / versionCode 3 on `codex/home-automation`.
 This ledger separates executable evidence from pending physical acceptance.
@@ -89,7 +124,7 @@ Earlier local location-monitor experiments on Android 16 showed background dispa
 BOOT_COMPLETED recovery with synthetic fixes. That is historical emulator evidence, not proof
 of the current combined build on DUDU Android 13. Full calibration replay does not exercise services.
 
-## Fresh-install safety regression — 2026-09-08
+## Fresh-install safety regression - 2026-09-08
 
 The review reproduced a fail-open bug in the old `pm path | grep` condition: an ADB query
 failure could fall through to `install -r`. Fixed by checking command status separately,
@@ -119,7 +154,7 @@ also passed again. This patch changes tooling/docs only, not the APK or radio ac
 - [x] Sanitized record of completed physical results; owner authorized development-source publication after privacy/documentation audit.
 - [ ] Final acceptance/release tag after the outstanding physical checks. Source availability does not imply full hardware verification.
 
-## Radio session — 2026-09-08
+## Radio session - 2026-09-08
 
 Installed the unchanged `0.2.0-local` APK (SHA-256
 `886e11dba7075290049cf9cca45fa4fb62d4016c976ad2a7ead147e586c17e7c`).

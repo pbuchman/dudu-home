@@ -247,7 +247,7 @@ Wcześniejsza kontrolna próba `[MAC, numer]` nie wywołała outgoing. Analiza A
 przekazuje dalej wyłącznie `strings[0]`, natomiast command `10` wywołuje bezargumentowe
 rozłączenie. To jest podstawa wyboru wariantu single-device dla formatu listy MAC.
 
-### Wariant zgodności z MAC — nieużywany na przetestowanym radiu
+### Wariant zgodności z MAC - nieużywany na przetestowanym radiu
 
 Dial:
 
@@ -339,7 +339,7 @@ Manifest nie deklaruje `CALL_PHONE`, `READ_PHONE_STATE`, `BLUETOOTH_CONNECT`,
 `BLUETOOTH_SCAN`, `BLUETOOTH_PRIVILEGED` ani `QUERY_ALL_PACKAGES`. Nie są potrzebne root,
 Shizuku, podpis systemowy ani instalacja `priv-app`.
 
-Jedynym wpisem visibility jest:
+Wpis visibility wymagany dla połączeń to (aktualna wersja deklaruje dodatkowo pakiet Yanosika):
 
 ```xml
 <queries>

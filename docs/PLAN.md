@@ -1,10 +1,10 @@
-# Dudu Home — plan wdrożenia i odbioru
+# Dudu Home - plan wdrożenia i odbioru
 
 Decyzje funkcjonalne są zatwierdzone. Nie wymagają ponownego pytania o menu, ręczne akcje,
 jedną automatyczną próbę dziennie, brak sprawdzania stanu robota lub brak automatycznego stop.
 Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jawnie zgłosić.
 
-## 1. Zachować działający punkt wyjścia — wykonane
+## 1. Zachować działający punkt wyjścia - wykonane
 
 - Prywatny poprzednik, APK, podpis i pełne dane kalibracji poza nowym repozytorium; oryginałów nie usuwać.
 - Nowa, czysta historia `pbuchman/dudu-home`, MIT, source only, `v0.1.0-baseline`.
@@ -12,7 +12,7 @@ Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jaw
 - Rozwój na `codex/home-automation`; pierwotna wersja zachowana pod tagiem `v0.1.0-baseline`.
   Na późniejsze polecenie właściciela aktualny kod udostępniamy na main jako wersję rozwojową.
 
-## 2. Natywne wykonanie Full Cleaning — zaimplementowane, lokalnie testowane
+## 2. Natywne wykonanie Full Cleaning - zaimplementowane, lokalnie testowane
 
 - `RoborockCredentials`: ścisła walidacja endpointu, rutyny i pól Hawk.
 - `RoborockStore`: szyfrowany zapis Keystore, brak backupu, trwała blokada odrzuconego pakietu.
@@ -22,7 +22,7 @@ Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jaw
   Nie pokazywać „sprzątanie zakończone” po samym przyjęciu żądania.
 - Komputerowy bootstrap służy jedynie odnowieniu minimalnego pakietu; nie uruchamia robota.
 
-## 3. UI i automatyzacja — zaimplementowane, lokalnie testowane
+## 3. UI i automatyzacja - zaimplementowane, lokalnie testowane
 
 - Dwa duże kafelki, niewielkie ustawienia, osobne formularze numeru i pakietu.
 - Ręczna akcja → postęp → wynik → menu. Automatyczna → ten sam przebieg → ukrycie, chyba że menu było otwarte.
@@ -33,7 +33,7 @@ Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jaw
 - Podpiąć Full Cleaning tylko do `OUTBOUND_CHECKPOINT`. Brama pozostaje przy rozpoczęciu
   wyjazdu i dojeździe powrotnym. Nie zmieniać kalibracji bez brakującego dowodu.
 
-## 4. Pełny prywatny deployment — wykonany na radiu
+## 4. Pełny prywatny deployment - wykonany na radiu
 
 - Weryfikacja formatu poza radiem; numer potwierdzony porównaniem na radiu, nie historycznym opisem.
 - Sprawdzenie pakietu i zgodności certyfikatu, prywatny backup APK/danych z sumami, `install -r`.
@@ -53,7 +53,7 @@ Commity logiczne: wykonawca/UI; narzędzia instalacji i konfiguracji; dokumentac
 Każdy wynik zapisujemy w [VERIFICATION.md](VERIFICATION.md), zmiany w [CHANGELOG.md](../CHANGELOG.md),
 punkt kontynuacji w [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md). Szczegóły prywatne pozostają poza Git.
 
-## 6. Odbiór na radiu — częściowo wykonany
+## 6. Odbiór na radiu - częściowo wykonany
 
 Instalacja pełnego pakietu, ręczna brama (SUCCESS), ręczny Full Cleaning (ACCEPTED), powrót
 do menu i GPS w tle są potwierdzone. Szczegóły w [VERIFICATION.md](VERIFICATION.md).

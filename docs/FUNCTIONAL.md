@@ -1,4 +1,4 @@
-# Kontrakt funkcjonalny — Dudu Home
+# Kontrakt funkcjonalny - Dudu Home
 
 ## Cel
 
@@ -60,7 +60,7 @@ Powrót nie uruchamia odkurzacza. Sam zapłon, restart i odzyskanie Internetu ni
 Detektor toleruje sąsiednie miejsca parkingowe w obszarze 45 m od punktu odniesienia. Wymaga
 świeżych i dokładnych pomiarów, potwierdzonego postoju oraz utrzymującego się ruchu w kierunku
 bramy. Nie utożsamia pojedynczego skoku GPS z wyjazdem. Nie potrafi jednak zagwarantować
-rozpoznania zamiaru kierowcy w każdym nieznanym manewrze — to ograniczenie GPS i małej kalibracji.
+rozpoznania zamiaru kierowcy w każdym nieznanym manewrze - to ograniczenie GPS i małej kalibracji.
 
 ## Dokładnie co oznacza „raz dziennie”
 

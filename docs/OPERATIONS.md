@@ -14,7 +14,7 @@ adres ADB lub pakiet poświadczeń nadal są poprawne. Nie wyświetlaj sekretów
 
 Aktualizacja radia wymaga: samochód bezpiecznie zaparkowany, żadnej trwającej rozmowy ani akcji,
 autoryzowane ADB oraz przygotowane prywatne pliki. Nie odinstalowuj aplikacji i nie czyść danych.
-Testy fizycznych akcji wykonujemy dopiero w aplikacji zainstalowanej na radiu — nie z komputera.
+Testy fizycznych akcji wykonujemy dopiero w aplikacji zainstalowanej na radiu - nie z komputera.
 
 ## Prywatny katalog
 
@@ -111,7 +111,7 @@ Również zatrzymuje aplikację i czeka na ręczne otwarcie/import; wykonuj ją 
 Świeża instalacja dla innego użytkownika: `scripts/install-on-device.sh DEVICE_SERIAL`, potem
 formularz numeru na postoju. Helper odmawia aktualizacji już istniejącej aplikacji. Dla tego
 radia używamy aktualizacji z kopią, nie ścieżki świeżej instalacji. Nie uruchamiaj baseline'u
-automatycznie po instalacji — stary baseline po starcie z zapisanym numerem dzwoni.
+automatycznie po instalacji - stary baseline po starcie z zapisanym numerem dzwoni.
 
 Helper świeżej instalacji wymaga dokładnie jednego jawnego DEVICE_SERIAL. Przed buildem
 odczytuje listę pakietów, również tych z zachowanymi danymi (`pm list packages -u`). Błąd ADB,
@@ -144,7 +144,7 @@ Podczas jazdy kierowca nie obsługuje UI ani terminala. Nie potrzeba kolejnych o
    monitoringu bez akcji/odtworzenia checkpointu. Ponowne uruchomienie nie resetuje dziennej rezerwacji.
 
 Jeżeli robot nadal sprząta przy automatycznej próbie, aplikacja zgodnie z decyzją użytkownika
-nie sprawdza stanu — wysyła rutynę. Zaplanuj kolejność prób, świadomie uwzględniając tę możliwość.
+nie sprawdza stanu - wysyła rutynę. Zaplanuj kolejność prób, świadomie uwzględniając tę możliwość.
 Nie dodawaj automatycznego stop/status tylko dla wygody testów. Dni/rollback, błędny JSON, timeout,
 auth rejection i duplikaty są testowane syntetycznie; radio służy do realnej integracji.
 

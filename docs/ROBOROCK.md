@@ -19,7 +19,7 @@ Brak serwera pośredniego, Home Assistant, Google Home, Pythona na Androidzie, M
 Android firm trzecich. Opcjonalny Python na komputerze służy tylko do logowania i odczytania
 identyfikatora istniejącej rutyny. Nie jest wymagany podczas działania radia.
 
-## Minimalny pakiet — poufny, poza Git
+## Minimalny pakiet - poufny, poza Git
 
 Pakiet JSON ma `schema_version: 1`, `api_base_url`, dodatni całkowity `routine_id`,
 `routine_name: "Full Cleaning"` i obiekt `auth` z polami `u`, `s`, `h` z RRiot.
@@ -105,7 +105,7 @@ produkcyjnego przed właścicielem/rootem urządzenia. Android backup i transfer
 ## Start i tło
 
 BOOT_COMPLETED i MY_PACKAGE_REPLACED mogą uruchomić usługę, jeśli konfiguracja i uprawnienia
-na to pozwalają. DUDU wake task powinien wskazywać `.HomeWakeActivity` — bez ekranu i bez akcji.
+na to pozwalają. DUDU wake task powinien wskazywać `.HomeWakeActivity` - bez ekranu i bez akcji.
 `MainActivity` pozostaje wejściem menu. Watchdog GPS ma okres 15 s. Runtime evidence po
 przerwie jest czyszczone; trwale zużyte zdarzenia nie są odtwarzane jako nowe żądania.
 
@@ -116,7 +116,7 @@ fizycznego DUDU7**, nie tylko emulator. Nie ma Accessibility ani powiadomień al
 ## Źródła i aktualizacja kontraktu
 
 - [python-roborock 7.4.1](https://pypi.org/project/python-roborock/7.4.1/)
-- [Źródło biblioteki — web_api.py](https://github.com/Python-roborock/python-roborock/blob/main/roborock/web_api.py)
+- [Źródło biblioteki - web_api.py](https://github.com/Python-roborock/python-roborock/blob/main/roborock/web_api.py)
 - [Android: start Activity z tła](https://developer.android.com/guide/components/activities/background-starts)
 - [Android Keystore](https://developer.android.com/privacy-and-security/keystore)
 

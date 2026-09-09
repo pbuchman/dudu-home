@@ -1,41 +1,39 @@
 # Dudu Home
 
-> Local development: `0.4.0-local` moves to `com.pbuchman.duduhome`; see
-> [package boundaries and migration identity](docs/PACKAGES.md). It is not installed on
-> the radio or published yet. The version 0.3 evidence below concerns the old application ID.
-> [Migration](docs/MIGRATION.md) is emulator-tested. The [Yanosik hook](docs/YANOSIK.md)
-> has local movement/cold-boot support; the manufacturer wake adapter remains blocked on
-> radio observations. Do not claim readiness for the full ignition/wake behavior yet.
-
-**Your gate. Your cleaning routines. One touch — or the right moment on your journey.**
+**Your gate. Your cleaning routines. One touch - or the right moment on your journey.**
 
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
+It also starts Yanosik in the background after sustained driving, keeping the radio screen visible.
 
-> **Version status:** `0.3.0-local` adds manual-only Full Mop, illustrated tiles
-> and five-second success screens. Installed on DUDU7 with private configuration;
-> one manual Full Mop request was accepted and the app returned to its menu.
-> The preceding version's gate/Cleaning manual actions and background GPS passed on DUDU7;
-> **complete automatic journey/ignition acceptance is still pending**.
+> **Current source: `0.4.0-local`.** Installed on DUDU7. Migration to
+> `com.pbuchman.duduhome`, configuration, menu and monitoring were verified.
+> Yanosik passed a real full-restart, movement and background-warning-overlay check.
+> Gate and Roborock manual actions were verified on the preceding package version.
+> **Automatic home journeys and manufacturer ignition/wake acceptance remain pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
 > fully verified production release. No public APK is provided.
 
-![Dudu Home menu — actual DUDU7 radio screenshot](docs/images/menu-dudu7.png)
+![Dudu Home menu - actual DUDU7 screenshot with Polish labels, 2026-09-09](docs/images/menu-dudu7.png)
 
 ## What it does
 
 - **Otwórz bramę:** use the paired phone's SIM, observe outgoing, wait five seconds, hang up
   and confirm idle. Never use the head unit's SIM or interrupt a pre-existing conversation.
-- **Full Cleaning:** send the saved Roborock routine. This is not a generic “clean” command;
+- **Pełne sprzątanie (Full Cleaning):** send the saved Roborock routine. This is not a generic “clean” command;
   the routine's rooms and settings remain managed in the Roborock phone app.
-- **Full Mop:** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
+- **Mopowanie (Full Mop):** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
   Missing Mop configuration never starts Full Cleaning instead.
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or offline queue.** Manual cleaning remains independent.
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
+- **Yanosik in the background:** one launch attempt per full system boot, after at least
+  ten seconds of qualified GPS movement. The existing warning overlay remains above the
+  radio screen. A stop or process restart does not rearm it. Manufacturer sleep/wake support
+  is not implemented yet; see [verification and limitations](docs/YANOSIK.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -80,7 +78,7 @@ never contact a real robot. They cannot certify Bluetooth IPC, GNSS reception or
 
 Local artifact: `app/build/outputs/apk/debug/app-debug.apk`. Source only is published under MIT:
 **no public APK, credentials or signing key**. The local package is `com.pbuchman.duduhome`;
-the installed predecessor is `pl.piotrbuchman.dudugate`. Use the explicit migration runbook
+the legacy package is `pl.piotrbuchman.dudugate`. Use the explicit migration runbook
 for that transition, not an ordinary update. Keep the matching signing certificate.
 
 ## Install safely

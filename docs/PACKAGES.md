@@ -2,7 +2,8 @@
 
 Local version 0.4.0 uses `com.pbuchman.duduhome` for both namespace and application ID.
 This intentionally requires migration from the published `pl.piotrbuchman.dudugate`.
-The installed radio and public main remain unchanged until separately authorized.
+Radio migration was authorized and completed on 2026-09-09. The owner subsequently authorized
+publication of the current development source; complete ignition/wake acceptance remains pending.
 
 | Package suffix | Responsibility |
 |---|---|

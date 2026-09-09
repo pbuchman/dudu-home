@@ -1,4 +1,4 @@
-# Handoff — local Full Cleaning implementation
+# Handoff - local Full Cleaning implementation
 
 Read this file first when resuming without the conversation. The accepted behavior is in
 [FUNCTIONAL.md](FUNCTIONAL.md), implementation details in [ROBOROCK.md](ROBOROCK.md),
@@ -10,7 +10,13 @@ LOCAL 0.4 update: functional packages and new installation ID `com.pbuchman.dudu
 see PACKAGES.md and MIGRATION.md. Migration passed on an emulator with synthetic data.
 Movement-based Yanosik launch and cold-boot deduplication are implemented locally. The verified
 manufacturer wake adapter is NOT implemented; see YANOSIK.md before claiming readiness.
-No 0.4 installation on the radio and no publication. The following describes version 0.3 history.
+Update 2026-09-09: 0.4 is now installed on the radio after verified migration; old package
+is disabled, not removed. Menu labels are “Pełne sprzątanie” and “Mopowanie”. Yanosik package
+identity is corrected and Android behind-task launch passed a real full-reboot/movement check:
+monitor autostart, Yanosik background service and warning overlay with the radio launcher
+remaining visible. Owner confirmed actual movement as a passenger. See YANOSIK.md and
+VERIFICATION.md for scope and the still-unimplemented manufacturer wake adapter. The owner
+authorized publication after a privacy/documentation audit on 2026-09-09. The following describes version 0.3 history.
 
 Newest local work is `0.3.0-local` / versionCode 4: manual-only Full Mop, optional private
 `full_mop_routine_id`, three illustrated tiles and 5000 ms successes. The real Mop identifier
@@ -35,7 +41,7 @@ queued Yanosik hook; do not accidentally implement Mop as an automatic action.
   Source publication is authorized after privacy/documentation review; a final release tag
   or full hardware-verification claim still requires the remaining evidence.
 
-## Private state — do not copy into this repo
+## Private state - do not copy into this repo
 
 The owner's sibling `dudu-home-private` directory contains `config.json`,
 `roborock/routine-credentials.json`, the original archives and private replay tooling.

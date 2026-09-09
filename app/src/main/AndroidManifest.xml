@@ -12,7 +12,7 @@
 
     <queries>
         <package android:name="com.syu.ms" />
-        <package android:name="pl.neptis.yanosik" />
+        <package android:name="pl.neptis.yanosik.mobi.android" />
     </queries>
 
     <application

@@ -1,4 +1,4 @@
-# Dudu Home — wygląd i materiały
+# Dudu Home - wygląd i materiały
 
 ## Kierunek
 
@@ -18,7 +18,7 @@ usunięto podpis nagłówka i opisy powielające nazwy akcji. Status automatyzac
 bez udawania potwierdzonej pozycji czy działania robota. Poniżej 600 dp szerokości kafelki
 układają się pionowo w przewijanej zawartości. Ekrany postępu/sukcesu używają ilustracji akcji.
 
-Przegląd projektu: odrzucono miniaturową kroplę nakładaną na ten sam bitmapowy robot — była
+Przegląd projektu: odrzucono miniaturową kroplę nakładaną na ten sam bitmapowy robot - była
 nieczytelna po skalowaniu. Finalny Mop ma osobną wysokiej rozdzielczości ilustrację.
 Nie dodano ozdobnych liczników, wykresów, dekoracyjnych etykiet ani kolejnych ekranów.
 
@@ -71,7 +71,7 @@ industrial-design render, soft studio light, crisp silhouette readable when smal
 transparent background, soft contact shadow only, no floor or scene, no words, no brand or
 watermark. Highest available quality.
 
-### Full Mop — edycja ilustracji Full Cleaning
+### Full Mop - edycja ilustracji Full Cleaning
 
 Use case: precise-object-edit. Edit target: the attached robot vacuum production illustration.
 Create its matching Full Mop routine illustration: preserve the same white robot shape,

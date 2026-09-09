@@ -1,14 +1,17 @@
 # Change history
 
-## 0.4.0-local — not installed or published
+## 0.4.0-local - installed development source, not a final release
 
 - Functional Java packages and new application ID `com.pbuchman.duduhome`.
 - Explicit guarded legacy migration with emulator-backed state/import/resume tests.
 - Independent sustained-motion hook, Yanosik launcher and persistent cold-boot reservation.
 - No new UI setting; existing actions/setup/result screens take priority.
 - Manufacturer wake adapter still requires actual radio evidence; full ignition support is pending.
+- Radio migration, configuration preservation and full-boot monitor recovery verified.
+- Correct Yanosik package and behind-task launch verified with real motion and warning overlay.
+- Polish menu labels, refreshed radio screenshot and source publication/privacy audit.
 
-## 0.3.0-local — manual Mop and visual refresh
+## 0.3.0-local - manual Mop and visual refresh
 
 - Installed as a backed-up, same-signature update on DUDU7; full private configuration imported.
 - One owner-authorized manual Full Mop request returned ACCEPTED and the menu reappeared.
@@ -23,7 +26,7 @@
 - Regression checks for Mop selection/absence, encrypted persistence/import, automatic rejection,
   unchanged daily quota, and result duration. Yanosik movement hook recorded in the roadmap only.
 
-## 0.2.0-local — published development source, not a final release
+## 0.2.0-local - published development source, not a final release
 
 ### Source publication review
 
@@ -73,7 +76,7 @@
 - Radio installation/manual acceptance now recorded above; complete acceptance remains pending;
   no public automation APK/tag.
 
-## 0.1.0-baseline — published source baseline
+## 0.1.0-baseline - published source baseline
 
 - Fresh clean repository `pbuchman/dudu-home`, MIT, visible Dudu Home branding.
 - Preserved single-phone DUDU/SYU calling protocol and package/signing compatibility.

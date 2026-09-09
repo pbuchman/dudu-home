@@ -1,12 +1,13 @@
 package com.pbuchman.duduhome.automation;
 
 import android.content.Context;
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.util.Log;
 
-/** Package observed in previous physical DUDU7 location-service captures; resolve launcher at runtime. */
+/** Package verified on the physical DUDU7; resolve its launcher at runtime. */
 public final class YanosikLauncher {
-    public static final String PACKAGE = "pl.neptis.yanosik";
+    public static final String PACKAGE = "pl.neptis.yanosik.mobi.android";
     public interface Launch {
         Intent resolve();
         void open(Intent intent);
@@ -16,7 +17,13 @@ public final class YanosikLauncher {
     public YanosikLauncher(Context context) {
         this(new JourneySession(context), new Launch() {
             public Intent resolve() { return context.getPackageManager().getLaunchIntentForPackage(PACKAGE); }
-            public void open(Intent intent) { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
+            public void open(Intent intent) {
+                // Request Android's behind-task launch; no delayed HOME press or UI automation.
+                // Hardware acceptance must check the target's own subsequent activities too.
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_NEW_DOCUMENT),
+                        ActivityOptions.makeTaskLaunchBehind().toBundle());
+            }
         });
     }
     public YanosikLauncher(JourneySession session, Launch launch) { this.session = session; this.launch = launch; }
