@@ -1,5 +1,16 @@
 # Change history
 
+## 0.5.0-local - observational automation progress, radio checks pending
+
+- Native top-centred non-interactive overlay and shared inline menu banner.
+- Immutable detection snapshots, correlated action outcomes, two-second cancellation reasons.
+- Detector-derived fill and honest Yanosik launch-request result; no action from observation.
+- Expire undelivered five-second Activity requests without retry or late execution.
+- Reuse bounded diagnostics; preserve executor locks, daily quota and wake adapter.
+- Baseline-equivalent events/times/flags on all eight private replays, plus synthetic checks.
+- Synthetic screenshots and emulator coverage; no radio installation or wake acceptance
+  claimed for this version. Package/signing unchanged; source only, no public APK.
+
 ## 0.4.1-local - startup recovery work, physical wake acceptance pending
 
 - Identified the vendor force-stop that leaves monitoring stopped after head-unit sleep.

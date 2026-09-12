@@ -5,13 +5,17 @@
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
 Obecny zakres obejmuje trzy duże kafelki. Full Mop działa wyłącznie ręcznie; Spotify i inne
-urządzenia pozostają poza nim. Następny hook Yanosika jest opisany osobno w [ROADMAP.md](ROADMAP.md).
+urządzenia pozostają poza nim. Obecny hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
+a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Menu i akcje
 
 | Sytuacja | Zachowanie |
 |---|---|
-| Otwarcie aplikacji | Menu „Otwórz bramę”, „Full Cleaning”, „Full Mop”; brak numeru przypomina formularzem, który można opuścić do menu |
+| Otwarcie aplikacji | Menu „Otwórz bramę”, „Pełne sprzątanie”, „Mopowanie”; brak numeru przypomina formularzem, który można opuścić do menu |
+| Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
+| Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
+| Yanosik | Pasek rozpoznawania, potem wynik wysłania żądania przez 2 s; bez obietnicy działania usługi |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |
 | Automatyczne zdarzenie przy schowanej aplikacji | Ten sam ekran postępu → wynik → schowanie aplikacji; monitor pozostaje aktywny |
 | Automatyczne zdarzenie przy otwartym menu | Ten sam ekran postępu → wynik → poprzednio otwarte menu |

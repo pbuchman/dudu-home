@@ -19,4 +19,5 @@ jobs:
       - run: python3 scripts/test-private-tools.py
       - run: python3 scripts/test-fresh-installer.py
       - run: bash scripts/check-detector.sh
+      - run: python3 scripts/check-progress.py
       - run: ./gradlew assembleDebug assembleDebugAndroidTest lintDebug

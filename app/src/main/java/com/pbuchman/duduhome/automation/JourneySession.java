@@ -28,6 +28,12 @@ public final class JourneySession {
                     && state.edit().putBoolean("consumed", true).commit();
         }
     }
+    /** Read-only presentation eligibility; never establishes a boot or reserves an attempt. */
+    public boolean available() {
+        synchronized (JourneySession.class) {
+            return boot >= 0 && state.getInt("boot", -1) == boot && !state.getBoolean("consumed", false);
+        }
+    }
     /** First observation establishes a baseline, never rearms an already consumed boot. */
     public boolean observeAwakeCycle(long cycle) {
         synchronized (JourneySession.class) {

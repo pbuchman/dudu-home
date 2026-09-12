@@ -3,6 +3,8 @@ package com.pbuchman.duduhome.ui;
 import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.automation.HomeAction;
 import com.pbuchman.duduhome.automation.HomeActions;
+import com.pbuchman.duduhome.automation.ProgressBus;
+import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.gate.GateCallCoordinator;
 import com.pbuchman.duduhome.gate.GateCallState;
@@ -54,6 +56,7 @@ public final class MainActivity extends Activity {
     private boolean configurationSaved = true;
     private HomeAction currentAction = HomeAction.GATE;
     private boolean gateLease;
+    private long actionAttempt;
     private View roborockSetup;
     private EditText roborockInput;
     private TextView roborockMessage;
@@ -90,19 +93,17 @@ public final class MainActivity extends Activity {
         Button closeButton = findViewById(R.id.close_button);
         Button saveNumberButton = findViewById(R.id.save_number_button);
 
-        retryButton.setOnClickListener(view -> { returnToMenu = true; startSelected(); });
+        retryButton.setOnClickListener(view -> manualAction(currentAction));
         closeButton.setOnClickListener(view -> finishAction());
         findViewById(R.id.open_gate_button).setOnClickListener(view -> {
             if (actionRunning) return;
-            returnToMenu = true;
-            currentAction = HomeAction.GATE;
-            startAttempt();
+            manualAction(HomeAction.GATE);
         });
         findViewById(R.id.full_cleaning_button).setOnClickListener(view -> {
-            returnToMenu = true; currentAction = HomeAction.CLEANING; startCleaning();
+            manualAction(HomeAction.CLEANING);
         });
         findViewById(R.id.full_mop_button).setOnClickListener(view -> {
-            returnToMenu = true; currentAction = HomeAction.MOP; startCleaning();
+            manualAction(HomeAction.MOP);
         });
         findViewById(R.id.settings_button).setOnClickListener(view -> {
             if (busyNotice()) return;
@@ -135,13 +136,15 @@ public final class MainActivity extends Activity {
         configurationSaved = PrivateImport.apply(this);
         PrivateImport.migrateLegacyPhone(this);
         gateNumber = configurationSaved ? gateNumberStore.read() : null;
-        HomeAction requested = HomeActions.consumeAction(getIntent());
+        HomeActions.Request requested = HomeActions.consumeRequest(this, getIntent());
         if (requested != null && configurationSaved) {
-            currentAction = requested; returnToMenu = false; startSelected();
+            currentAction = requested.action(); actionAttempt = requested.attempt(); returnToMenu = false; startSelected();
         } else if (gateNumber == null) {
             showNumberSetup();
         } else showMenu();
         if (!configurationSaved) automationStatus.setText(R.string.import_failed);
+        if (!configurationSaved && requested != null)
+            ProgressBus.update(this, requested.attempt(), Phase.SKIPPED, Reason.BUSY_OR_MAINTENANCE);
         HomeMonitorService.ensureStarted(this);
     }
 
@@ -149,8 +152,8 @@ public final class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        HomeAction requested = HomeActions.consumeAction(intent);
-        if (requested != null) automaticAction(requested);
+        HomeActions.Request requested = HomeActions.consumeRequest(this, intent);
+        if (requested != null) automaticAction(requested.action(), requested.attempt());
         else if (Intent.ACTION_MAIN.equals(intent.getAction())) {
             returnToMenu = true;
             if (!HomeActions.busy()) showMenu();
@@ -161,12 +164,14 @@ public final class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         HomeActions.visible(this);
+        ProgressBus.presentationChanged();
         HomeMonitorService.ensureStarted(this);
     }
 
     @Override protected void onPause() {
         resumed = false;
         HomeActions.hidden(this);
+        ProgressBus.presentationChanged();
         super.onPause();
     }
 
@@ -178,23 +183,44 @@ public final class MainActivity extends Activity {
                 && (!resumed || getWindow().getDecorView().hasWindowFocus()));
     }
     public void automaticAction(HomeAction action) {
-        if (action == HomeAction.MOP) return; // Manual-only, including future internal callers.
+        if (action == HomeAction.MOP) return;
+        automaticAction(action, ProgressBus.request(this, ProgressBus.kind(action)));
+    }
+    public void automaticAction(HomeAction action, long attempt) {
+        if (action == HomeAction.MOP) { ProgressBus.update(this, attempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) {
+            ProgressBus.update(this, attempt, Phase.SKIPPED, Reason.BUSY_OR_MAINTENANCE);
             com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "SKIP_AUTO_UI_NOT_READY"); return;
         }
         if (actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
                 || roborockSetup.getVisibility() == View.VISIBLE
                 || (callStatusContent.getVisibility() == View.VISIBLE && errorActions.getVisibility() == View.VISIBLE)) {
+            ProgressBus.update(this, attempt, Phase.SKIPPED, Reason.UI_BUSY);
             com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "SKIP_AUTO_UI_BUSY"); return;
         }
         returnToMenu = resumed && menuContent.getVisibility() == View.VISIBLE;
         currentAction = action;
+        actionAttempt = attempt;
         startSelected();
+    }
+
+    private void manualAction(HomeAction action) {
+        returnToMenu = true; currentAction = action;
+        actionAttempt = ProgressBus.request(this, ProgressBus.kind(action)); startSelected();
+    }
+    public android.view.ViewGroup progressHost() {
+        return resumed && menuContent.getVisibility() == View.VISIBLE && getWindow().getDecorView().hasWindowFocus()
+                ? findViewById(R.id.automation_progress_host) : null;
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (menuContent != null) ProgressBus.presentationChanged();
     }
 
     private void startSelected() { if (currentAction != HomeAction.GATE) startCleaning(); else startAttempt(); }
 
     private void showMenu() {
+        actionAttempt = 0;
         hideKeyboard();
         roborockSetup.setVisibility(View.GONE);
         roborockInput.setText("");
@@ -210,6 +236,7 @@ public final class MainActivity extends Activity {
     }
 
     private void finishAction() {
+        if (coordinator != null) ProgressBus.update(this, actionAttempt, Phase.UNKNOWN, Reason.NONE);
         ++uiGeneration;
         statusIcon.removeCallbacks(finishAfterSuccess);
         statusIcon.removeCallbacks(finishAfterInformation);
@@ -233,24 +260,28 @@ public final class MainActivity extends Activity {
         statusIcon.removeCallbacks(finishAfterSuccess);
         statusIcon.removeCallbacks(finishAfterInformation);
         if (coordinator != null) {
+            ProgressBus.update(this, actionAttempt, Phase.UNKNOWN, Reason.NONE);
             coordinator.close();
         }
         super.onDestroy();
     }
 
     private void startAttempt() {
-        if (busyNotice()) return;
+        if (actionAttempt == 0) actionAttempt = ProgressBus.request(this, ProgressBus.kind(HomeAction.GATE));
+        if (busyNotice()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         currentAction = HomeAction.GATE;
         actionRunning = true;
         menuContent.setVisibility(View.GONE);
         gateNumber = gateNumberStore.read();
         if (gateNumber == null) {
+            ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_NUMBER);
             showNumberSetup();
             return;
         }
 
         long cooldownRemainingMillis = gateNumberStore.cooldownRemainingMillis();
         if (cooldownRemainingMillis > 0L) {
+            ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.COOLDOWN);
             showCooldownAndFinish(cooldownRemainingMillis);
             return;
         }
@@ -262,7 +293,9 @@ public final class MainActivity extends Activity {
         }
 
         int generation = ++uiGeneration;
-        if (!HomeActions.begin()) return;
+        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        final long attempt = actionAttempt;
+        ProgressBus.update(this, attempt, Phase.ACCEPTED, Reason.NONE);
         gateLease = true;
         roborockSetup.setVisibility(View.GONE);
         numberSetupContent.setVisibility(View.GONE);
@@ -280,6 +313,8 @@ public final class MainActivity extends Activity {
                             GateCallState state,
                             String title,
                             String description) {
+                        if (state != GateCallState.ERROR && state != GateCallState.SUCCESS)
+                            ProgressBus.update(MainActivity.this, attempt, Phase.STARTED, Reason.NONE);
                         com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_STATE_" + state.name());
                         if (generation == uiGeneration && !isFinishing()) {
                             renderState(state, title, description);
@@ -288,6 +323,7 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onSuccess() {
+                        ProgressBus.update(MainActivity.this, attempt, Phase.SUCCEEDED, Reason.NONE);
                         if (generation == uiGeneration && !isFinishing()) {
                             showSuccessAnimation();
                         }
@@ -295,6 +331,7 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onError(GateError error, String detail) {
+                        ProgressBus.update(MainActivity.this, attempt, Phase.ERROR, Reason.NONE);
                         com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_ERROR_" + error.name());
                         if (generation != uiGeneration || isFinishing()) {
                             return;
@@ -511,17 +548,23 @@ public final class MainActivity extends Activity {
     }
 
     private void startCleaning() {
-        if (busyNotice()) return;
+        if (actionAttempt == 0) actionAttempt = ProgressBus.request(this, ProgressBus.kind(currentAction));
+        if (busyNotice()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         RoborockStore store = new RoborockStore(this);
         RoborockCredentials credentials = store.read();
-        if (credentials == null) { showRoborockSetup(store.rejected()); return; }
+        if (credentials == null) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_CONFIG); showRoborockSetup(store.rejected()); return; }
         if (currentAction == HomeAction.MOP && credentials.fullMopRoutine == 0) {
+            ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_CONFIG);
             showRoborockSetup(false);
             roborockMessage.setText(R.string.mop_setup_missing);
             return;
         }
         RoborockCredentials selected = credentials.forAction(currentAction);
-        if (!HomeActions.begin()) return;
+        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        final long attempt = actionAttempt;
+        final HomeAction executing = currentAction;
+        final Context application = getApplicationContext();
+        ProgressBus.update(this, attempt, Phase.ACCEPTED, Reason.NONE);
         actionRunning = true;
         int generation = ++uiGeneration;
         statusIcon.removeCallbacks(finishAfterSuccess); statusIcon.removeCallbacks(finishAfterInformation);
@@ -534,15 +577,18 @@ public final class MainActivity extends Activity {
         java.util.concurrent.ScheduledExecutorService timer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         java.util.function.Consumer<RoborockClient.Result> complete = result -> {
             if (!delivered.compareAndSet(false, true)) return;
+            ProgressBus.update(application, attempt, result == RoborockClient.Result.ACCEPTED ? Phase.SUCCEEDED
+                    : result == RoborockClient.Result.NETWORK_UNKNOWN ? Phase.UNKNOWN : Phase.ERROR, Reason.NONE);
+            com.pbuchman.duduhome.diagnostics.Diagnostics.record(application, executing.name() + "_RESULT_" + result.name());
             runOnUiThread(() -> {
                 if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
                 renderCleaningResult(result);
-                com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, currentAction.name() + "_RESULT_" + result.name());
             });
         };
         timer.schedule(() -> { complete.accept(RoborockClient.Result.NETWORK_UNKNOWN); client.cancelTransport(); }, 20, java.util.concurrent.TimeUnit.SECONDS);
         new Thread(() -> {
             try {
+                ProgressBus.update(application, attempt, Phase.STARTED, Reason.NONE);
                 RoborockClient.Result result = client.execute(selected);
                 if (result == RoborockClient.Result.AUTH_REJECTED) store.reject(credentials);
                 complete.accept(result);

@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="progress_departure">Wyjazd z domu</string>
+    <string name="progress_return">Powrót do domu</string>
+    <string name="progress_yanosik">Yanosik</string>
+    <string name="progress_departure_detail">Potwierdzam ruch w stronę bramy</string>
+    <string name="progress_return_detail">Potwierdzam dojazd do bramy</string>
+    <string name="progress_cleaning_detail">Potwierdzam wyjazd z osiedla</string>
+    <string name="progress_motion_detail">Potwierdzam jazdę</string>
+    <string name="progress_stopped">Ruch ustał lub jest zbyt wolny. Potwierdzanie przerwane.</string>
+    <string name="progress_bad_gps">Brak wiarygodnego GPS. Potwierdzanie przerwane.</string>
+    <string name="progress_stale">Brak aktualnych danych o postępie.</string>
+    <string name="progress_wake">Nowy cykl jazdy. Potwierdzanie od początku.</string>
+    <string name="progress_configuration">Zmieniono konfigurację. Potwierdzanie przerwane.</string>
+    <string name="progress_service_stopped">Monitorowanie zostało zatrzymane.</string>
+    <string name="progress_conditions">Warunki się zmieniły. Nie wykonano akcji.</string>
+    <string name="progress_cooldown">Nie wykonano połączenia. Trwa blokada ponownej próby.</string>
+    <string name="progress_no_number">Nie wykonano połączenia. Brak numeru bramy.</string>
+    <string name="progress_no_config">Nie wykonano akcji. Brak konfiguracji.</string>
+    <string name="progress_cleaning_blocked">Nie można zarezerwować automatycznego sprzątania.</string>
+    <string name="progress_ui_unavailable">Nie wykonano akcji. Ekran był niedostępny.</string>
+    <string name="progress_target_unavailable">Yanosik jest niedostępny. Brak ponowienia.</string>
+    <string name="progress_request_failed">Nie udało się wysłać żądania uruchomienia.</string>
+    <string name="progress_launching">Uruchamiam Yanosika</string>
+    <string name="progress_launch_requested">Wysłano żądanie uruchomienia Yanosika.</string>
+    <string name="progress_confirmed">Zdarzenie potwierdzone</string>
     <string name="full_cleaning">Pełne sprzątanie</string>
     <string name="full_mop">Mopowanie</string>
     <string name="cleaning_name">Pełne sprzątanie</string>

@@ -24,6 +24,12 @@ Nie dodano ozdobnych liczników, wykresów, dekoracyjnych etykiet ani kolejnych 
 
 ## Dostępność i zachowanie
 
+Od wersji 0.5 istniejący styl uzupełnia pasek rozpoznawania GPS, bez przebudowy menu.
+Ta sama ikona, nagłówek 22 sp, opis 18 sp i pasek występują nad inną aplikacją lub w menu.
+Bez nowych przycisków i procentów. Kontrakt: [PROGRESS_UI.md](PROGRESS_UI.md).
+Zrzuty `progress-*.png` pochodzą z emulatora, na syntetycznych danych. Widok wykonywania
+akcji jest podglądem renderera, nie dowodem telefonu do bramy.
+
 - Cały kafelek jest przyciskiem z jedną etykietą dostępności; ilustracje nie są osobnymi celami.
 - Widoczny fokus klawiatury i reakcja ripple; tekst o wysokim kontraście na pastelowych kafelkach.
 - Treść jest tekstem Androida, nie wypalonym napisem w grafice. Powiększenie tekstu pozostaje możliwe.

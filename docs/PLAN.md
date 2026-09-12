@@ -1,5 +1,14 @@
 # Dudu Home - plan wdrożenia i odbioru
 
+## Aktualizacja 0.5: pasek automatyzacji
+
+[PROGRESS_UI.md](PROGRESS_UI.md) opisuje kontrakt i implementację w osobnej gałęzi
+`codex/automation-progress` od `origin/main` (`911d18b`). Zachowano adapter wybudzenia,
+diagnostykę i powrót od wschodu. Dodano obserwację, jeden pasek, wyniki i testy. Publikacja
+obejmuje kod i bezpieczne zrzuty, nie APK. Test na postoju i prezentacja automatyczna na radiu
+pozostają do wykonania po integracji zadania zapłonu w oddzielnym zadaniu. Poniżej historia
+poprzednich etapów i nadal obowiązujące zabezpieczenia.
+
 Decyzje funkcjonalne są zatwierdzone. Nie wymagają ponownego pytania o menu, ręczne akcje,
 jedną automatyczną próbę dziennie, brak sprawdzania stanu robota lub brak automatycznego stop.
 Brak urządzenia, niezgodny numer/podpis albo zagrożenie dla danych należy jawnie zgłosić.

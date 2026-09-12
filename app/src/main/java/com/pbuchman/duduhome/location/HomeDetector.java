@@ -1,6 +1,9 @@
 package com.pbuchman.duduhome.location;
 
 import com.pbuchman.duduhome.automation.HomeEvent;
+import com.pbuchman.duduhome.automation.DetectionProgress;
+import static com.pbuchman.duduhome.automation.DetectionProgress.Kind.*;
+import static com.pbuchman.duduhome.automation.DetectionProgress.Reason.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +22,8 @@ public final class HomeDetector {
     private double anchorGateDistance;
     private long lastTime = -1, stationarySince = -1, movingSince = -1, junctionTime = -1;
     private long awaySince = -1;
+    private final DetectionProgress.Tracker progress = new DetectionProgress.Tracker();
+    public List<DetectionProgress> progress() { return progress.snapshot(); }
 
     public HomeDetector(Geometry geometry, int persistedFlags) {
         this.geometry = geometry;
@@ -41,6 +46,7 @@ public final class HomeDetector {
                 || fix.speed < 0 || fix.point == null || !Double.isFinite(fix.point.x)
                 || !Double.isFinite(fix.point.y) || fix.elapsedMs < 0) {
             clearEvidence();
+            progress.clear(GPS_UNRELIABLE);
             return events;
         }
         if (lastTime >= 0 && fix.elapsedMs <= lastTime) return events;
@@ -120,11 +126,24 @@ public final class HomeDetector {
             exitConsumed = true;
             events.add(HomeEvent.JOURNEY_EXIT);
         }
+        // Observe the decisions above without introducing a new event condition.
+        DetectionProgress.Reason lost = fix.speed < 0.7 ? STOPPED : CONDITIONS_CHANGED;
+        progress.update(DEPARTURE, movingTowardGate && !departureConsumed,
+                events.contains(HomeEvent.DEPARTURE_STARTED),
+                movingSince < 0 ? 0 : (fix.elapsedMs - movingSince) / 3000.0,
+                fix.elapsedMs + 3000, lost);
+        progress.update(RETURN, !returnConsumed && visitedJunction && previous != null
+                        && gateDistance < previous.distance(geometry.gate) && fix.speed >= 0.7,
+                events.contains(HomeEvent.RETURN_APPROACH), 0.5, fix.elapsedMs + 3000, lost);
+        progress.update(CLEANING, departureConsumed && !checkpointConsumed && previous != null
+                        && gateDistance > previous.distance(geometry.gate) && fix.speed >= 0.7,
+                events.contains(HomeEvent.OUTBOUND_CHECKPOINT), 0.5, fix.elapsedMs + 3000, lost);
         previous = p;
         return events;
     }
 
     public void clearEvidence() {
+        progress.clear(RESET);
         homeArmed = false;
         anchor = previous = null;
         stationarySince = movingSince = junctionTime = -1;

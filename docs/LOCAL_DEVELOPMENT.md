@@ -6,6 +6,13 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
+**Current source 0.5.0-local / versionCode 7:** observational GPS progress and action outcomes,
+developed on `codex/automation-progress` from verified `origin/main` (`911d18b`). See
+[PROGRESS_UI.md](PROGRESS_UI.md) and the latest verification entry. Package/signing unchanged.
+Last verified installed radio version remains 0.4.1/code 6. Do not describe 0.5 as installed
+or wake-tested. Finish parked overlay acceptance and real presentation after independent
+ignition-task work. The notes below describe earlier versions.
+
 **Current 0.4.1 local work (2026-09-12):** proven SYU force-stop at sleep, missing restart
 task, eastern return omission fixed, private bounded diagnostics and vendor cycle adapter
 implemented. Local checks pass. VersionCode 6 is installed with a verified private import;

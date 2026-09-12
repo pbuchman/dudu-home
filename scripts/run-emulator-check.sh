@@ -45,6 +45,7 @@ cd "$PROJECT_DIR"
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear com.pbuchman.duduhome >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+"$DUDU_ADB" -s "$DUDU_SERIAL" shell appops set com.pbuchman.duduhome SYSTEM_ALERT_WINDOW allow
 DUDU_SAFETY="$($DUDU_ADB -s "$DUDU_SERIAL" shell am instrument -w \
     com.pbuchman.duduhome.test/com.pbuchman.duduhome.SafetyChecks)"
 echo "$DUDU_SAFETY"
@@ -52,6 +53,11 @@ if [[ "$DUDU_SAFETY" != *"PASS:"* || "$DUDU_SAFETY" == *"FAIL:"* ]]; then
     echo "Safety checks failed." >&2
     exit 1
 fi
+mkdir -p build/ui-checks
+for DUDU_SHOT in progress-menu progress-overlay progress-cancelled progress-action; do
+    "$DUDU_ADB" -s "$DUDU_SERIAL" pull \
+        "/sdcard/Android/data/com.pbuchman.duduhome/files/$DUDU_SHOT.png" "build/ui-checks/$DUDU_SHOT.png"
+done
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell am force-stop com.pbuchman.duduhome
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell am start -n com.pbuchman.duduhome/.ui.MainActivity >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell uiautomator dump /sdcard/dudu-menu.xml >/dev/null

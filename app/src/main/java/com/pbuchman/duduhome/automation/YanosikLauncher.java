@@ -31,12 +31,22 @@ public final class YanosikLauncher {
     public YanosikLauncher(JourneySession session, Launch launch) { this.session = session; this.launch = launch; }
     public void attempt() {
         if (!session.reserve()) return;
+        long attempt = diagnosticContext == null ? 0 : ProgressBus.request(diagnosticContext, DetectionProgress.Kind.YANOSIK);
+        if (diagnosticContext != null) ProgressBus.update(diagnosticContext, attempt, DetectionProgress.Phase.STARTED, DetectionProgress.Reason.NONE);
         try {
             Intent intent = launch.resolve();
-            if (intent == null) { record("YANOSIK_UNAVAILABLE"); return; }
+            if (intent == null) {
+                record("YANOSIK_UNAVAILABLE"); outcome(attempt, DetectionProgress.Phase.ERROR, DetectionProgress.Reason.TARGET_UNAVAILABLE); return;
+            }
             launch.open(intent);
             record("YANOSIK_LAUNCH_REQUESTED"); // not proof BAL allowed it
-        } catch (RuntimeException denied) { record("YANOSIK_LAUNCH_FAILED_NO_RETRY"); }
+            outcome(attempt, DetectionProgress.Phase.SUCCEEDED, DetectionProgress.Reason.NONE);
+        } catch (RuntimeException denied) {
+            record("YANOSIK_LAUNCH_FAILED_NO_RETRY"); outcome(attempt, DetectionProgress.Phase.ERROR, DetectionProgress.Reason.REQUEST_FAILED);
+        }
+    }
+    private void outcome(long attempt, DetectionProgress.Phase phase, DetectionProgress.Reason reason) {
+        if (diagnosticContext != null) ProgressBus.update(diagnosticContext, attempt, phase, reason);
     }
     private void record(String category) {
         if (diagnosticContext != null) com.pbuchman.duduhome.diagnostics.Diagnostics.record(diagnosticContext, category);

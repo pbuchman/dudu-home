@@ -32,7 +32,7 @@ if args.private_roborock:
     private += [str(v).encode().lower() for v in robot.get('auth', {}).values() if len(str(v)) >= 4]
     if robot.get('routine_id'): private.append(str(robot['routine_id']).encode())
     if robot.get('full_mop_routine_id'): private.append(str(robot['full_mop_routine_id']).encode())
-def inspect(name, data):
+def inspect(name, data, current_style=False):
     path = Path(name)
     if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf', '.enc'}
             or name.startswith(('private/', 'calibration/', 'output/')) or path.name in {'config.json', '.env', 'local.properties'}):
@@ -42,6 +42,9 @@ def inspect(name, data):
             errors.add((name, 'private value'))
     if path.suffix.lower() in {'.png', '.jar'}:
         return
+    # Historical typography is not a privacy leak and must not force a history rewrite.
+    if current_style and b'\xe2\x80\x94' in data:
+        errors.add((name, 'em dash'))
     if re.search(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{20,}', data):
         errors.add((name, 'credential pattern'))
     if re.search(rb'(?<![\w.])[+]?[1-9][0-9]{8,14}(?![\w.])', data):
@@ -58,7 +61,7 @@ for entry in entries:
     meta, name = entry.split(b'\t', 1)
     blob = meta.split()[1].decode()
     name = name.decode()
-    inspect(name, git('cat-file', 'blob', blob))
+    inspect(name, git('cat-file', 'blob', blob), current_style=True)
     seen.add((name, blob))
     count += 1
 if not count:
@@ -68,7 +71,7 @@ if args.working_tree:
         if raw:
             name = raw.decode()
             path = root / name
-            if path.is_file(): inspect(name, path.read_bytes())
+            if path.is_file(): inspect(name, path.read_bytes(), current_style=True)
 if args.all_history:
     for rev in git('rev-list', '--all').decode().splitlines():
         inspect('commit-message', git('show', '-s', '--format=%B', rev))

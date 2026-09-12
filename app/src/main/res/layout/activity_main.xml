@@ -44,6 +44,8 @@
                         android:textColor="@color/text_primary" android:textSize="18sp"
                         android:text="@string/settings" android:textAllCaps="false" />
                 </LinearLayout>
+                <FrameLayout android:id="@+id/automation_progress_host" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
                 <LinearLayout android:id="@+id/action_tiles" android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="28dp" android:orientation="horizontal" android:gravity="top" android:baselineAligned="false">
                     <LinearLayout android:id="@+id/open_gate_button" style="@style/ActionTile"

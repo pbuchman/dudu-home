@@ -37,6 +37,11 @@ Repeated wake entry, ordinary screen toggles, GPS gaps and traffic stops do not 
 
 ## Journal
 
+Version 0.5 adds [correlated UI states](PROGRESS_UI.md) to this same journal. DISPATCH still
+precedes final acceptance. ACTION categories and IDs distinguish requested, accepted, started,
+skipped and final outcomes. Expired screen delivery is explicit and never retried. A banner
+does not prove the ignition task is configured or that Yanosik is actually running.
+
 App-private no-backup storage contains `diagnostics.txt` and one rotated previous file,
 approximately 128 KiB each. Each row contains wall time, monotonic time and category/counters.
 No position, bearing, street, phone fragment, credentials, request headers or response bodies

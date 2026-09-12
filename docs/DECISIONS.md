@@ -1,5 +1,17 @@
 # Design decisions
 
+## Observational automation progress - 0.5
+
+- Keep the 0.4.1 detector, vendor cycle adapter, diagnostics and executor safety as the baseline.
+- Publish immutable observations; UI can neither dispatch nor reserve/rearm an action.
+- Use one native banner, inline in the focused menu or a non-touchable overlay, without an
+  Activity launch for detection. Protected apps may hide overlays; never bypass this.
+- Distinguish recognition, dispatch, acceptance, actual attempt and outcome. Correlate using
+  numeric IDs, not authorization tokens. Undelivered requests expire without retry after 5 s.
+- Detector evidence supplies fill; 2 s cancellation/request outcomes do not alter action timing.
+- No new configuration/export UI, libraries, logger, private data or public APK.
+- See [PROGRESS_UI.md](PROGRESS_UI.md); real radio presentation and ignition acceptance remain pending.
+
 ## Startup recovery - 0.4.1
 
 - Fix the proven vendor force-stop with an explicit DUDU ignition shortcut to the existing

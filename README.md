@@ -7,7 +7,8 @@ A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetoo
 Private, locally configured route detection connects those actions to leaving and returning home.
 It also starts Yanosik in the background after sustained driving, keeping the radio screen visible.
 
-> **Current source and installed version: `0.4.1-local`.** The backed-up DUDU7 update,
+> **Current source: `0.5.0-local`, with automation progress UI. Not installed on DUDU7 yet.**
+> **Last verified installed version: `0.4.1-local`.** The backed-up DUDU7 update,
 > private configuration import, fresh GPS delivery and app-side vendor cycle reading passed.
 > **The DUDU ignition task is not configured yet, so wake recovery is not ready.**
 > The preceding version passed a real full-restart, movement and Yanosik warning-overlay check;
@@ -18,6 +19,22 @@ It also starts Yanosik in the background after sustained driving, keeping the ra
 > fully verified production release. No public APK is provided.
 
 ![Dudu Home menu - actual DUDU7 screenshot with Polish labels, 2026-09-09](docs/images/menu-dudu7.png)
+
+### See what the automation is detecting
+
+A small, silent banner shows real GPS evidence before an automatic action. It sits above the
+current app or inside the open Dudu Home menu, never both. It cannot receive touches, steal
+focus, advance on its own or trigger an action. Cancelled detection shows a short reason.
+Gate and cleaning use the existing execution screen; Yanosik only reports the launch request.
+
+![Automation progress above another app - synthetic emulator capture, not radio acceptance](docs/images/progress-overlay.png)
+
+[Inside the menu](docs/images/progress-menu.png) · [Cancelled detection](docs/images/progress-cancelled.png) ·
+[Existing action view, synthetic preview without a call](docs/images/progress-action.png)
+
+Local checks include all eight recorded routes against the pre-UI detector. A parked DUDU7
+overlay check and real automatic presentation are still pending.
+See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and limits.
 
 ## What it does
 
@@ -69,6 +86,7 @@ There are no external Android runtime libraries.
 ```sh
 ./gradlew assembleDebug assembleDebugAndroidTest lintDebug
 bash scripts/check-detector.sh
+python3 scripts/check-progress.py
 python3 scripts/test-private-tools.py
 python3 scripts/test-fresh-installer.py
 ./scripts/run-emulator-check.sh
@@ -120,6 +138,8 @@ An authorized ADB/debug session is privileged access: keep it restricted and dis
 Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
 Version 0.4.1 keeps a bounded private diagnostic journal across process restarts, recording
 monitor startup, GPS delivery counts, events, blocked actions and results. Nothing is uploaded.
+Version 0.5 adds correlated detection/action transitions to that same journal, not per-frame
+fill updates. UI reads process-local snapshots, never logs; restarting does not replay actions.
 Check private archives and diagnostics before sharing: firmware-generated logs may contain data
 even when Dudu Home does not log it. Automated privacy scans supplement manual review.
 
@@ -132,6 +152,7 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 - [Implementation and acceptance plan](docs/PLAN.md), [verification evidence](docs/VERIFICATION.md).
 - [Decisions](docs/DECISIONS.md), [change history](CHANGELOG.md), [handoff](docs/LOCAL_DEVELOPMENT.md).
 - [Design and illustration prompts](docs/DESIGN.md), [next queued work](docs/ROADMAP.md).
+- [Progress UI and background communication](docs/PROGRESS_UI.md).
 
 ## License
 

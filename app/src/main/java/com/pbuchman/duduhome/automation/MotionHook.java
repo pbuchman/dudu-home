@@ -8,8 +8,15 @@ public final class MotionHook {
     private final Runnable action;
     public MotionHook(Runnable action) { this.action = action; }
     public void accept(MotionDetector.Fix fix, boolean uiAvailable) {
-        if (detector.accept(fix) && uiAvailable) action.run();
+        accept(fix, uiAvailable, ignored -> { });
+    }
+    public void accept(MotionDetector.Fix fix, boolean uiAvailable,
+                       java.util.function.Consumer<java.util.List<DetectionProgress>> observer) {
+        boolean confirmed = detector.accept(fix);
+        observer.accept(detector.progress());
+        if (confirmed && uiAvailable) action.run();
     }
     public boolean fresh(long now) { return detector.fresh(now); }
+    public java.util.List<DetectionProgress> progress() { return detector.progress(); }
     public void clear() { detector.clear(); }
 }

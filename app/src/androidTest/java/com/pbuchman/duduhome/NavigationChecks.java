@@ -11,10 +11,14 @@ final class NavigationChecks {
         SharedPreferences prefs=instrumentation.getTargetContext().getSharedPreferences("test_journey",0);
         prefs.edit().clear().commit();
         JourneySession first=new JourneySession(prefs,42);
+        require(!first.available());
+        require(first.ensureBoot() && first.available() && first.available());
         require(first.ensureBoot() && first.reserve());
+        require(!first.available());
         require(!new JourneySession(prefs,42).reserve());
         require(!new JourneySession(prefs,41).reserve());
         require(!first.observeAwakeCycle(0) && !first.reserve());
+        require(!first.available() && !first.observeAwakeCycle(-1) && !first.available());
         require(first.verifiedWake(1) && first.reserve());
         require(!first.verifiedWake(1) && !first.reserve());
         require(!first.observeAwakeCycle(1) && !first.reserve());

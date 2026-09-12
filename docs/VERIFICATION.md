@@ -1,5 +1,45 @@
 # Verification ledger
 
+## Progress UI 0.5.0-local - local checks, 2026-09-12
+
+Built from verified origin/main `911d18b` in a separate worktree/branch. Application ID and
+debug-signing scheme unchanged, versionCode 7. The last verified installed radio version
+remains 0.4.1/code 6. No radio was attached for this implementation; no installation, real
+call, cloud routine, ignition or road-test acceptance is claimed here.
+
+Pure checks compare every sample's events and persistent flags to the pre-UI Java source:
+20,000 synthetic home samples, 20,000 motion samples and 2,644 samples across all eight
+private replays. No event, timing or flag divergence. The reference remains three departures,
+three returns including east, and two genuine negatives. Existing detector/motion checks
+retain through-road and home-road reversal controls, alternate parking and action counts.
+
+New pure tests cover detector-derived fill, no clock-driven increase, freshness expiry,
+cancellation, generations, priorities, consumed evidence, duplicate/backwards outcomes,
+terminal immutability, empty fresh-process state and bounded attempt history.
+
+Emulator instrumentation passes existing gate/Roborock/navigation checks plus one inline host,
+overlay handoff, no focus/touch/screen-wake flags, capped opacity, unchanged action eligibility,
+observer-failure isolation, cancellation, stale generation rejection and timed disappearance.
+A context that deliberately does not deliver the Activity verifies the real five-second
+token expiry, correlated refusal, rejection of late delivery and no dial reservation.
+A late cycle callback on a stopped monitor leaves state unchanged. Read-only session checks
+do not grant attempts. The existing two-file diagnostic rotation and input filter also pass.
+
+Screenshots use synthetic observations on a landscape emulator; the execution screenshot is
+a renderer preview without Bluetooth or HTTP. Android Settings can suppress overlays even
+while the window remains attached, so the public overlay capture uses the normal launcher.
+Pixel inspection is required in addition to attachment/flag assertions.
+
+Build/lint, pure checks, seven private-tool and five fresh-installer test methods passed.
+Private-value scans of working files and reachable history passed, supplemented with number
+suffixes, rounded coordinates, commit metadata and unpacked APK checks. The signing certificate
+matches the preceding local 0.4.1 APK. Public captures contain no text/EXIF metadata and were
+visually reviewed. Current files contain no em dash; historical typography was not rewritten.
+
+Still required: final backed-up 0.5 installation, parked overlay/touch-through check without
+executors, then real automatic presentation after the separate DUDU ignition task is saved
+and verified. No need to repeat all eight calibration drives unless a specific gap is found.
+
 ## Startup diagnosis and 0.4.1 installation - 2026-09-12
 
 Confirmed vendor force-stop at sleep, stopped package after wake and missing DUDU task;
