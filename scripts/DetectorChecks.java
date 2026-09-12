@@ -49,7 +49,14 @@ public final class DetectorChecks {
         passing.move(point(400, -20)); passing.expect();
         DetectorChecks east = new DetectorChecks();
         east.position = point(520, 100);
-        east.move(point(400, 100)); east.move(point(100, 100)); east.expect();
+        east.move(point(400, 100)); east.move(point(100, 100)); east.expect(HomeEvent.RETURN_APPROACH);
+        east.move(point(120, 100)); east.move(point(100, 100)); east.expect(HomeEvent.RETURN_APPROACH);
+        DetectorChecks eastThrough = new DetectorChecks();
+        eastThrough.position = point(520, 100);
+        eastThrough.move(point(400, 100)); eastThrough.move(point(400, 220)); eastThrough.expect();
+        DetectorChecks fromHomeRoad = new DetectorChecks();
+        fromHomeRoad.position = point(100, 100);
+        fromHomeRoad.move(point(400, 100)); fromHomeRoad.move(point(100, 100)); fromHomeRoad.expect();
 
         DetectorChecks startupMoving = new DetectorChecks();
         startupMoving.move(point(0, -40)); startupMoving.expect();

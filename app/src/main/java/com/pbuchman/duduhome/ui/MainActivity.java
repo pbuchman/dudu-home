@@ -179,10 +179,14 @@ public final class MainActivity extends Activity {
     }
     public void automaticAction(HomeAction action) {
         if (action == HomeAction.MOP) return; // Manual-only, including future internal callers.
-        if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) return;
+        if (!configurationSaved || HomeActions.busy() || PrivateImport.pending(this)) {
+            com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "SKIP_AUTO_UI_NOT_READY"); return;
+        }
         if (actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
                 || roborockSetup.getVisibility() == View.VISIBLE
-                || (callStatusContent.getVisibility() == View.VISIBLE && errorActions.getVisibility() == View.VISIBLE)) return;
+                || (callStatusContent.getVisibility() == View.VISIBLE && errorActions.getVisibility() == View.VISIBLE)) {
+            com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "SKIP_AUTO_UI_BUSY"); return;
+        }
         returnToMenu = resumed && menuContent.getVisibility() == View.VISIBLE;
         currentAction = action;
         startSelected();
@@ -276,6 +280,7 @@ public final class MainActivity extends Activity {
                             GateCallState state,
                             String title,
                             String description) {
+                        com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_STATE_" + state.name());
                         if (generation == uiGeneration && !isFinishing()) {
                             renderState(state, title, description);
                         }
@@ -290,6 +295,7 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onError(GateError error, String detail) {
+                        com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_ERROR_" + error.name());
                         if (generation != uiGeneration || isFinishing()) {
                             return;
                         }
@@ -531,7 +537,7 @@ public final class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
                 renderCleaningResult(result);
-                android.util.Log.i("DuduHome", currentAction.name() + " result " + result.name());
+                com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, currentAction.name() + "_RESULT_" + result.name());
             });
         };
         timer.schedule(() -> { complete.accept(RoborockClient.Result.NETWORK_UNKNOWN); client.cancelTransport(); }, 20, java.util.concurrent.TimeUnit.SECONDS);

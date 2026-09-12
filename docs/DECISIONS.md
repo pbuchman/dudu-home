@@ -1,5 +1,15 @@
 # Design decisions
 
+## Startup recovery - 0.4.1
+
+- Fix the proven vendor force-stop with an explicit DUDU ignition shortcut to the existing
+  NoDisplay wake Activity; do not add another menu tile or pretend sticky services survive it.
+- Identify wake by the observed vendor sleep counter, with awake-state guards and a
+  non-rearming first baseline. Never treat shortcut invocation or screen/GPS gaps as ignition.
+- Keep bounded private category-only diagnostics, no export UI or full route recording.
+- Accept eastern return as well as north/south approaches, preserving inbound sequence checks.
+- Retain all call safety, manual-only Mop and daily-cleaning reservation rules.
+
 ## Local 0.4 - approved namespace migration and navigation
 
 - Owner explicitly chose new application ID and functional packages `com.pbuchman.duduhome`.

@@ -6,6 +6,15 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
+**Current 0.4.1 local work (2026-09-12):** proven SYU force-stop at sleep, missing restart
+task, eastern return omission fixed, private bounded diagnostics and vendor cycle adapter
+implemented. Local checks pass. VersionCode 6 is installed with a verified private import;
+fresh GPS and app-side vendor cycle reads passed. DUDU shortcut/task configuration was not
+saved before radio access ended. Finish that integration and physical wake verification
+when the owner makes the radio available again. Do not repeat installation just to reconnect.
+Read [STARTUP_DIAGNOSTICS.md](STARTUP_DIAGNOSTICS.md) and the latest verification entry.
+The following 0.4/0.3 notes are historical, not current acceptance of wake recovery.
+
 LOCAL 0.4 update: functional packages and new installation ID `com.pbuchman.duduhome`;
 see PACKAGES.md and MIGRATION.md. Migration passed on an emulator with synthetic data.
 Movement-based Yanosik launch and cold-boot deduplication are implemented locally. The verified
@@ -57,11 +66,14 @@ Do not bypass that refusal. Local private storage is the current source of deplo
 
 ## Calibration evidence
 
-All eight captures were replayed against the same production Java `HomeDetector`:
-three departure traces emit departure/checkpoint/journey-exit, two return traces emit return,
-three negative controls emit no action events. Declared fix counts match the completed captures.
+All eight captures were replayed against the production Java `HomeDetector`. In 0.4.1,
+three departure traces emit departure/checkpoint/journey-exit, three return traces emit
+return, and two negative controls emit no events. The former eastern-entry negative is
+now a required return case under the owner's updated scope; its recorded path was checked.
+The other seven captures retain their earlier event sequence and timing.
+Declared fix counts match the completed captures.
 Two malformed lines in older data do not belong to those completed capture counts.
-Geometry and thresholds remain unchanged by the Roborock extension.
+Geometry and thresholds were unchanged by the Roborock extension; 0.4.1 adds eastern arming.
 
 The recordings helped choose thresholds; they are not an independent statistical validation
 set. No promise of perfect intent detection on all parking manoeuvres. Do not invent coordinates

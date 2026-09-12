@@ -10,6 +10,8 @@ public final class HomeBootReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
                 || Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) {
+            com.pbuchman.duduhome.diagnostics.Diagnostics.record(context,
+                    Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) ? "BOOT_RECEIVED" : "UPDATE_RECEIVED");
             HomeMonitorService.ensureStarted(context);
         }
     }

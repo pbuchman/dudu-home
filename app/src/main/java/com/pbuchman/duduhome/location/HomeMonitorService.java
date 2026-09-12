@@ -27,10 +27,11 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.util.Log;
 import com.pbuchman.duduhome.automation.JourneySession;
 import com.pbuchman.duduhome.automation.YanosikLauncher;
 import com.pbuchman.duduhome.automation.MotionHook;
+import com.pbuchman.duduhome.diagnostics.Diagnostics;
+import com.pbuchman.duduhome.startup.DuduCycle;
 
 public final class HomeMonitorService extends Service implements LocationListener {
     private static final String CHANNEL = "home_monitor";
@@ -41,22 +42,29 @@ public final class HomeMonitorService extends Service implements LocationListene
     private boolean registered;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long lastFix;
+    private long lastSummary;
+    private int fixes, poorFixes;
+    private boolean destroyed, cycleReady, cyclePending;
+    private final java.util.concurrent.ExecutorService cycleReader = java.util.concurrent.Executors.newSingleThreadExecutor();
     private YanosikLauncher yanosik;
     private final MotionHook motion = new MotionHook(() -> yanosik.attempt());
     private Location motionOrigin;
     private final Runnable watchdog = new Runnable() {
         @Override public void run() {
             if (!ready(HomeMonitorService.this) || PrivateImport.pending(HomeMonitorService.this)) {
+                Diagnostics.record(HomeMonitorService.this, "MONITOR_STOP_NOT_READY");
                 stopSelf();
                 return;
             }
             if (SystemClock.elapsedRealtime() - lastFix > 15000) {
+                Diagnostics.record(HomeMonitorService.this, "GPS_GAP_RESUBSCRIBE");
                 if (detector != null) detector.clearEvidence();
                 motion.clear(); motionOrigin = null;
                 if (registered) locations.removeUpdates(HomeMonitorService.this);
                 registered = false;
                 subscribe();
             }
+            checkCycle();
             handler.postDelayed(this, 15000);
         }
     };
@@ -70,13 +78,17 @@ public final class HomeMonitorService extends Service implements LocationListene
     }
 
     public static void ensureStarted(Context context) {
-        if (!ready(context) || PrivateImport.pending(context)) return;
+        if (!ready(context) || PrivateImport.pending(context)) {
+            Diagnostics.record(context, PrivateImport.pending(context) ? "MONITOR_START_MAINTENANCE" : "MONITOR_START_PERMISSIONS");
+            return;
+        }
         try { context.startForegroundService(new Intent(context, HomeMonitorService.class)); }
-        catch (RuntimeException ignored) { Log.w("DuduHome", "Monitor start blocked by system; manual calls remain available"); }
+        catch (RuntimeException ignored) { Diagnostics.record(context, "MONITOR_START_SYSTEM_BLOCKED"); }
     }
 
     @Override public void onCreate() {
         super.onCreate();
+        Diagnostics.record(this, "MONITOR_CREATE");
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel(CHANNEL, "Automatyzacja domu", NotificationManager.IMPORTANCE_LOW));
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
@@ -86,7 +98,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         try {
             if (Build.VERSION.SDK_INT >= 29) startForeground(17, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
             else startForeground(17, notification);
-        } catch (RuntimeException denied) { stopSelf(); return; }
+        } catch (RuntimeException denied) { Diagnostics.record(this, "MONITOR_FOREGROUND_DENIED"); stopSelf(); return; }
         state = getSharedPreferences("home_detector", 0);
         locations = getSystemService(LocationManager.class);
         yanosik = new YanosikLauncher(this);
@@ -96,6 +108,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         HomeConfiguration next = HomeConfiguration.load(this);
         if (state == null || !ready(this) || PrivateImport.pending(this)) {
+            Diagnostics.record(this, "MONITOR_STOP_NOT_READY");
             stopSelf(); return START_NOT_STICKY;
         }
         if (next == null || !next.enabled) { config = next; detector = null; }
@@ -107,10 +120,33 @@ public final class HomeMonitorService extends Service implements LocationListene
                 stopSelf(); return START_NOT_STICKY;
             }
         }
+        Diagnostics.record(this, "MONITOR_START HOME=" + (detector == null ? 0 : 1)
+                + " FLAGS=" + (detector == null ? 0 : detector.flags()));
+        checkCycle();
         subscribe();
         handler.removeCallbacks(watchdog);
         handler.postDelayed(watchdog, 15000);
         return START_STICKY;
+    }
+
+    private void checkCycle() {
+        if (destroyed || cyclePending) return;
+        cyclePending = true;
+        cycleReader.execute(() -> {
+            long cycle = DuduCycle.readAwakeCycle();
+            handler.post(() -> {
+                cyclePending = false;
+                if (destroyed) return;
+                if (!cycleReady) Diagnostics.record(this, cycle < 0 ? "VENDOR_CYCLE_UNAVAILABLE" : "VENDOR_CYCLE=" + cycle);
+                if (new JourneySession(this).observeAwakeCycle(cycle)) {
+                    // Never carry pre-sleep movement evidence into a new cycle.
+                    motion.clear(); motionOrigin = null;
+                    if (detector != null) detector.clearEvidence();
+                    Diagnostics.record(this, "VENDOR_WAKE_REARM CYCLE=" + cycle);
+                }
+                cycleReady = true;
+            });
+        });
     }
 
     @SuppressWarnings("MissingPermission")
@@ -119,13 +155,23 @@ public final class HomeMonitorService extends Service implements LocationListene
         try {
             locations.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this, Looper.getMainLooper());
             registered = true;
-        } catch (RuntimeException denied) { Log.w("DuduHome", "GPS subscription unavailable"); }
+            Diagnostics.record(this, "GPS_SUBSCRIBED");
+        } catch (RuntimeException denied) { Diagnostics.record(this, "GPS_SUBSCRIPTION_DENIED"); }
     }
 
     @Override public void onLocationChanged(Location location) {
         if (!ready(this) || PrivateImport.pending(this)) { stopSelf(); return; }
         lastFix = SystemClock.elapsedRealtime();
         long fixTime = location.getElapsedRealtimeNanos() / 1000000;
+        fixes++;
+        if (!location.hasAccuracy() || location.getAccuracy() > 15 || lastFix - fixTime > 3000
+                || location.isFromMockProvider()) poorFixes++;
+        if (lastFix - lastSummary >= 30000) {
+            Diagnostics.record(this, "GPS_SUMMARY FIXES=" + fixes + " POOR=" + poorFixes
+                    + " HOME=" + (detector == null ? 0 : 1)
+                    + " FLAGS=" + (detector == null ? 0 : detector.flags()));
+            fixes = poorFixes = 0; lastSummary = lastFix;
+        }
         if (motionOrigin == null) motionOrigin = new Location(location);
         float[] distance = new float[2];
         Location.distanceBetween(motionOrigin.getLatitude(), motionOrigin.getLongitude(),
@@ -136,7 +182,7 @@ public final class HomeMonitorService extends Service implements LocationListene
                 location.getSpeed(), location.hasSpeed(), lastFix - fixTime, location.isFromMockProvider());
         // Home actions get first opportunity on the same fix; Yanosik never masks their result.
         if (detector != null && !acceptHome(location, fixTime)) return;
-        motion.accept(motionFix, HomeActions.allowsExternalLaunch() && !PrivateImport.pending(this));
+        motion.accept(motionFix, cycleReady && HomeActions.allowsExternalLaunch() && !PrivateImport.pending(this));
         if (!motion.fresh(lastFix)) motionOrigin = null;
     }
 
@@ -154,18 +200,22 @@ public final class HomeMonitorService extends Service implements LocationListene
             HomeConfiguration current = HomeConfiguration.load(this);
             if (current == null || !current.enabled || !current.revision.equals(config.revision)
                     || PrivateImport.pending(this)) { stopSelf(); return false; }
-            Log.i("DuduHome", "Event " + event.name());
+            Diagnostics.record(this, "EVENT " + event.name());
             HomeActions.dispatch(this, event);
         }
         return true;
     }
     @Override public void onProviderDisabled(String provider) {
+        Diagnostics.record(this, "GPS_PROVIDER_DISABLED");
         if (detector != null) detector.clearEvidence();
         motion.clear(); motionOrigin = null;
     }
-    @Override public void onProviderEnabled(String provider) { }
+    @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }
     @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
     @Override public void onDestroy() {
+        destroyed = true;
+        cycleReader.shutdownNow();
+        Diagnostics.record(this, "MONITOR_DESTROY");
         handler.removeCallbacksAndMessages(null);
         if (registered && locations != null) locations.removeUpdates(this);
         super.onDestroy();

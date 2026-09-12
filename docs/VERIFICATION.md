@@ -1,5 +1,34 @@
 # Verification ledger
 
+## Startup diagnosis and 0.4.1 installation - 2026-09-12
+
+Confirmed vendor force-stop at sleep, stopped package after wake and missing DUDU task;
+details in [startup diagnostics](STARTUP_DIAGNOSTICS.md). A real off/on cycle incremented
+the vendor sleep counter without changing Android boot count. This is signal evidence,
+not yet app-side wake recovery acceptance. Corrected the eastern return approach and added
+bounded private category diagnostics plus a conservative cycle adapter.
+
+Build, lint, pure detector/motion tests and emulator safety/navigation checks passed. A
+complete readable private app archive was verified and its configured phone matched the
+private installation bundle. An initial update attempt stopped on lost connectivity before
+backup/install. After reconnecting, the guarded installer successfully backed up APK/data,
+checked the signature and installed versionCode 6 / 0.4.1-local. Opening the menu consumed
+the complete private import. The journal confirmed monitoring, fresh GPS fixes and a valid
+vendor cycle read from the app's own process. No test call or robot routine was requested.
+
+DUDU shortcut/task configuration is not saved yet. Access to the radio ended before this
+integration and its physical wake test; the owner confirmed later access is required.
+Next: configure the exact NoDisplay shortcut, verify recovery without opening the menu,
+then observe real motion, Yanosik's background service/overlay and the previous screen.
+This installation does not establish wake acceptance or successful automatic home journeys.
+
+All eight private calibration recordings were replayed against the updated production
+detector. Seven retain exactly their previous event sequence and timing. The former eastern
+entry control now emits one return event: inspection confirms an eastern approach, then the
+junction, then the inbound checkpoint. This is the owner's newly required return case, not
+a remaining negative control. Two genuine negative controls still emit no events. Raw traces
+and replay outputs remain private; this is recorded-input verification, not a new road test.
+
 ## Yanosik cold-boot/background acceptance - 2026-09-09
 
 Corrected the installed Yanosik package identity and verified normal launch on the radio.

@@ -4,6 +4,7 @@ import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.gate.GateNumberStore;
 import com.pbuchman.duduhome.roborock.RoborockStore;
 import com.pbuchman.duduhome.ui.MainActivity;
+import com.pbuchman.duduhome.diagnostics.Diagnostics;
 
 import android.content.Context;
 import android.content.Intent;
@@ -40,27 +41,32 @@ public final class HomeActions {
     public static void dispatch(Context context, HomeEvent event) {
         HomeAction action;
         if (callsGate(event)) action = HomeAction.GATE;
-        else if (event == HomeEvent.OUTBOUND_CHECKPOINT && DailyCleaning.reserve(context)) action = HomeAction.CLEANING;
+        else if (event == HomeEvent.OUTBOUND_CHECKPOINT) {
+            if (!DailyCleaning.reserve(context)) { Diagnostics.record(context, "SKIP_CLEANING_DAILY_LIMIT_OR_STORAGE"); return; }
+            action = HomeAction.CLEANING;
+        }
         else return;
-        if (busy() || PrivateImport.pending(context)) { android.util.Log.i("DuduHome", "Skipped " + action + ": busy or maintenance"); return; }
+        if (busy() || PrivateImport.pending(context)) { Diagnostics.record(context, "SKIP_" + action + "_BUSY_OR_MAINTENANCE"); return; }
         if (action == HomeAction.GATE) {
             GateNumberStore store = new GateNumberStore(context);
-            if (store.read() == null || store.cooldownRemainingMillis() > 0) return;
-        } else if (new RoborockStore(context).read() == null) { android.util.Log.i("DuduHome", "Skipped CLEANING: configuration unavailable"); return; }
+            if (store.read() == null) { Diagnostics.record(context, "SKIP_GATE_NO_NUMBER"); return; }
+            if (store.cooldownRemainingMillis() > 0) { Diagnostics.record(context, "SKIP_GATE_COOLDOWN"); return; }
+        } else if (new RoborockStore(context).read() == null) { Diagnostics.record(context, "SKIP_CLEANING_NO_CONFIG"); return; }
+        Diagnostics.record(context, "DISPATCH_" + action);
         MainActivity activity = visible.get();
         if (activity != null) {
             activity.automaticAction(action);
             return;
         }
         long now = SystemClock.elapsedRealtime();
-        if (pendingToken != null && now - pendingSince < 5000) return;
+        if (pendingToken != null && now - pendingSince < 5000) { Diagnostics.record(context, "SKIP_ACTION_PENDING"); return; }
         pendingToken = UUID.randomUUID().toString();
         pendingAction = action;
         pendingSince = now;
         try {
             context.startActivity(new Intent(context, MainActivity.class).setAction(ACTION)
                     .putExtra("request_token", pendingToken).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        } catch (RuntimeException ignored) { pendingToken = null; }
+        } catch (RuntimeException ignored) { pendingToken = null; Diagnostics.record(context, "ACTION_UI_START_DENIED"); }
     }
 
     public static boolean consume(Intent intent) {

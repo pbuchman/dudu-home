@@ -24,19 +24,28 @@ JourneySession persists reservation before resolving/starting. Missing app, thro
 or silent Android background denial consume the session attempt: no retry loop. A log saying
 `launch requested` is not proof that Android brought the app forward. Tests must observe it.
 
-## Important unfinished part: manufacturer wake
+## Manufacturer wake recovery - 0.4.1
 
 Cold system boot is identified by Android BOOT_COUNT. Process/service restart and package
 replacement keep the same reservation. Unknown/rolled-back boot identity fails closed.
-An internal `verifiedWake(cycleId)` seam is tested for durable deduplication but deliberately
-has **no production caller yet**. The approved behavior needs an observed DUDU ignition/wake
-cycle identifier. The radio was unavailable during read-only inspection in this session.
+Radio evidence on 2026-09-12 proved SYU force-stops the app at sleep, leaving `stopped=true`.
+An ordinary sticky service or BOOT_COMPLETED receiver cannot by itself repair this wake path.
+DUDU Tasks exposes Vehicle Ignition and Shortcuts exposes an explicit Activity selection.
+The task needs to start HomeWakeActivity, not the menu. See [startup recovery](STARTUP_DIAGNOSTICS.md).
 
 Do not treat HomeWakeActivity invocations, screen on/off, GPS gaps, traffic stops or elapsed
 time as verified ignition. HomeWakeActivity currently only ensures monitoring; it does not
-rearm Yanosik. Consequently the current APK supports once per cold boot, **not yet the full
-once-per-ignition/wake contract**. It is not ready for full radio acceptance until this adapter
-is implemented against an observed manufacturer signal. No broad exported reset endpoint.
+rearm Yanosik directly. DuduCycle reads the manufacturer's `sys.sleeptimes` counter off the
+main thread, bracketed by awake-state checks. Analysis of the installed SYU APK identified
+the increment at real sleep entry; a real car off/on sequence increased it without changing
+BOOT_COUNT. First observation only establishes a baseline and cannot reset a consumed boot.
+An increasing counter within the same boot rearms one launch and clears old motion evidence.
+Missing/malformed/sleeping state does not rearm. No property writes, root, hidden APIs or
+exported reset endpoint. The read-only command has a bounded timeout and fixed arguments.
+
+The adapter is implemented, synthetic tests pass and the installed 0.4.1 app successfully
+read a valid cycle on the radio. Actual task configuration and next-wake background launch
+remain hardware acceptance requirements. Access ended before the shortcut/task was saved.
 
 ## Verification and next exact step
 
@@ -45,9 +54,8 @@ is implemented against an observed manufacturer signal. No broad exported reset 
 - Android NavigationChecks: durable reservation/reconstruction, boot changes, duplicate
   verified wake IDs, missing target and launch exception with no retry; fake launch only.
 - Existing UI tests assert setup/error/five-second success do not allow external launch.
-- Read actual launcher component and observe two real ignition sequences/wake cycles through
-  read-only radio diagnostics. Identify the trusted, deduplicatable signal; implement its adapter
-  into JourneySession, then repeat tests before reporting full installation readiness.
+- Configure and verify the actual DUDU ignition shortcut and two real wake sequences before
+  reporting full wake readiness. App-side cycle access alone has already passed.
 - Future authorized radio tests: parked idle, one launch after moving, traffic stop with no
   repeat, manual Yanosik closure with no repeat, action priority, next ignition permits launch.
 

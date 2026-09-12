@@ -28,9 +28,18 @@ public final class JourneySession {
                     && state.edit().putBoolean("consumed", true).commit();
         }
     }
-    /** Integration seam only: caller must supply a verified vendor cycle identifier.
-     * No production caller until the DUDU wake contract is observed on the actual radio.
-     * Ordinary HomeWakeActivity launches are NOT evidence of a new ignition cycle. */
+    /** First observation establishes a baseline, never rearms an already consumed boot. */
+    public boolean observeAwakeCycle(long cycle) {
+        synchronized (JourneySession.class) {
+            if (!ensureBoot() || cycle < 0) return false;
+            if (!state.contains("wake_id")) {
+                state.edit().putLong("wake_id", cycle).commit();
+                return false;
+            }
+            return verifiedWake(cycle);
+        }
+    }
+    /** Only a verified increasing vendor counter may rearm, never an Activity launch. */
     public boolean verifiedWake(long cycle) {
         synchronized (JourneySession.class) {
             if (!ensureBoot() || cycle < 0 || cycle <= state.getLong("wake_id", -1)) return false;

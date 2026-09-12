@@ -1,5 +1,18 @@
 # Change history
 
+## 0.4.1-local - startup recovery work, physical wake acceptance pending
+
+- Identified the vendor force-stop that leaves monitoring stopped after head-unit sleep.
+- Read the observed vendor sleep counter with awake-state guards and a non-rearming baseline.
+- Keep private bounded diagnostic categories for startup, GPS delivery, events, blocked actions
+  and results, without location values, phone fragments or account payloads.
+- Include the eastern return approach while retaining directional inbound sequence checks.
+- Preserve calling safety, once-per-day automatic cleaning and manual-only Mop.
+- Build, lint, detector and emulator regression checks passed; a backed-up same-signature
+  update, private import, fresh GPS and app-side cycle reading passed on DUDU7.
+- DUDU ignition shortcut/task configuration and actual wake/background acceptance remain
+  pending. No final release tag or public APK.
+
 ## 0.4.0-local - installed development source, not a final release
 
 - Functional Java packages and new application ID `com.pbuchman.duduhome`.

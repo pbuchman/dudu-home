@@ -14,6 +14,7 @@ public final class YanosikLauncher {
     }
     private final JourneySession session;
     private final Launch launch;
+    private Context diagnosticContext;
     public YanosikLauncher(Context context) {
         this(new JourneySession(context), new Launch() {
             public Intent resolve() { return context.getPackageManager().getLaunchIntentForPackage(PACKAGE); }
@@ -25,15 +26,20 @@ public final class YanosikLauncher {
                         ActivityOptions.makeTaskLaunchBehind().toBundle());
             }
         });
+        diagnosticContext = context.getApplicationContext();
     }
     public YanosikLauncher(JourneySession session, Launch launch) { this.session = session; this.launch = launch; }
     public void attempt() {
         if (!session.reserve()) return;
         try {
             Intent intent = launch.resolve();
-            if (intent == null) { Log.w("DuduHome", "YANOSIK unavailable; session consumed"); return; }
+            if (intent == null) { record("YANOSIK_UNAVAILABLE"); return; }
             launch.open(intent);
-            Log.i("DuduHome", "YANOSIK launch requested"); // not proof BAL allowed it
-        } catch (RuntimeException denied) { Log.w("DuduHome", "YANOSIK launch failed; no retry"); }
+            record("YANOSIK_LAUNCH_REQUESTED"); // not proof BAL allowed it
+        } catch (RuntimeException denied) { record("YANOSIK_LAUNCH_FAILED_NO_RETRY"); }
+    }
+    private void record(String category) {
+        if (diagnosticContext != null) com.pbuchman.duduhome.diagnostics.Diagnostics.record(diagnosticContext, category);
+        else Log.i("DuduHome", category);
     }
 }

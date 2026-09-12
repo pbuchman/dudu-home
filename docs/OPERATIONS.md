@@ -3,7 +3,8 @@
 Wersja lokalna 0.4 zmienia identyfikator na `com.pbuchman.duduhome`. Przejście ze starej
 instalacji wymaga [MIGRATION.md](MIGRATION.md), nie komendy aktualizacji poniżej.
 Nowy komponent menu to `.ui.MainActivity`, wybudzenia `.startup.HomeWakeActivity`.
-Opis wybudzenia nie oznacza gotowej integracji Yanosika: ograniczenia w [YANOSIK.md](YANOSIK.md).
+Konfiguracja zadania DUDU jest konieczna po vendorowym force-stop. Procedura i status testów
+w [STARTUP_DIAGNOSTICS.md](STARTUP_DIAGNOSTICS.md); ograniczenia w [YANOSIK.md](YANOSIK.md).
 
 ## Zasady dla operatora i kolejnego agenta
 
@@ -100,7 +101,7 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
 7. Zweryfikuj obecność wszystkich sekcji odczytem logicznym/rozmiarami, nie wypisaniem wartości.
    `roborock.enc` powinien istnieć, staging i maintenance zniknąć. `home-config.json` po imporcie v2
    nie zawiera numeru ani pakietu Roborock. Numer porównano już przed instalacją.
-8. Ustawienie autostartu/wybudzenia DUDU ma wskazywać `.HomeWakeActivity`. Zweryfikuj faktyczny
+8. Ustawienie autostartu/wybudzenia DUDU ma wskazywać `.startup.HomeWakeActivity`. Zweryfikuj faktyczny
    dostęp do tej opcji na urządzeniu. BOOT_COMPLETED nie zastępuje vendorowego wybudzenia.
 9. Wykonaj pakiet prób z następnej sekcji. Zachowuj logi wyłącznie w prywatnym katalogu.
 

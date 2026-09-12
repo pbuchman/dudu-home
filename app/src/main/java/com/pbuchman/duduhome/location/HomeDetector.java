@@ -88,10 +88,13 @@ public final class HomeDetector {
             }
         } else movingSince = -1;
 
-        // Approach the junction on its north/south road, then leave it toward the gate road.
+        // Outside approaches: north/south road or its eastern continuation. The western
+        // home road cannot arm a return by itself. Expire approach evidence if the car leaves.
         double jx = p.x - geometry.junction.x;
         double jy = p.y - geometry.junction.y;
-        if (Math.abs(jx) <= 45 && Math.abs(jy) >= 70 && junctionDistance <= 300) roadApproach = true;
+        if (junctionDistance > 300) roadApproach = false;
+        if (junctionDistance <= 300 && ((Math.abs(jx) <= 45 && Math.abs(jy) >= 70)
+                || (jx >= 70 && Math.abs(jy) <= 60))) roadApproach = true;
         if (roadApproach && junctionDistance <= 35) {
             visitedJunction = true;
             junctionTime = fix.elapsedMs;

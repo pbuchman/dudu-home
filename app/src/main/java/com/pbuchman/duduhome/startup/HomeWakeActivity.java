@@ -9,6 +9,7 @@ import android.os.Bundle;
 public final class HomeWakeActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "WAKE_ENTRY");
         HomeMonitorService.ensureStarted(this);
         finish();
     }

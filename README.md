@@ -7,9 +7,11 @@ A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetoo
 Private, locally configured route detection connects those actions to leaving and returning home.
 It also starts Yanosik in the background after sustained driving, keeping the radio screen visible.
 
-> **Current source: `0.4.0-local`.** Installed on DUDU7. Migration to
-> `com.pbuchman.duduhome`, configuration, menu and monitoring were verified.
-> Yanosik passed a real full-restart, movement and background-warning-overlay check.
+> **Current source and installed version: `0.4.1-local`.** The backed-up DUDU7 update,
+> private configuration import, fresh GPS delivery and app-side vendor cycle reading passed.
+> **The DUDU ignition task is not configured yet, so wake recovery is not ready.**
+> The preceding version passed a real full-restart, movement and Yanosik warning-overlay check;
+> this does not prove recovery after the manufacturer force-stops apps at sleep.
 > Gate and Roborock manual actions were verified on the preceding package version.
 > **Automatic home journeys and manufacturer ignition/wake acceptance remain pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
@@ -30,10 +32,11 @@ It also starts Yanosik in the background after sustained driving, keeping the ra
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or offline queue.** Manual cleaning remains independent.
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
-- **Yanosik in the background:** one launch attempt per full system boot, after at least
+- **Yanosik in the background:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
   ten seconds of qualified GPS movement. The existing warning overlay remains above the
-  radio screen. A stop or process restart does not rearm it. Manufacturer sleep/wake support
-  is not implemented yet; see [verification and limitations](docs/YANOSIK.md).
+  radio screen. A stop or process restart does not rearm it. DUDU's ignition task must restart
+  monitoring after the vendor force-stops apps at sleep. Task configuration and real wake
+  acceptance remain pending; see [startup recovery](docs/STARTUP_DIAGNOSTICS.md) and [limitations](docs/YANOSIK.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -115,6 +118,8 @@ short-lived import file is deleted after successful import. App backups are disa
 An authorized ADB/debug session is privileged access: keep it restricted and disconnect afterward.
 
 Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
+Version 0.4.1 keeps a bounded private diagnostic journal across process restarts, recording
+monitor startup, GPS delivery counts, events, blocked actions and results. Nothing is uploaded.
 Check private archives and diagnostics before sharing: firmware-generated logs may contain data
 even when Dudu Home does not log it. Automated privacy scans supplement manual review.
 
