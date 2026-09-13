@@ -6,12 +6,24 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
-**Current source 0.5.0-local / versionCode 7:** observational GPS progress and action outcomes,
+**Newest source: 0.5.2-local / code 9, not installed.** Notification-based Yanosik presence
+guard and earlier return banner are implemented on top of the 0.5.1 work below.
+Read YANOSIK.md/PROGRESS_UI.md for the grant, unknown-state behavior and return stages.
+Owner reported no automation after overnight parking on 2026-09-13. No radio connection
+was available to diagnose that occurrence. Do not call wake reliable or use these changes
+as its fix. Hardware access must wait for the owner's explicit availability message.
+
+**Previous source 0.5.1-local / versionCode 8:** one-shot Yanosik desktop return added to GPS progress,
 developed on `codex/automation-progress` from verified `origin/main` (`911d18b`). See
 [PROGRESS_UI.md](PROGRESS_UI.md) and the latest verification entry. Package/signing unchanged.
-Last verified installed radio version remains 0.4.1/code 6. Do not describe 0.5 as installed
-or wake-tested. Finish parked overlay acceptance and real presentation after independent
-ignition-task work. The notes below describe earlier versions.
+Version 0.5/code 7 was installed with verified backup, import and fresh GPS. The exact
+DUDU ignition shortcut/task is saved; full reboot and one real wake restarted monitoring.
+Real movement displayed the banner. An automatic return call passed and the owner confirmed
+physical opening. Yanosik started its service but brought the dashboard forward. The owner
+approved normal launch then desktop after five seconds. Version 0.5.1 is installed with
+verified backup/import/APK hash; full reboot restarted monitoring and fresh GPS. The car
+was stationary at capture; real motion plus automatic desktop return remains pending.
+The notes below describe earlier versions and are superseded by this checkpoint.
 
 **Current 0.4.1 local work (2026-09-12):** proven SYU force-stop at sleep, missing restart
 task, eastern return omission fixed, private bounded diagnostics and vendor cycle adapter

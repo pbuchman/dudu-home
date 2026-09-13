@@ -10,7 +10,12 @@ import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 /** Pure presentation state. No callback here can dispatch an action or reserve a quota. */
 public final class ProgressModel {
     public record State(long id, long generation, Kind kind, Phase phase, double value,
-                        Reason reason, long validUntil, long expiresAt, long evidenceId) { }
+                        Reason reason, long validUntil, long expiresAt, long evidenceId, Stage stage) {
+        public State(long id, long generation, Kind kind, Phase phase, double value,
+                     Reason reason, long validUntil, long expiresAt, long evidenceId) {
+            this(id, generation, kind, phase, value, reason, validUntil, expiresAt, evidenceId, Stage.NONE);
+        }
+    }
     private final EnumMap<Kind, State> candidates = new EnumMap<>(Kind.class);
     private final EnumMap<Kind, Long> consumed = new EnumMap<>(Kind.class);
     private final LinkedHashMap<Long, State> attempts = new LinkedHashMap<>();
@@ -37,7 +42,7 @@ public final class ProgressModel {
                     && old.phase == p.phase() && old.phase == Phase.CANCELLED) continue;
             long id = old != null && old.generation == epoch && old.evidenceId == p.id() ? old.id : ++sequence;
             candidates.put(kind, new State(id, epoch, kind, p.phase(), p.value(), p.reason(),
-                    p.validUntil(), p.phase() == Phase.CANCELLED ? now + 2000 : Long.MAX_VALUE, p.id()));
+                    p.validUntil(), p.phase() == Phase.CANCELLED ? now + 2000 : Long.MAX_VALUE, p.id(), p.stage()));
         }
     }
     public long request(Kind kind, long now) {
@@ -55,7 +60,7 @@ public final class ProgressModel {
         if (s.phase == phase && s.reason == reason) return;
         if (!terminal(phase) && phase.ordinal() < s.phase.ordinal()) return;
         attempts.put(id, new State(id, s.generation, s.kind, phase, 1, reason,
-                s.validUntil, terminal(phase) ? now + 2000 : Long.MAX_VALUE, -1));
+                s.validUntil, terminal(phase) ? now + 2000 : Long.MAX_VALUE, -1, s.stage));
     }
     public State attempt(long id) { return attempts.get(id); }
     public List<State> snapshot() {
@@ -85,7 +90,7 @@ public final class ProgressModel {
     }
     private static State cancel(State s, Reason reason, long now) {
         return new State(s.id, s.generation, s.kind, Phase.CANCELLED, s.value, reason,
-                s.validUntil, now + 2000, s.evidenceId);
+                s.validUntil, now + 2000, s.evidenceId, s.stage);
     }
     public static boolean terminal(Phase p) {
         return p == Phase.CANCELLED || p == Phase.SKIPPED || p == Phase.SUCCEEDED

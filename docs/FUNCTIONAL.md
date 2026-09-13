@@ -15,7 +15,10 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Otwarcie aplikacji | Menu „Otwórz bramę”, „Pełne sprzątanie”, „Mopowanie”; brak numeru przypomina formularzem, który można opuścić do menu |
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
-| Yanosik | Pasek rozpoznawania, potem wynik wysłania żądania przez 2 s; bez obietnicy działania usługi |
+| Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
+| Yanosik bez sygnału pracy | Potwierdzony ruch, start, pulpit po 5 s, wynik żądania przez 2 s |
+| Nieznany stan Yanosika | Pominięcie startu z krótkim komunikatem; brak samoczynnego ponowienia |
+| Powrót przed skrętem | „Sprawdzam trasę powrotu”, następnie potwierdzanie dojazdu; postęp z GPS, nie zegara |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |
 | Automatyczne zdarzenie przy schowanej aplikacji | Ten sam ekran postępu → wynik → schowanie aplikacji; monitor pozostaje aktywny |
 | Automatyczne zdarzenie przy otwartym menu | Ten sam ekran postępu → wynik → poprzednio otwarte menu |
@@ -34,6 +37,9 @@ Niepewny wynik wymaga sprawdzenia aplikacji Roborock przed ręcznym ponowieniem.
 
 „Ustawienia” zawiera numer bramy, dane dostępowe Roborock i informację o obecności konfiguracji
 lokalizacji. GPS nie ma edytora w UI. Instalator dostarcza prywatny plik.
+Dochodzi „Yanosik: wykrywanie pracy”: stan zgody i przejście do systemowego dostępu do
+powiadomień. Sprawdzamy tylko pakiet i oznaczenie usługi, nie treści. Nadanie zgody nie
+wykonuje akcji i nie resetuje cyklu. Brak zgody blokuje automatyczny start Yanosika, nie bramę.
 
 - Numer: walidacja, prywatny zapis, powrót do menu. Zapis nie dzwoni i blokuje dzwonienie na
   60 sekund również po restarcie. Działa także istniejąca blokada po rozpoczęciu własnego dial.

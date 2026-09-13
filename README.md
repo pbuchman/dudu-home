@@ -5,16 +5,20 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-It also starts Yanosik in the background after sustained driving, keeping the radio screen visible.
+It also starts Yanosik after sustained driving, then requests the radio desktop once after five seconds.
+Yanosik can briefly appear during startup; this does not restore a previously open navigation app.
 
-> **Current source: `0.5.0-local`, with automation progress UI. Not installed on DUDU7 yet.**
-> **Last verified installed version: `0.4.1-local`.** The backed-up DUDU7 update,
-> private configuration import, fresh GPS delivery and app-side vendor cycle reading passed.
-> **The DUDU ignition task is not configured yet, so wake recovery is not ready.**
-> The preceding version passed a real full-restart, movement and Yanosik warning-overlay check;
-> this does not prove recovery after the manufacturer force-stops apps at sleep.
+> **Current source: `0.5.2-local`. Last verified installed version: `0.5.1-local`.**
+> Version 0.5.2 adds notification-based Yanosik presence checks and earlier return progress.
+> It is not installed on the radio yet. Notification access requires a one-time system grant.
+> **The owner reported another startup failure after overnight parking. Wake reliability is unresolved.**
+> The backed-up DUDU7 update, private configuration import and fresh GPS delivery passed.
+> On `0.5.0`, monitoring recovered automatically after full reboot and one real ignition cycle.
+> The real movement banner and an automatic return call passed; the owner confirmed gate opening.
+> Yanosik's service started, but its dashboard stole the foreground. The new desktop-return
+> behavior requires a fresh hardware test; it is not certified by the earlier background check.
 > Gate and Roborock manual actions were verified on the preceding package version.
-> **Automatic home journeys and manufacturer ignition/wake acceptance remain pending.**
+> **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
 > fully verified production release. No public APK is provided.
 
@@ -32,8 +36,11 @@ Gate and cleaning use the existing execution screen; Yanosik only reports the la
 [Inside the menu](docs/images/progress-menu.png) · [Cancelled detection](docs/images/progress-cancelled.png) ·
 [Existing action view, synthetic preview without a call](docs/images/progress-action.png)
 
-Local checks include all eight recorded routes against the pre-UI detector. A parked DUDU7
-overlay check and real automatic presentation are still pending.
+[Return before the turn](docs/images/progress-return-early.png) ·
+[Return approaching the gate](docs/images/progress-return-inbound.png)
+
+Local checks include all eight recorded routes against the pre-UI detector. The earlier 0.5.0
+movement overlay and automatic return call passed on the radio; the new return stages await testing.
 See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and limits.
 
 ## What it does
@@ -49,11 +56,15 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or offline queue.** Manual cleaning remains independent.
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
-- **Yanosik in the background:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
-  ten seconds of qualified GPS movement. The existing warning overlay remains above the
-  radio screen. A stop or process restart does not rearm it. DUDU's ignition task must restart
-  monitoring after the vendor force-stops apps at sleep. Task configuration and real wake
-  acceptance remain pending; see [startup recovery](docs/STARTUP_DIAGNOSTICS.md) and [limitations](docs/YANOSIK.md).
+- **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
+  ten seconds of qualified GPS movement. First check its foreground-service notification.
+  If work is detected, do not reopen Yanosik or request the desktop. Unknown state (including
+  missing notification access) skips this cycle, without retry. With no work signal, launch;
+  five seconds after the launch request, request the
+  desktop once so Yanosik can work in the background. No repeated hiding, foreground-app
+  tracking or automatic retry. A stop or process restart does not rearm it. The DUDU ignition
+  task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
+  and [limitations](docs/YANOSIK.md) for the separately pending desktop-return test.
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -69,8 +80,8 @@ The original gate executor was exercised on **DUDU7, Android 13, DUDUOS 3.7 buil
 with one connected phone: idle → dial → outgoing → delay → hangup → idle. The disconnected
 phone path was also checked. On 2026-09-08 the combined APK was installed on that radio:
 both manual tiles returned to the menu after gate-call success / Roborock cloud acceptance,
-and background GPS delivery was verified. Automatic journeys and ignition/wake acceptance
-remain pending; see the [verification ledger](docs/VERIFICATION.md).
+and background GPS delivery was verified. On 2026-09-12 a full reboot, one ignition recovery
+and one automatic return call also passed. Further acceptance remains in the [verification ledger](docs/VERIFICATION.md).
 
 The implementation uses undocumented DUDU/SYU IPC; other firmware and two-phone setups are not
 certified. It cannot detect the first ringback, reception by the controller, or physical gate
@@ -126,6 +137,13 @@ No home GPS configuration disables home-route automation, not the independent mo
 or manual tiles. No gate number blocks calls;
 no Roborock bundle blocks cleaning. Saving a number imposes a persistent 60-second call block.
 Saving Roborock credentials never starts cleaning or resets the daily limit.
+
+For automatic Yanosik startup, open **Ustawienia > Yanosik: wykrywanie pracy > Ustawienia systemowe**
+and grant notification access to Dudu Home. Android grants broad access; our code only inspects
+Yanosik's package and foreground-service flag, never notification contents or actions. Other
+notifications are ignored. Granting access does not launch anything or reset a consumed cycle.
+The exact Yanosik notification signal still requires a radio test; absence is not a universal
+process-liveness check, and a detected service does not certify working hazard warnings.
 
 ## Privacy and maintenance
 

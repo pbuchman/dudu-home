@@ -1,5 +1,13 @@
 # DUDU startup recovery and private diagnostics
 
+## Latest report - 2026-09-13
+
+The owner reports neither home actions nor Yanosik started after overnight parking. The
+radio was unavailable for read-only inspection, so the specific failure point is unknown.
+Earlier short-wake/full-reboot successes do not establish overnight reliability. Preserve
+the failed state and collect journal/system evidence before manual app start on next access.
+The 0.5.2 presence/progress changes do not repair this separate startup issue.
+
 ## Confirmed incident
 
 On 2026-09-12, read-only inspection before opening Dudu Home found no app process or location
@@ -18,7 +26,7 @@ missed gate event. A separate detector omission rejected an eastern approach to 
 The radio's foreground service does not survive a vendor force-stop. Restart it through the
 device's supported automation UI, not through repeated phone calls, an alarm loop or a fake
 launcher identity. The following controls were observed on DUDUOS 3.7; the end-to-end task
-is still awaiting hardware verification:
+has been saved on the radio and restarted monitoring after one actual ignition cycle:
 
 1. DUDU Settings > More Features > Advanced Settings > Shortcuts.
 2. Add a shortcut for Dudu Home's `com.pbuchman.duduhome.startup.HomeWakeActivity`.
@@ -73,5 +81,13 @@ controls emit nothing. This does not replace checking the installed service on a
 VersionCode 6 / 0.4.1-local was installed through the signature-checked, backed-up update
 path. Private import completed, fresh GPS arrived and the app's journal confirmed a valid
 vendor cycle read. No new real gate call or robot routine was invoked to test these changes.
-The shortcut/task has not been saved. Radio access ended before configuration and a real
-ignition test; do not claim automatic recovery until those steps pass without a manual launch.
+In the subsequent combined session, versionCode 7 / 0.5.0-local was installed through the
+same guarded procedure. Import and fresh GPS passed. A shortcut named `Dudu` was saved with
+the exact HomeWakeActivity component, followed by Vehicle Ignition -> Open the App -> Dudu,
+zero delay. Both persisted list entries were inspected and captured privately.
+Following renewed debugging authorization, the journal proved automatic monitoring after full
+reboot and one real ignition cycle, with fresh GPS and no manual app launch. The real movement
+banner and automatic return call passed; the owner confirmed gate opening. Yanosik's service
+started but its dashboard came forward. Version 0.5.1 replaces behind-task startup with the
+owner-approved normal launch plus one desktop request. Repeat wake and that new presentation
+require separate acceptance; one successful recovery is not proof of all power-cycle cases.

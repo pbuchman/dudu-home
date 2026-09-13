@@ -1,6 +1,6 @@
 # Automation progress: UI and background contract
 
-Source version `0.5.0-local`, versionCode 7, based on `911d18b`. Java 17, native Views/XML,
+Source version `0.5.2-local`, versionCode 9, progress based on `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
@@ -16,20 +16,29 @@ the same layout inline. Only one host owns it at a time.
 | Detection | Title | Detail | Evidence |
 |---|---|---|---|
 | Departure | Wyjazd z domu | Potwierdzam ruch w stronę bramy | Qualified movement duration toward gate / existing 3 s requirement |
-| Return | Powrót do domu | Potwierdzam dojazd do bramy | Junction sequence plus movement toward gate, then inbound checkpoint |
+| Return before turn | Powrót do domu | Sprawdzam trasę powrotu | Supported road approach, reducing distance to junction |
+| Return after turn | Powrót do domu | Potwierdzam dojazd do bramy | Junction sequence plus inward movement, then inbound checkpoint |
 | Cleaning | Pełne sprzątanie | Potwierdzam wyjazd z osiedla | Consumed departure plus outward movement, then outward checkpoint |
 | Navigation | Yanosik | Potwierdzam jazdę | Minimum of qualified duration and displacement requirements |
 
-Sequence candidates show the intermediate stage at half fill; confirmation fills the bar.
-It is not a distance, probability or inferred intent. Departure starts only after existing
+Return fills 0-30% as junction distance reduces from the existing 300 m approach boundary to
+35 m. The inward stage fills 30-95% from junction-to-checkpoint distance down to the existing
+35 m trigger radius, clamped to that range. These are geometric stages, not time remaining,
+probability or intent. Only the unchanged return event produces 100% and immediate dispatch.
+A traffic stop holds observed fill; departing the route cancels. Late GPS starts at the actual
+stage rather than replaying a fictitious approach. Cleaning still uses the half-fill sequence.
+Departure starts only after existing
 displacement/direction gates; navigation uses the existing 10 s requirement. All fill values
 come from the detector. Time passing in UI cannot increase them. Radio start alone gives no
 prediction. Manual buttons bypass detection; Mop stays manual only.
 
 No animation delays dispatch. Full fill means recognized event, not successful execution.
 Gate/cleaning immediately use the existing full screen: success 5 s, errors until retry/close,
-return to previously open menu or hide. Navigation stays behind the current app; its request
-result lasts 2 s and does not claim service, warning icon or hazard-display confirmation.
+return to previously open menu or hide. Since 0.5.1 navigation launches normally and requests
+the desktop once after 5 s, as explicitly approved. Its request result then lasts 2 s and does
+not claim service, warning icon or hazard-display confirmation. Brief target UI is acceptable.
+Version 0.5.2 checks fresh notification presence before launch: detected work skips silently
+without STARTED or HOME; unknown status produces a short skipped message, not a launch.
 
 ## Communication and ownership
 
@@ -38,7 +47,9 @@ result lasts 2 s and does not claim service, warning icon or hazard-display conf
 `existing event -> HomeActions -> existing executor -> correlated action outcome`
 
 - Immutable DetectionProgress: kind, detector-local run ID, phase, fill, monotonic validity
-  and cancellation category. Its tracker is a side channel inside the same accept evaluation.
+  and cancellation category, plus Stage NONE/APPROACHING_JUNCTION/APPROACHING_GATE. Stage survives
+  model delivery and cancellation; the renderer selects copy without doing GPS maths.
+  Its tracker is a side channel inside the same accept evaluation.
   Observers cannot affect returned events, persistent flags or detection thresholds.
 - ProgressModel.State adds a process-local attempt/presentation ID, generation and display
   expiry. Candidate/action maps are separate; completed attempt history is bounded to 16.
@@ -114,8 +125,10 @@ streets, phone fragments, credentials or server payloads. UI never parses logs.
 - Synthetic screenshots are generated in ignored build/ui-checks. Reviewed copies belong in
   docs/images. The action screenshot is a renderer preview, without a call or HTTP request.
 
-Hardware pending: backed-up same-signature update, parked overlay/touch-through without
-executors, then one outbound/return presentation check after independent ignition-task
-configuration. Verify real warning-overlay behavior, menu restoration and no duplicate
+Hardware update: 0.5.1 is installed; 0.5.2 is local only. A real movement banner and automatic
+return call passed on 0.5, but the later overnight startup failed according to the owner.
+Pending: notification presence validation and early/inward banner on a real return, plus
+the remaining outbound/cleaning and wake reliability checks.
+Verify real warning-overlay behavior, menu restoration and no duplicate
 banner/actions. Do not repeat calibration without a specific evidence gap. Local success
 does not establish physical acceptance or manufacturer wake recovery.

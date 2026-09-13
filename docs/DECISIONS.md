@@ -1,5 +1,24 @@
 # Design decisions
 
+## Presence guard and earlier return - 0.5.2
+
+- Owner approved notification access and a return banner before the turn.
+- Fresh service-notification evidence, not a guessed PID or persisted "running" flag.
+- Work detected: no launch/HOME. Unknown: skip cycle with short explanation, no retries.
+- Settings is the only permission entry point; no content logging or other-app analysis.
+- Return-only observation expands to approach/inward stages with distance-derived fill.
+  Existing call events, timings and flags remain identical. No animation-delayed calls.
+- Car access/testing waits for the owner. Overnight monitoring startup remains unresolved.
+
+## One-shot Yanosik desktop return - 0.5.1
+
+- The owner accepted a simple launch followed by one desktop request, five seconds later.
+- Replace unreliable behind-task startup. Brief Yanosik UI is acceptable; do not track other
+  foreground apps or restore a prior navigation app. No Accessibility or simulated keys.
+- Keep one reservation per boot/wake, no retries and no hiding a later manual Yanosik launch.
+- Cancel the pending desktop callback when monitoring stops or a new verified cycle arrives.
+- A requested desktop is not proof of Yanosik service/overlay readiness. Verify on the radio.
+
 ## Observational automation progress - 0.5
 
 - Keep the 0.4.1 detector, vendor cycle adapter, diagnostics and executor safety as the baseline.

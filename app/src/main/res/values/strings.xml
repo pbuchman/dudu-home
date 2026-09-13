@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="yanosik_notification_access">Yanosik: wykrywanie pracy</string>
+    <string name="yanosik_access_granted">Dostęp do powiadomień jest włączony.</string>
+    <string name="yanosik_access_missing">Brak dostępu do powiadomień. Automatyczny start Yanosika zostanie pominięty.</string>
+    <string name="yanosik_access_explanation">Android nadaje dostęp do powiadomień aplikacji. Dudu Home sprawdza tylko pakiet i oznaczenie usługi Yanosika, bez czytania ani zapisywania treści. Nadanie zgody nie uruchamia żadnej akcji.</string>
+    <string name="yanosik_access_settings">Ustawienia systemowe</string>
+    <string name="yanosik_access_unavailable">Nie można otworzyć ustawień dostępu do powiadomień.</string>
+    <string name="progress_target_status_unknown">Nie mogę sprawdzić pracy Yanosika. Pomijam start.</string>
+    <string name="progress_return_checking_route">Sprawdzam trasę powrotu</string>
     <string name="progress_departure">Wyjazd z domu</string>
     <string name="progress_return">Powrót do domu</string>
     <string name="progress_yanosik">Yanosik</string>

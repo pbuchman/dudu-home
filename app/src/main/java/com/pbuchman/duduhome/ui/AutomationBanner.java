@@ -49,6 +49,7 @@ public final class AutomationBanner {
             case DAILY_LIMIT_OR_STORAGE -> R.string.progress_cleaning_blocked;
             case UI_UNAVAILABLE -> R.string.progress_ui_unavailable;
             case TARGET_UNAVAILABLE -> R.string.progress_target_unavailable;
+            case TARGET_STATUS_UNKNOWN -> R.string.progress_target_status_unknown;
             case REQUEST_FAILED -> R.string.progress_request_failed;
             case BUSY_OR_MAINTENANCE, UI_BUSY -> R.string.operation_busy;
             default -> R.string.progress_conditions;
@@ -57,6 +58,8 @@ public final class AutomationBanner {
         if (s.phase() == Phase.STARTED || s.phase() == Phase.ACCEPTED || s.phase() == Phase.REQUESTED)
             return R.string.progress_launching;
         if (s.phase() == Phase.CONFIRMED) return R.string.progress_confirmed;
+        if (s.kind() == Kind.RETURN && s.stage() == Stage.APPROACHING_JUNCTION)
+            return R.string.progress_return_checking_route;
         return switch (s.kind()) { case DEPARTURE -> R.string.progress_departure_detail;
             case RETURN -> R.string.progress_return_detail; case CLEANING -> R.string.progress_cleaning_detail;
             default -> R.string.progress_motion_detail; };

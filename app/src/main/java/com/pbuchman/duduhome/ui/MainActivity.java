@@ -108,9 +108,11 @@ public final class MainActivity extends Activity {
         findViewById(R.id.settings_button).setOnClickListener(view -> {
             if (busyNotice()) return;
             new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
-                    .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja"}, (dialog, which) -> {
+                    .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja",
+                            getString(R.string.yanosik_notification_access)}, (dialog, which) -> {
                         if (which == 0) { returnToMenu = true; showNumberSetup(); }
                         else if (which == 1) showRoborockSetup(false);
+                        else if (which == 3) showYanosikAccess();
                         else new android.app.AlertDialog.Builder(this).setTitle("Lokalizacja")
                                 .setMessage(HomeConfiguration.load(this) == null ? "Brak konfiguracji GPS. Dostarcz prywatny plik instalatorem."
                                         : "Konfiguracja GPS zainstalowana. Zmiany przez prywatny plik instalatora.")
@@ -166,6 +168,21 @@ public final class MainActivity extends Activity {
         HomeActions.visible(this);
         ProgressBus.presentationChanged();
         HomeMonitorService.ensureStarted(this);
+    }
+
+    private void showYanosikAccess() {
+        boolean granted = com.pbuchman.duduhome.automation.YanosikPresence.accessGranted(this);
+        new android.app.AlertDialog.Builder(this).setTitle(R.string.yanosik_notification_access)
+                .setMessage(getString(granted ? R.string.yanosik_access_granted : R.string.yanosik_access_missing)
+                        + "\n\n" + getString(R.string.yanosik_access_explanation))
+                .setNegativeButton(R.string.close, null)
+                .setPositiveButton(R.string.yanosik_access_settings, (dialog, which) -> {
+                    try { startActivity(new Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
+                    catch (RuntimeException unavailable) {
+                        new android.app.AlertDialog.Builder(this).setMessage(R.string.yanosik_access_unavailable)
+                                .setPositiveButton("OK", null).show();
+                    }
+                }).show();
     }
 
     @Override protected void onPause() {

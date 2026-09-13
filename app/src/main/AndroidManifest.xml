@@ -28,6 +28,13 @@
         android:theme="@style/Theme.DuduGate">
         <activity android:name="com.pbuchman.duduhome.startup.HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleInstance" />
         <service android:name="com.pbuchman.duduhome.location.HomeMonitorService" android:exported="false" android:foregroundServiceType="location" />
+        <service android:name="com.pbuchman.duduhome.automation.YanosikPresence"
+            android:label="@string/yanosik_notification_access"
+            android:exported="false" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
         <receiver android:name="com.pbuchman.duduhome.startup.HomeBootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

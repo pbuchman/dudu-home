@@ -123,6 +123,13 @@ aktualizację. Nie ma automatycznego ponowienia ani uruchomienia aplikacji. Regr
 
 ## Minimalna sesja akceptacyjna na radiu
 
+Od 0.5.2 automatyczny start Yanosika wymaga zgody w „Ustawienia > Yanosik: wykrywanie pracy”.
+Nadaj dostęp systemowy i sprawdź odczyt, nie tylko sam przełącznik. Zweryfikuj stan Yanosika
+uruchomionego wcześniej, jego brak oraz cofnięcie zgody: odpowiednio zero startów/HOME,
+jeden start/HOME po ruchu oraz pominięcie. Samo nadanie zgody nie rozpoczyna akcji.
+Przed instalacją podczas następnej sesji najpierw zabezpiecz logi nocnego braku startu.
+Nie powtarzaj krótkiego restartu jako zastępstwa za niezaliczony test po całej nocy.
+
 Zanim kierowca ruszy, operator ma potwierdzony dostęp do logów i gotowość konfiguracji.
 Podczas jazdy kierowca nie obsługuje UI ani terminala. Nie potrzeba kolejnych ośmiu tras.
 

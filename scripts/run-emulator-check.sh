@@ -54,7 +54,7 @@ if [[ "$DUDU_SAFETY" != *"PASS:"* || "$DUDU_SAFETY" == *"FAIL:"* ]]; then
     exit 1
 fi
 mkdir -p build/ui-checks
-for DUDU_SHOT in progress-menu progress-overlay progress-cancelled progress-action; do
+for DUDU_SHOT in progress-menu progress-overlay progress-cancelled progress-action progress-return-early progress-return-inbound; do
     "$DUDU_ADB" -s "$DUDU_SERIAL" pull \
         "/sdcard/Android/data/com.pbuchman.duduhome/files/$DUDU_SHOT.png" "build/ui-checks/$DUDU_SHOT.png"
 done

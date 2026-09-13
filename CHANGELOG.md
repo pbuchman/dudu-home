@@ -1,5 +1,24 @@
 # Change history
 
+## 0.5.2-local - Yanosik presence and earlier return progress, not installed
+
+- Skip launch and desktop navigation when Yanosik's foreground-service notification exists.
+- Explicit unknown state and no-retry skip when notification access/connection is unavailable.
+- Settings entry for the owner-approved system notification grant, without reading contents.
+- Return banner before the turn, then inward distance-derived progress instead of fixed 50%.
+- Preserve route events/timing, call safety, daily cleaning quota and wake semantics.
+- Overnight monitor startup is still unresolved; radio tests wait for owner availability.
+
+## 0.5.1-local - one-shot desktop return after Yanosik startup
+
+- Normal Yanosik launch followed by one desktop request after five seconds, as approved.
+- No foreground-app tracking, repeated hiding, extra permissions or launch retry.
+- Cancel a pending desktop request on monitor stop/new cycle; do not replay after restart.
+- Preserve motion thresholds, session reservation and all gate/cleaning protections.
+- Real 0.5 session proved full-boot and one ignition recovery, the movement banner and an
+  automatic return call; the owner confirmed gate opening. Yanosik foreground presentation
+  failed in that session, motivating this fix. New hardware acceptance remains separate.
+
 ## 0.5.0-local - observational automation progress, radio checks pending
 
 - Native top-centred non-interactive overlay and shared inline menu banner.
@@ -8,8 +27,9 @@
 - Expire undelivered five-second Activity requests without retry or late execution.
 - Reuse bounded diagnostics; preserve executor locks, daily quota and wake adapter.
 - Baseline-equivalent events/times/flags on all eight private replays, plus synthetic checks.
-- Synthetic screenshots and emulator coverage; no radio installation or wake acceptance
-  claimed for this version. Package/signing unchanged; source only, no public APK.
+- Synthetic screenshots and emulator coverage. Subsequent backed-up DUDU7 update, private
+  import and fresh GPS verified; ignition shortcut/task saved. Actual wake and journey
+  acceptance still pending. Package/signing unchanged; source only, no public APK.
 
 ## 0.4.1-local - startup recovery work, physical wake acceptance pending
 

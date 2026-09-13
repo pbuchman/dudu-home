@@ -67,6 +67,46 @@ public final class ProgressChecks {
         }
         motion.accept(new MotionDetector.Fix(11000,20,0,3,0,true,0,false));
         check(motion.progress().get(0).reason()==Reason.STOPPED,"specific stop reason");
+        returnProgress();
         System.out.println("PASS: progress, cancellation, epochs, priorities, immutable outcomes, bounded state");
+    }
+    static DetectionProgress returning(HomeDetector d) {
+        return d.progress().stream().filter(p -> p.kind() == Kind.RETURN).findFirst().orElseThrow();
+    }
+    static void sample(HomeDetector d, long second, double x, double y, double speed) {
+        d.accept(new HomeDetector.Fix(second * 1000, new HomeDetector.Point(x,y), 3,speed,0,false));
+    }
+    static void returnProgress() {
+        var g = new HomeDetector.Geometry(new HomeDetector.Point(-250,-180),new HomeDetector.Point(-220,-150),
+                new HomeDetector.Point(-180,0),new HomeDetector.Point(0,0));
+        HomeDetector d = new HomeDetector(g,0);
+        long t=0;
+        sample(d,t++,0,290,5);sample(d,t++,0,280,5);
+        var early=returning(d);
+        check(early.stage()==Stage.APPROACHING_JUNCTION && early.value()<.05,"early near-empty banner");
+        for(int y=260;y>=20;y-=20)sample(d,t++,0,y,5);
+        var junction=returning(d);
+        check(junction.id()==early.id() && junction.value()==.3,"continuous first stage");
+        sample(d,t++,0,20,0);sample(d,t++,0,20,0);
+        check(returning(d).value()==junction.value(),"traffic stop cannot fill");
+        sample(d,t++,-20,0,5);sample(d,t++,-40,0,5);
+        var inward=returning(d);
+        check(inward.id()==early.id() && inward.stage()==Stage.APPROACHING_GATE && inward.value()>.3,"turn keeps same run");
+        for(int x=-60;x>=-140;x-=20)sample(d,t++,x,0,5);
+        check(returning(d).value()>.8 && returning(d).value()<1,"distance-derived inward fill");
+        var events=d.accept(new HomeDetector.Fix(t++*1000,new HomeDetector.Point(-150,0),3,5,0,false));
+        check(events.contains(HomeEvent.RETURN_APPROACH) && returning(d).value()==1,"unchanged event, complete fill");
+        HomeDetector through=new HomeDetector(g,0);t=0;
+        for(int y=280;y>=-60;y-=20)sample(through,t++,0,y,5);
+        check(through.progress().stream().noneMatch(p->p.kind()==Kind.RETURN&&p.phase()==Phase.CANDIDATE),"through-road cancellation");
+        HomeDetector gap=new HomeDetector(g,0);
+        sample(gap,0,0,280,5);sample(gap,1,0,260,5);long old=returning(gap).id();
+        gap.accept(new HomeDetector.Fix(2000,new HomeDetector.Point(0,240),30,5,0,false));
+        check(returning(gap).reason()==Reason.GPS_UNRELIABLE,"bad GPS cancels early return");
+        sample(gap,3,0,220,5);sample(gap,4,0,200,5);
+        check(returning(gap).id()!=old,"recovered GPS uses new run");
+        ProgressModel model=new ProgressModel();
+        model.offer(0,Set.of(Kind.RETURN),List.of(returning(gap)),4000);
+        check(model.visible(4000).stage()==Stage.APPROACHING_JUNCTION,"stage reaches model");
     }
 }

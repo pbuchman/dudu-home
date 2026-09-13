@@ -34,8 +34,9 @@ public final class ProgressBus {
         model.offer(epoch, scope, updates, SystemClock.elapsedRealtime());
         for (ProgressModel.State s : model.snapshot()) {
             if (s.evidenceId() < 0) continue;
-            if (before.stream().noneMatch(old -> old.id() == s.id() && old.phase() == s.phase()))
-                Diagnostics.record(c, "PROGRESS_" + s.kind() + "_" + s.phase() + "_" + s.reason() + " ID=" + s.id());
+            if (before.stream().noneMatch(old -> old.id() == s.id() && old.phase() == s.phase() && old.stage() == s.stage()))
+                Diagnostics.record(c, "PROGRESS_" + s.kind() + "_" + s.phase() + "_" + s.reason()
+                        + "_STAGE_" + s.stage() + " ID=" + s.id());
         }
         notifyObservers();
     }

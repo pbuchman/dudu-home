@@ -2,6 +2,30 @@
 
 ## Implemented
 
+### Presence guard - 0.5.2, radio validation pending
+
+The owner approved NotificationListenerService access. YanosikPresence reads a fresh complete
+active-notification snapshot only while connected and granted access. It filters the exact
+Yanosik package before examining FLAG_FOREGROUND_SERVICE. No extras/text, PendingIntent,
+notification action, account data or other-package contents are read or stored. The service
+is system-bound, permission-protected, and never starts monitoring or actions itself.
+
+Three states: WORK_DETECTED, NO_WORK_SIGNAL, UNKNOWN. Existing foreground-service notification
+means skip without launch/HOME. NO_WORK_SIGNAL permits the existing movement-triggered launch;
+it does not prove every cached process is absent. UNKNOWN (unbound, revoked, null snapshot or
+exception) skips with a two-second message. All outcomes consume the current boot/wake attempt.
+Late grant/reconnect or notification removal cannot retry. Reads occur before action and use
+current notifications, including those posted before Dudu Home started. No disk-cached presence.
+
+Settings exposes grant status and the system notification-access screen, never an automatic
+permission dialog on the road. Android's grant is broad, even though our processing is narrow.
+No Accessibility, usage-history permission, shell process query or private service bypass.
+The installed Yanosik notification must be validated while running/stopped on the radio before
+acceptance; service flags do not prove GNSS/warning readiness. This does not fix the unresolved
+overnight monitor startup reported on 2026-09-13. Last installed version remains 0.5.1/code 8.
+
+Reference: [Android notification listener lifecycle](https://developer.android.com/reference/android/service/notification/NotificationListenerService).
+
 The existing foreground location service supplies an independent MotionDetector: at least
 10 seconds, speed >= 1 m/s, displacement >= 15 m, accuracy <= 15 m, age <= 3 seconds.
 Missing speed, bad/mock positions, a gap > 3 seconds or stopping clear motion evidence.
@@ -16,8 +40,12 @@ priority on the same fix. The launch does not call, send a robot command or chan
 YanosikLauncher uses `getLaunchIntentForPackage` for `pl.neptis.yanosik.mobi.android`.
 The complete package and launcher were verified on the physical radio on 2026-09-09;
 the earlier shortened package name was incorrect and could not resolve the installed app.
-The component is resolved at runtime instead of hardcoded. Resolution and cold-boot background
-startup passed on the radio as recorded below. The manifest queries only that package and SYU.
+The component is resolved at runtime instead of hardcoded. Version 0.5.1 uses a normal launch,
+then one ACTION_MAIN/CATEGORY_HOME request five seconds later. The owner explicitly accepted
+brief startup UI and returning to the desktop instead of restoring another app. No foreground
+app tracking, repeated hiding or launch retry. Monitor destruction/new verified cycle cancels
+the pending callback; process restart cannot replay it. Missing/throwing launch does not schedule
+HOME. HOME failure is logged once without retry. The manifest queries only Yanosik and SYU.
 No Accessibility, shell launches, fake radio coordinates or QUERY_ALL_PACKAGES.
 
 JourneySession persists reservation before resolving/starting. Missing app, thrown failure
@@ -43,16 +71,26 @@ An increasing counter within the same boot rearms one launch and clears old moti
 Missing/malformed/sleeping state does not rearm. No property writes, root, hidden APIs or
 exported reset endpoint. The read-only command has a bounded timeout and fixed arguments.
 
-The adapter is implemented, synthetic tests pass and the installed 0.4.1 app successfully
-read a valid cycle on the radio. Actual task configuration and next-wake background launch
-remain hardware acceptance requirements. Access ended before the shortcut/task was saved.
+The adapter is implemented, synthetic tests pass and the installed app successfully read
+a valid cycle on the radio. The later 0.5.0 update and exact ignition shortcut/task are now
+installed/saved. After renewed debugging authorization, the private journal confirmed automatic
+monitor startup on full boot and again after one real ignition off/on, with fresh GPS and no
+manual menu launch. Sustained movement displayed the real banner and started Yanosik's service.
+However its dashboard opened in front, so this run failed background presentation acceptance.
 
 ## Verification and next exact step
+
+The owner confirmed the automatic return call physically opened the gate. For 0.5.1, verify
+normal Yanosik launch, exactly one desktop return and the continuing service/warning overlay,
+without manually pressing HOME. Five seconds is a startup allowance, not a readiness callback;
+a future/slower Yanosik could still open another Activity afterward. No guarantee of universal
+compatibility. Current request outcomes do not claim a running service or available warnings.
 
 - Pure Java MotionChecks: duration/displacement, bad accuracy/age/mock/missing speed, stop,
   gap, jump, deferred and cancelled execution.
 - Android NavigationChecks: durable reservation/reconstruction, boot changes, duplicate
   verified wake IDs, missing target and launch exception with no retry; fake launch only.
+  One delayed HOME, no early/duplicate HOME, cancellation and HOME exception are also tested.
 - Existing UI tests assert setup/error/five-second success do not allow external launch.
 - Configure and verify the actual DUDU ignition shortcut and two real wake sequences before
   reporting full wake readiness. App-side cycle access alone has already passed.
@@ -85,7 +123,8 @@ The installed APK hash matched the current local build. Build/lint, emulator saf
 checks, motion checks and private installer tests passed. The session reservation remained
 consumed after the observed stop. This is physical cold-boot/background presentation evidence,
 not a manufacturer ignition/wake test or a guarantee against future Yanosik changes.
-No accessibility, delayed HOME press or fabricated GPS is used. Full cold boot, application
+That historical variant used no delayed HOME request. Version 0.5.1 replaces it after the
+2026-09-12 foreground regression and the owner's explicit simplification. Full cold boot, application
 update and manufacturer wake remain separate cases. Source publication was subsequently
 authorized after the privacy/documentation audit; this is not full ignition/wake acceptance.
 

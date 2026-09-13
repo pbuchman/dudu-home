@@ -1,5 +1,85 @@
 # Verification ledger
 
+## 0.5.2 local checks - 2026-09-13, not installed
+
+Build, Android test APK and lint passed. The full emulator safety suite passed, including
+system notification-listener grant, bind, revoke and reconnect. A fresh snapshot without
+access returns unknown; an empty connected snapshot allows the existing launch path.
+Synthetic notification fixtures distinguish the exact Yanosik foreground-service flag from
+ordinary/ongoing notices and other packages. Existing-service and unknown-status paths do
+not launch an Activity or request HOME and do not retry after a later status change.
+These checks do not establish the notification behavior of the installed Yanosik on DUDU7.
+
+Detector tests passed, including earlier return presentation, one run through the junction,
+stationary frozen fill, cancellation when continuing elsewhere and fresh evidence after GPS
+loss. Equivalence checks retained events, times and flags for 22,644 home samples (including
+all eight private recordings) and 20,000 motion samples. Seven private-tool tests and five
+fresh-installer tests passed. No live gate call or cloud routine was performed.
+
+The two new public return screenshots were captured on the synthetic landscape emulator
+and visually reviewed. The early and inbound messages, matching real supplied fill and
+overlay layout passed instrumentation checks. No radio connection, installation or ignition
+test was performed for this version. The overnight startup failure reported on this date
+remains unresolved; these presence/presentation changes are not a claimed wake repair.
+
+## 0.5.1 update and local checks - 2026-09-12
+
+Build/lint and the emulator safety suite passed, including delayed HOME ordering, single
+delivery, missing/denied launch, cancellation and HOME failure without retry. Pure detector,
+motion and 40,000-sample progress equivalence checks passed. No GPS thresholds changed.
+The guarded installer backed up the current APK/data, compared the radio phone and signature,
+then updated to code 8 without clearing data. One-time import completed; installed APK hash,
+private geometry, enabled automation and phone matched the local sources. GPS subscription
+and vendor cycle read resumed. A full radio reboot then automatically restarted monitoring
+and fresh GPS without opening the menu. At the captured stationary state, no navigation
+attempt had fired. The real-motion desktop-return result is not yet claimed here.
+Backup manifest hashes and all eight regular tar payloads were independently verified.
+All eight private recordings retained identical events, times and flags on replay.
+No public APK or private radio screenshots.
+
+## Combined real journey results - 2026-09-12 evening
+
+After debugging authorization, the journal confirmed NoDisplay wake entry and monitoring
+after full reboot, then a second wake entry after a real ignition off/on. Fresh GPS arrived
+without manually opening Dudu Home. One sustained-motion candidate confirmed after about
+eleven seconds, displayed the real banner and requested Yanosik once. Its foreground service
+ran, but DashboardPackActivity and subsequently the map came forward. This fails the desired
+background presentation despite an earlier successful behind-task test.
+
+The return sequence then produced one accepted/started gate attempt, own dial, outgoing,
+five-second delay, hangup and idle success. The owner independently confirmed physical gate
+opening. This is one successful return, not acceptance of every route or negative control.
+The owner approved a simpler follow-up: normal Yanosik launch, then one desktop request after
+five seconds. Source 0.5.1 implements it; installation/hardware acceptance must be recorded
+separately. Raw journal, system logs and location-bearing screenshots remain private.
+
+Still pending: repeated wake, outbound/cleaning and daily deduplication, plus the new Yanosik
+desktop/service/overlay sequence without manually pressing HOME. Do not reset real quotas
+or fake motion to turn these into apparent passes.
+
+## Combined 0.5 radio installation and ignition setup - 2026-09-12 evening
+
+Before manually opening the app, the radio had 0.4.1/code 6 and an already-running monitor.
+The journal contained an earlier successful gate call and navigation launch request, but
+Yanosik's full map was foreground. The observed state does not establish how those apps were
+opened or prove automatic background acceptance. Raw evidence was archived privately first.
+
+Rebuilt/linted 0.5/code 7 and repeated both private source/history denylist checks. The guarded
+installer compared the configured phone and signing certificate, archived the previous APK
+and app data, and installed without uninstalling or clearing data. Backup manifest hashes
+and all eight regular tar payloads were independently verified. Import completed; maintenance
+and pending staging were absent, encrypted routine configuration remained present, and fresh
+good GPS deliveries continued. No test call or cloud routine was deliberately dispatched.
+
+Saved a DUDU shortcut named `Dudu`, explicitly targeting HomeWakeActivity, then a zero-delay
+Vehicle Ignition -> Open the App task targeting that shortcut. Persisted list entries were
+visually verified and captured privately. The six-character draft name was not accepted by
+the device; the shorter name worked. This is configuration evidence, not ignition execution.
+
+A full radio reboot was requested after returning to the launcher. Before acceptance capture,
+no manual app launch or HOME navigation was issued afterward. Renewed debugging authorization
+initially blocked inspection; the subsequent results are recorded above.
+
 ## Progress UI 0.5.0-local - local checks, 2026-09-12
 
 Built from verified origin/main `911d18b` in a separate worktree/branch. Application ID and

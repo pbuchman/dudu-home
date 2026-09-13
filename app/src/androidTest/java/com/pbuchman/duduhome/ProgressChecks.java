@@ -87,6 +87,24 @@ final class ProgressChecks {
             check(HomeActions.allowsExternalLaunch(),"overlay cannot change action eligibility");
         });
         capture(i,"progress-overlay.png");
+        i.runOnMainSync(()-> {
+            epoch[0]=ProgressBus.reset(c,Reason.RESET);
+            ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.RETURN,3,
+                    Phase.CANDIDATE,.08,SystemClock.elapsedRealtime()+15000,Reason.NONE,Stage.APPROACHING_JUNCTION)));
+            var view=(View)field(panel[0],"overlay");
+            check(((android.widget.TextView)view.findViewById(R.id.banner_detail)).getText().toString()
+                    .equals(c.getString(R.string.progress_return_checking_route)),"early route copy");
+        });
+        capture(i,"progress-return-early.png");
+        i.runOnMainSync(()-> {
+            ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.RETURN,3,
+                    Phase.CANDIDATE,.68,SystemClock.elapsedRealtime()+15000,Reason.NONE,Stage.APPROACHING_GATE)));
+            var view=(View)field(panel[0],"overlay");
+            check(((android.widget.TextView)view.findViewById(R.id.banner_detail)).getText().toString()
+                    .equals(c.getString(R.string.progress_return_detail)),"inbound route copy");
+            check(((ProgressBar)view.findViewById(R.id.banner_progress)).getProgress()==680,"inbound fill");
+        });
+        capture(i,"progress-return-inbound.png");
         i.runOnMainSync(()->{
             epoch[0]=ProgressBus.reset(c,Reason.GPS_UNRELIABLE);
             ProgressBus.offer(c,epoch[0]-1,ProgressBus.HOME,List.of(new DetectionProgress(Kind.DEPARTURE,1,

@@ -132,15 +132,42 @@ public final class HomeDetector {
                 events.contains(HomeEvent.DEPARTURE_STARTED),
                 movingSince < 0 ? 0 : (fix.elapsedMs - movingSince) / 3000.0,
                 fix.elapsedMs + 3000, lost);
-        progress.update(RETURN, !returnConsumed && visitedJunction && previous != null
-                        && gateDistance < previous.distance(geometry.gate) && fix.speed >= 0.7,
-                events.contains(HomeEvent.RETURN_APPROACH), 0.5, fix.elapsedMs + 3000, lost);
+        observeReturn(fix, events.contains(HomeEvent.RETURN_APPROACH), junctionDistance,
+                approachDistance, gateDistance, jx, lost);
         progress.update(CLEANING, departureConsumed && !checkpointConsumed && previous != null
                         && gateDistance > previous.distance(geometry.gate) && fix.speed >= 0.7,
                 events.contains(HomeEvent.OUTBOUND_CHECKPOINT), 0.5, fix.elapsedMs + 3000, lost);
         previous = p;
         return events;
     }
+
+    /** Presentation only: never writes route evidence, consumed flags or action thresholds. */
+    private void observeReturn(Fix fix, boolean confirmed, double junctionDistance,
+                               double approachDistance, double gateDistance, double jx,
+                               DetectionProgress.Reason lost) {
+        DetectionProgress old = progress.snapshot().stream().filter(p -> p.kind() == RETURN
+                && p.phase() == DetectionProgress.Phase.CANDIDATE).findFirst().orElse(null);
+        boolean inward = previous != null && gateDistance < previous.distance(geometry.gate);
+        boolean towardJunction = previous != null && junctionDistance < previous.distance(geometry.junction);
+        boolean beforeTurn = (roadApproach || (visitedJunction && junctionDistance <= 35))
+                && (towardJunction || (visitedJunction && junctionDistance <= 35 && inward));
+        boolean afterTurn = visitedJunction && jx < -35 && inward;
+        boolean candidate = !returnConsumed && fix.speed >= 0.7 && (beforeTurn || afterTurn);
+        DetectionProgress.Stage stage = afterTurn ? DetectionProgress.Stage.APPROACHING_GATE
+                : DetectionProgress.Stage.APPROACHING_JUNCTION;
+        double value = afterTurn
+                ? .3 + .65 * clamp((geometry.junction.distance(geometry.approach) - approachDistance)
+                    / Math.max(1, geometry.junction.distance(geometry.approach) - 35))
+                : .3 * clamp((300 - junctionDistance) / (300 - 35.0));
+        // A traffic stop holds observed progress; time and GPS drift cannot fill the bar.
+        if (!returnConsumed && fix.speed < .7 && old != null && (roadApproach || visitedJunction)) {
+            candidate = true; value = old.value(); stage = old.stage();
+        }
+        progress.update(RETURN, candidate, confirmed, value, fix.elapsedMs + 3000, lost,
+                confirmed ? DetectionProgress.Stage.APPROACHING_GATE : stage);
+    }
+
+    private static double clamp(double value) { return Math.max(0, Math.min(1, value)); }
 
     public void clearEvidence() {
         progress.clear(RESET);
