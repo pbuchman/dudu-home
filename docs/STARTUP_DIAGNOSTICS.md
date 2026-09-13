@@ -1,6 +1,74 @@
 # DUDU startup recovery and private diagnostics
 
-## Latest report - 2026-09-13
+## First-wake baseline repair - 0.5.5, hardware acceptance pending
+
+Code 11 recovered monitoring after sleep but retained a consumed Yanosik attempt at the
+first numeric counter. Cold boot had returned empty vendor properties and never persisted
+wake_id. The next numeric increase rearmed successfully. This is distinct from the earlier
+pre-onCreate task trimming. Neither finding proves the cause of every historical failure.
+
+DuduCycle now returns AWAKE_COUNTER, ABSENT_COLD_BASELINE or UNAVAILABLE. The fixed shell
+command checks every getprop exit status, frames the output, waits at most 500 ms for the
+process and bounds each output stream to 512 bytes. It reads boot-completed, both sleep
+flags and the counter twice. Numeric readings require completed boot, zero sleep flags
+and equal counters. Only a complete pair of boot-completed=1 observations with all six
+vendor fields empty establishes the cold baseline zero. Stderr, timeout, failure,
+truncation, mixed/unstable fields or malformed values remain unavailable, never zero.
+The analyzed SYU implementation increments the missing counter from default zero at sleep.
+No hidden API, system-property write, new permission or alarm is used.
+
+JourneySession keeps the existing boot/wake_id/consumed keys. Missing baseline plus verified
+empty cold state writes zero without changing consumed. Missing baseline plus first numeric
+value writes that value without rearming. Only a strictly increasing numeric value atomically
+writes wake_id and consumed=false. Empty observations cannot overwrite an existing baseline.
+Updates never reconstruct a missed baseline from logs or elapsed time. A failed commit
+blocks that preferences object across all session instances for the process lifetime;
+even its possibly modified in-memory values cannot grant an attempt. No automatic restart.
+
+The monitor retains asynchronous single-flight reads and ignores callbacks after destruction.
+The first completed read releases the initial cycle barrier even if unavailable, preserving
+cold-boot behavior. Only REARMED cancels pending HOME and clears transient evidence/progress,
+not persisted route flags, phone cooldown or cleaning quotas. Baseline observations are inert.
+
+Diagnostics: VENDOR_BASELINE_ZERO, VENDOR_BASELINE_COUNTER, VENDOR_WAKE_REARM,
+VENDOR_CYCLE_UNAVAILABLE and VENDOR_CYCLE_INVALID_BOOT are category transitions with numeric
+cycle/ELIGIBLE fields only. Late successful baseline writes are recorded. Repeated unchanged
+reads are suppressed. YANOSIK_SESSION_STATE_WRITE_FAILED is emitted once per failed store
+and process. Existing two-file rotation remains unchanged; no raw property output is logged.
+
+Acceptance: update with preserved data/signature, full reboot, confirm automatic monitoring,
+fresh GPS and VENDOR_BASELINE_ZERO; drive to consume once; real sleep; first wake must record
+REARM with cycle 1, then one navigation attempt after fresh qualified movement. Repeat for
+cycle 2. A short interruption without a counter increase must not rearm. If Yanosik already
+works, expect no launch/HOME. Inspect the service and actual warning overlay, not only a
+launch-request log. Do not inject counters, clear quotas or manually start the app as proof.
+
+Version 0.5.5 is not yet hardware accepted. Private failure evidence is archived outside Git.
+The following sections document earlier versions and their separate results.
+
+## Intermittent wake race - 2026-09-13
+
+The owner clarified that failures also follow short and medium stops, not only overnight
+parking. A read-only capture before opening/updating the app found an existing process but
+no HomeMonitorService. The last two vendor wake launches created HomeWakeActivity tasks,
+started/bound the process, then destroyed the tasks with `recent-task-trimmed` before any
+app-side WAKE_ENTRY or MONITOR_CREATE. The last manual Yanosik launch came from the vendor
+launcher, not Dudu Home. Raw event/system logs and both journals are archived privately with
+verified checksums. This establishes a concrete failure path, not every reported occurrence.
+
+Version 0.5.3 removes manifest-time `excludeFromRecents` from the isolated NoDisplay entry.
+Android's [RecentTasks policy](https://github.com/aosp-mirror/platform_frameworks_base/blob/android13-release/services/core/java/com/android/server/wm/RecentTasks.java)
+can trim excluded tasks when another startup task takes the most recent position. The entry
+now calls `finishAndRemoveTask()` only after requesting monitoring. It still does not show
+the menu, reserve actions or infer a new ignition from its invocation. No retry loop, alarm,
+Application-level action dispatch or broad battery-policy change is added.
+
+The backed-up code 10 update, import and actual notification-listener binding passed.
+Fresh GPS then produced YANOSIK_ALREADY_RUNNING without another launch or HOME request.
+Full reboot and repeated manufacturer sleep/wake acceptance are recorded separately below
+or in VERIFICATION.md; this fix alone is not proof of universal wake reliability.
+
+## Initial report - 2026-09-13, superseded by the investigation above
 
 The owner reports neither home actions nor Yanosik started after overnight parking. The
 radio was unavailable for read-only inspection, so the specific failure point is unknown.

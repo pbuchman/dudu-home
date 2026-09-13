@@ -1,6 +1,6 @@
 # Automation progress: UI and background contract
 
-Source version `0.5.2-local`, versionCode 9, progress based on `911d18b`. Java 17, native Views/XML,
+Source version `0.5.5-local`, versionCode 12, progress based on `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
@@ -35,7 +35,7 @@ prediction. Manual buttons bypass detection; Mop stays manual only.
 No animation delays dispatch. Full fill means recognized event, not successful execution.
 Gate/cleaning immediately use the existing full screen: success 5 s, errors until retry/close,
 return to previously open menu or hide. Since 0.5.1 navigation launches normally and requests
-the desktop once after 5 s, as explicitly approved. Its request result then lasts 2 s and does
+the desktop once after a grace period (10 s since 0.5.4). Its request result then lasts 2 s and does
 not claim service, warning icon or hazard-display confirmation. Brief target UI is acceptable.
 Version 0.5.2 checks fresh notification presence before launch: detected work skips silently
 without STARTED or HOME; unknown status produces a short skipped message, not a launch.
@@ -125,10 +125,11 @@ streets, phone fragments, credentials or server payloads. UI never parses logs.
 - Synthetic screenshots are generated in ignored build/ui-checks. Reviewed copies belong in
   docs/images. The action screenshot is a renderer preview, without a call or HTTP request.
 
-Hardware update: 0.5.1 is installed; 0.5.2 is local only. A real movement banner and automatic
-return call passed on 0.5, but the later overnight startup failed according to the owner.
-Pending: notification presence validation and early/inward banner on a real return, plus
-the remaining outbound/cleaning and wake reliability checks.
+Hardware update: 0.5.4/code 11 is the last verified installation. Existing-Yanosik skip,
+automatic desktop return after 10 s and actual warning overlays passed. Version 0.5.5 adds
+typed cycle observations: baseline establishment never resets UI; only a verified increase
+resets old progress. Its installation/first-wake test remains pending, as do early/inward
+return presentation and remaining outbound/cleaning acceptance checks.
 Verify real warning-overlay behavior, menu restoration and no duplicate
 banner/actions. Do not repeat calibration without a specific evidence gap. Local success
 does not establish physical acceptance or manufacturer wake recovery.

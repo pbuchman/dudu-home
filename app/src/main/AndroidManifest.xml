@@ -26,7 +26,9 @@
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DuduGate">
-        <activity android:name="com.pbuchman.duduhome.startup.HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true" android:taskAffinity="" android:launchMode="singleInstance" />
+        <!-- Do not exclude before onCreate: Android can trim an excluded wake task while
+             concurrent vendor startup tasks take the foreground. Remove it after handoff. -->
+        <activity android:name="com.pbuchman.duduhome.startup.HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:taskAffinity="" android:launchMode="singleInstance" />
         <service android:name="com.pbuchman.duduhome.location.HomeMonitorService" android:exported="false" android:foregroundServiceType="location" />
         <service android:name="com.pbuchman.duduhome.automation.YanosikPresence"
             android:label="@string/yanosik_notification_access"

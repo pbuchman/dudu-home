@@ -48,6 +48,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private long lastSummary;
     private int fixes, poorFixes;
     private boolean destroyed, cycleReady, cyclePending;
+    private String lastCycleDiagnostic;
     private final java.util.concurrent.ExecutorService cycleReader = java.util.concurrent.Executors.newSingleThreadExecutor();
     private YanosikLauncher yanosik;
     private ProgressOverlay progressOverlay;
@@ -146,23 +147,36 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (destroyed || cyclePending) return;
         cyclePending = true;
         cycleReader.execute(() -> {
-            long cycle = DuduCycle.readAwakeCycle();
+            DuduCycle.Observation cycle = DuduCycle.readObservation();
             handler.post(() -> onCycleRead(cycle));
         });
     }
 
-    private void onCycleRead(long cycle) {
-        cyclePending = false;
+    private void onCycleRead(DuduCycle.Observation cycle) {
         if (destroyed) return;
-        if (!cycleReady) Diagnostics.record(this, cycle < 0 ? "VENDOR_CYCLE_UNAVAILABLE" : "VENDOR_CYCLE=" + cycle);
-        if (new JourneySession(this).observeAwakeCycle(cycle)) {
+        cyclePending = false;
+        JourneySession session = new JourneySession(this);
+        JourneySession.ObservationResult result = session.observeAwakeCycle(cycle);
+        if (result == JourneySession.ObservationResult.REARMED) {
             yanosik.cancelPendingHome();
             progressEpoch = ProgressBus.reset(this, Reason.WAKE);
             // Never carry pre-sleep movement evidence into a new cycle.
             motion.clear(); motionOrigin = null;
             if (detector != null) detector.clearEvidence();
-            Diagnostics.record(this, "VENDOR_WAKE_REARM CYCLE=" + cycle);
         }
+        String category = switch (result) {
+            case BASELINE_ZERO -> "VENDOR_BASELINE_ZERO";
+            case BASELINE_COUNTER -> "VENDOR_BASELINE_COUNTER CYCLE=" + cycle.counter();
+            case REARMED -> "VENDOR_WAKE_REARM CYCLE=" + cycle.counter();
+            case UNAVAILABLE -> "VENDOR_CYCLE_UNAVAILABLE";
+            case INVALID_BOOT -> "VENDOR_CYCLE_INVALID_BOOT";
+            case STATE_WRITE_FAILED -> null;
+            case UNCHANGED -> "VENDOR_CYCLE=" + cycle.counter();
+        };
+        if (category != null) category += " ELIGIBLE=" + (session.available() ? 1 : 0);
+        if (session.takeStorageFailureReport()) Diagnostics.record(this, "YANOSIK_SESSION_STATE_WRITE_FAILED");
+        if (category != null && !category.equals(lastCycleDiagnostic)) Diagnostics.record(this, category);
+        lastCycleDiagnostic = category;
         cycleReady = true;
     }
 

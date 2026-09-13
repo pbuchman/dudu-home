@@ -5,18 +5,22 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-It also starts Yanosik after sustained driving, then requests the radio desktop once after five seconds.
+It also starts Yanosik after sustained driving, then requests the radio desktop once after ten seconds.
 Yanosik can briefly appear during startup; this does not restore a previously open navigation app.
 
-> **Current source: `0.5.2-local`. Last verified installed version: `0.5.1-local`.**
-> Version 0.5.2 adds notification-based Yanosik presence checks and earlier return progress.
-> It is not installed on the radio yet. Notification access requires a one-time system grant.
-> **The owner reported another startup failure after overnight parking. Wake reliability is unresolved.**
+> **Current source: `0.5.5-local` (code 12). Last verified installation: `0.5.4-local` (code 11).**
+> Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.
+> Notification access requires a one-time system grant. Detection of an already-running
+> Yanosik passed on DUDU7 without reopening it or requesting HOME.
+> **Intermittent failures also followed shorter stops.** A wake-task trimming race was captured
+> and fixed in 0.5.3; repeated manufacturer wake reliability still requires verification.
 > The backed-up DUDU7 update, private configuration import and fresh GPS delivery passed.
 > On `0.5.0`, monitoring recovered automatically after full reboot and one real ignition cycle.
 > The real movement banner and an automatic return call passed; the owner confirmed gate opening.
-> Yanosik's service started, but its dashboard stole the foreground. The new desktop-return
-> behavior requires a fresh hardware test; it is not certified by the earlier background check.
+> On 0.5.4, automatic launch, desktop return and real warning overlays passed on DUDU7.
+> Version 0.5.5 fixes the first-wake session baseline in code: a verified empty cold-start
+> observation establishes zero without granting an extra attempt. Unknown reads never do.
+> **Installation and the first real sleep/wake test of 0.5.5 remain pending.**
 > Gate and Roborock manual actions were verified on the preceding package version.
 > **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
@@ -60,11 +64,11 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   ten seconds of qualified GPS movement. First check its foreground-service notification.
   If work is detected, do not reopen Yanosik or request the desktop. Unknown state (including
   missing notification access) skips this cycle, without retry. With no work signal, launch;
-  five seconds after the launch request, request the
+  ten seconds after the launch request, request the
   desktop once so Yanosik can work in the background. No repeated hiding, foreground-app
   tracking or automatic retry. A stop or process restart does not rearm it. The DUDU ignition
   task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
-  and [limitations](docs/YANOSIK.md) for the separately pending desktop-return test.
+  and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -142,7 +146,7 @@ For automatic Yanosik startup, open **Ustawienia > Yanosik: wykrywanie pracy > U
 and grant notification access to Dudu Home. Android grants broad access; our code only inspects
 Yanosik's package and foreground-service flag, never notification contents or actions. Other
 notifications are ignored. Granting access does not launch anything or reset a consumed cycle.
-The exact Yanosik notification signal still requires a radio test; absence is not a universal
+The Yanosik notification signal passed on this radio; absence is not a universal
 process-liveness check, and a detected service does not certify working hazard warnings.
 
 ## Privacy and maintenance

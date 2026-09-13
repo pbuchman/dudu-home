@@ -1,5 +1,29 @@
 # Change history
 
+## 0.5.5-local - preserve the first vendor wake opportunity
+
+- Distinguish verified empty cold-start properties from uncertain reads; persist baseline zero.
+- Keep first numeric migration conservative and rearm only on a verified counter increase.
+- Fail closed across session instances after persistence failure, without stopping home monitoring.
+- Preserve asynchronous reads, late-callback rejection, route flags and executor safety.
+- Add parser/process, persistence-failure and isolated monitor integration regressions.
+- Source verified locally; radio installation and first-wake acceptance remain pending.
+
+## 0.5.4-local - allow cold Yanosik startup before one desktop return
+
+- Extend one-shot HOME grace from 5 to 10 s after captured late dashboard startup on DUDU7.
+- Still no retries, repeated hiding or foreground-app tracking; existing-work skip is unchanged.
+- Keep the 0.5.3 wake entry repair and all calling/session protections.
+
+## 0.5.3-local - wake entry survives concurrent startup tasks
+
+- Fix captured pre-onCreate trimming of the excluded NoDisplay wake task.
+- Keep the isolated entry eligible until handoff, then finish and remove its own task.
+- Preserve session counters, action safety and no-menu wake behavior.
+- Add emulator regression for task flags, cleanup and no journey rearming by entry alone.
+- Installed as a backed-up code 10 update. Existing-Yanosik skip passed on the physical radio.
+- Intermittent failures include short/medium stops; repeated vendor wake acceptance is separate.
+
 ## 0.5.2-local - Yanosik presence and earlier return progress, not installed
 
 - Skip launch and desktop navigation when Yanosik's foreground-service notification exists.

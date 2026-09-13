@@ -1,5 +1,71 @@
 # Verification ledger
 
+## 0.5.5 local first-wake regression - 2026-09-13
+
+Build and Android test APK passed. Emulator instrumentation passed parser framing, invalid
+and oversized outputs, failed/timed-out/interrupted synthetic processes, cold-zero-to-first-
+wake rearming, duplicate/rollback/migration cases, and in-memory edits followed by commit
+failure across session instances. Isolated monitor callbacks passed initial unavailable
+fallback, late zero preserving movement, verified wake cancelling pending HOME and clearing
+evidence without changing route flags, plus stopped-instance rejection without modifying
+the new session, progress or pending HOME. Existing safety/UI/presence checks also passed.
+No real executor or GPS injection was used in these tests.
+
+Detector and progress checks passed on 20,000 home and 20,000 motion synthetic samples;
+no private recordings were replayed in this run. Seven private-tool and five fresh-installer
+tests passed. Existing public UI images were not replaced with private radio screenshots.
+The pre-change work is preserved separately in dbf806c and an owner-only snapshot.
+
+Radio became unreachable during implementation, including a reconnect attempt. Version
+0.5.5 has NOT been installed or tested through real first sleep/wake. The last verified
+installation is code 11. Required hardware sequence is documented in STARTUP_DIAGNOSTICS
+and OPERATIONS. Local tests and CI do not establish manufacturer wake acceptance.
+
+## Code 11 real reboot and sleep observations - 2026-09-13
+
+The signature-preserving update/import to 0.5.4 passed, including installed APK hash and
+private configuration comparison. After full reboot, monitoring and fresh GPS recovered
+without opening the menu. Sustained motion launched Yanosik once, then requested HOME after
+10 seconds. Private screenshots verified the desktop with actual Yanosik hazard overlays.
+Build/lint and full emulator checks passed for code 11.
+
+A simultaneous shell HOME/wake stress probe passed once and deferred its second wake
+Activity. This was not the original recent-task-trimmed failure and is not a passed wake
+test. Monitoring was explicitly restored; that restoration is not automatic acceptance.
+
+Subsequent real vendor sleep terminated both apps. Wake restored monitoring and fresh GPS,
+but the first numeric cycle only established a baseline while the previous navigation
+attempt stayed consumed. Cold boot had left vendor properties empty and no saved wake_id.
+The second numeric cycle rearmed correctly. A later short ignition interruption did not
+advance the counter or interrupt GPS; subsequent movement launched Yanosik once and actual
+desktop warnings were verified again. First-wake baseline repair remains required.
+Raw captures and screenshots remain in owner-only archives outside Git.
+
+## Live intermittent-start diagnosis and code 10 update - 2026-09-13
+
+Before any app launch/update, twelve private evidence files were captured and SHA-256
+verified. Code 8 had a process but no location service. Two recent vendor launches of
+HomeWakeActivity ended in recent-task-trimmed before onCreate/WAKE_ENTRY. The journal stopped
+at an earlier vendor force-stop; the saved cycle was behind the actual counter. The last
+Yanosik launch in that failed journey was attributed to the vendor launcher, matching the
+owner's manual-start report. Short/medium stops are affected too, not just overnight parking.
+
+The code 10 update preserved signature/data and imported the complete private bundle.
+Installed APK hash, configured phone, geometry and enabled automation matched local inputs.
+The notification listener was system-bound. On real motion, an already-running Yanosik was
+detected and skipped without launch/HOME. Fresh GPS deliveries continued.
+
+After one full radio reboot, the vendor wake entry reached onCreate, started monitoring and
+delivered fresh GPS before BOOT_COMPLETED, without manual app startup. About eleven seconds
+of motion produced one Yanosik launch; its foreground service ran. The 5 s HOME request was
+delivered, but Yanosik opened its dashboard roughly 0.9 s later and subsequently its map.
+Background presentation therefore FAILED this run. Code 11 extends the same one-shot grace
+to 10 s; it does not add repeated hiding. Acceptance of that change is separate.
+
+Local build/lint, detector/progress checks and the full emulator suite passed for code 10,
+including wake manifest flags, isolated task cleanup and no entry-driven journey reset.
+Actual short/medium ignition cycles still require verification, not simulated property writes.
+
 ## 0.5.2 local checks - 2026-09-13, not installed
 
 Build, Android test APK and lint passed. The full emulator safety suite passed, including

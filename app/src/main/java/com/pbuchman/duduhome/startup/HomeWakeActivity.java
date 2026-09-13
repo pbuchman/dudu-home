@@ -11,6 +11,8 @@ public final class HomeWakeActivity extends Activity {
         super.onCreate(state);
         com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "WAKE_ENTRY");
         HomeMonitorService.ensureStarted(this);
-        finish();
+        // Keep the isolated task eligible until our callback actually ran. Excluding it
+        // in the manifest lets concurrent vendor launches trim it before onCreate.
+        finishAndRemoveTask();
     }
 }

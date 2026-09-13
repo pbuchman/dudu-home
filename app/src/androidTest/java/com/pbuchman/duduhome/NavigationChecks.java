@@ -11,37 +11,13 @@ final class NavigationChecks {
     static void run(Instrumentation instrumentation) {
         SharedPreferences prefs=instrumentation.getTargetContext().getSharedPreferences("test_journey",0);
         prefs.edit().clear().commit();
-        JourneySession first=new JourneySession(prefs,42);
-        require(!first.available());
-        require(first.ensureBoot() && first.available() && first.available());
-        require(first.ensureBoot() && first.reserve());
-        require(!first.available());
-        require(!new JourneySession(prefs,42).reserve());
-        require(!new JourneySession(prefs,41).reserve());
-        require(!first.observeAwakeCycle(0) && !first.reserve());
-        require(!first.available() && !first.observeAwakeCycle(-1) && !first.available());
-        require(first.verifiedWake(1) && first.reserve());
-        require(!first.verifiedWake(1) && !first.reserve());
-        require(!first.observeAwakeCycle(1) && !first.reserve());
-        require(!first.observeAwakeCycle(0) && !first.reserve());
-        require(first.observeAwakeCycle(2) && first.reserve());
-        require(!new JourneySession(prefs,42).observeAwakeCycle(2));
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("0\n0\n2\n0\n0\n") == 2);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("1\n0\n3\n0\n0\n") == -1);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("0\n0\n3\n1\n0\n") == -1);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("\n\n\n\n\n") == -1);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("0\n0\n-1\n0\n0\n") == -1);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("0\n0\n3\n0\n1\n") == -1);
-        require(com.pbuchman.duduhome.startup.DuduCycle.parse("0\n0\n3\n0\n0\nextra") == -1);
-        JourneySession reboot=new JourneySession(prefs,43);
-        require(reboot.reserve());
-        require(!reboot.observeAwakeCycle(0) && !reboot.reserve());
-        require(!new JourneySession(prefs,-1).reserve());
+        FirstWakeChecks.run();
+        com.pbuchman.duduhome.startup.DuduCycleChecks.run();
         int[] opens={0};
         int[] homes={0};
         java.util.List<Runnable> callbacks = new java.util.ArrayList<>();
         YanosikLauncher.Delay delay = (callback, millis) -> {
-            require(millis == 5000); callbacks.add(callback);
+            require(millis == 10000); callbacks.add(callback);
         };
         YanosikLauncher missing=new YanosikLauncher(new JourneySession(prefs,44), new YanosikLauncher.Launch(){
             public Intent resolve(){return null;}

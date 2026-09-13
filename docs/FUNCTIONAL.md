@@ -1,5 +1,11 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+Od 0.5.5 potwierdzony pusty stan właściwości producenta po zakończeniu startu Androida
+zapisuje początkowy licznik zero, bez uruchamiania ani odblokowywania dodatkowej akcji.
+Dopiero jego późniejszy wzrost odblokowuje Yanosika po świeżym ruchu. Nieudany odczyt
+nie jest zerem. Błąd zapisu sesji blokuje Yanosika do końca procesu, nie monitoring bramy.
+Instalacja i odbiór tej poprawki na radiu pozostają osobnymi krokami.
+
 ## Cel
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
@@ -16,7 +22,7 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
-| Yanosik bez sygnału pracy | Potwierdzony ruch, start, pulpit po 5 s, wynik żądania przez 2 s |
+| Yanosik bez sygnału pracy | Potwierdzony ruch, start, jednorazowy pulpit po 10 s, wynik żądania przez 2 s |
 | Nieznany stan Yanosika | Pominięcie startu z krótkim komunikatem; brak samoczynnego ponowienia |
 | Powrót przed skrętem | „Sprawdzam trasę powrotu”, następnie potwierdzanie dojazdu; postęp z GPS, nie zegara |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |
