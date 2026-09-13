@@ -123,6 +123,13 @@ aktualizację. Nie ma automatycznego ponowienia ani uruchomienia aplikacji. Regr
 
 ## Minimalna sesja akceptacyjna na radiu
 
+Dla 0.5.5 konieczny jest pełny restart, zapis VENDOR_BASELINE_ZERO, pierwsza jazda,
+rzeczywiste uśpienie i pierwsze wybudzenie z VENDOR_WAKE_REARM CYCLE=1. Dopiero świeży ruch
+ma wywołać jedną próbę Yanosika, o ile nie działa on już wcześniej. Powtórzyć cykl 2 oraz
+krótki postój bez zmiany licznika. Nie naprawiać historycznego braku bazy przez kasowanie
+preferencji. Brak zgody/połączenia obserwatora powiadomień pozostaje pominięciem bez ponowień.
+Szczegóły protokołu i jawne ograniczenia są w STARTUP_DIAGNOSTICS.md.
+
 Od 0.5.2 automatyczny start Yanosika wymaga zgody w „Ustawienia > Yanosik: wykrywanie pracy”.
 Nadaj dostęp systemowy i sprawdź odczyt, nie tylko sam przełącznik. Zweryfikuj stan Yanosika
 uruchomionego wcześniej, jego brak oraz cofnięcie zgody: odpowiednio zero startów/HOME,

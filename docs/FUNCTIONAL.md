@@ -1,5 +1,11 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+Od 0.5.5 potwierdzony pusty stan właściwości producenta po zakończeniu startu Androida
+zapisuje początkowy licznik zero, bez uruchamiania ani odblokowywania dodatkowej akcji.
+Dopiero jego późniejszy wzrost odblokowuje Yanosika po świeżym ruchu. Nieudany odczyt
+nie jest zerem. Błąd zapisu sesji blokuje Yanosika do końca procesu, nie monitoring bramy.
+Instalacja i odbiór tej poprawki na radiu pozostają osobnymi krokami.
+
 ## Cel
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna

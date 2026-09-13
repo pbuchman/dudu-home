@@ -1,5 +1,26 @@
 # Verification ledger
 
+## 0.5.5 local first-wake regression - 2026-09-13
+
+Build and Android test APK passed. Emulator instrumentation passed parser framing, invalid
+and oversized outputs, failed/timed-out/interrupted synthetic processes, cold-zero-to-first-
+wake rearming, duplicate/rollback/migration cases, and in-memory edits followed by commit
+failure across session instances. Isolated monitor callbacks passed initial unavailable
+fallback, late zero preserving movement, verified wake cancelling pending HOME and clearing
+evidence without changing route flags, plus stopped-instance rejection without modifying
+the new session, progress or pending HOME. Existing safety/UI/presence checks also passed.
+No real executor or GPS injection was used in these tests.
+
+Detector and progress checks passed on 20,000 home and 20,000 motion synthetic samples;
+no private recordings were replayed in this run. Seven private-tool and five fresh-installer
+tests passed. Existing public UI images were not replaced with private radio screenshots.
+The pre-change work is preserved separately in dbf806c and an owner-only snapshot.
+
+Radio became unreachable during implementation, including a reconnect attempt. Version
+0.5.5 has NOT been installed or tested through real first sleep/wake. The last verified
+installation is code 11. Required hardware sequence is documented in STARTUP_DIAGNOSTICS
+and OPERATIONS. Local tests and CI do not establish manufacturer wake acceptance.
+
 ## Code 11 real reboot and sleep observations - 2026-09-13
 
 The signature-preserving update/import to 0.5.4 passed, including installed APK hash and

@@ -134,8 +134,14 @@ final class ProgressChecks {
                 HomeMonitorService stopped=new HomeMonitorService();
                 var destroyed=HomeMonitorService.class.getDeclaredField("destroyed");destroyed.setAccessible(true);destroyed.setBoolean(stopped,true);
                 var before=ProgressBus.snapshot();
-                var callback=HomeMonitorService.class.getDeclaredMethod("onCycleRead",long.class);callback.setAccessible(true);callback.invoke(stopped,999L);
+                var journey=c.getSharedPreferences("journey_session",0);
+                var saved=new java.util.HashMap<>(journey.getAll());
+                var callback=HomeMonitorService.class.getDeclaredMethod("onCycleRead",com.pbuchman.duduhome.startup.DuduCycle.Observation.class);
+                callback.setAccessible(true);
+                callback.invoke(stopped,new com.pbuchman.duduhome.startup.DuduCycle.Observation(
+                        com.pbuchman.duduhome.startup.DuduCycle.Kind.AWAKE_COUNTER,999));
                 check(before.equals(ProgressBus.snapshot()),"late cycle callback cannot reset UI after stop");
+                check(saved.equals(journey.getAll()),"late cycle callback cannot update session");
             } catch(ReflectiveOperationException e){throw new AssertionError(e);}
         });
         // Screenshot of the existing execution view only. No Bluetooth or HTTP worker is started.

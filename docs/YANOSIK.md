@@ -2,6 +2,18 @@
 
 ## Implemented
 
+### First-wake session fix - 0.5.5, installation and radio test pending
+
+The cycle adapter distinguishes a fully verified empty cold-start observation from a
+failed/partial read. It records baseline zero without rearming a consumed attempt. The first
+later numeric increase can then rearm normally. Legacy state without a baseline still treats
+the first numeric observation as baseline only. Failed session persistence blocks navigation
+eligibility for the process, not the independent home monitor. See STARTUP_DIAGNOSTICS.
+
+On installed 0.5.4, automatic launch plus the 10-second desktop return and real hazard overlay
+passed. Its first vendor wake retained an old consumed reservation; a subsequent cycle
+worked. The 0.5.5 source fixes that specific gap, not every possible manufacturer startup fault.
+
 ### Presence guard - introduced in 0.5.2, installed with 0.5.3
 
 The owner approved NotificationListenerService access. YanosikPresence reads a fresh complete
@@ -82,9 +94,10 @@ However its dashboard opened in front, so this run failed background presentatio
 
 ## Verification and next exact step
 
-The owner confirmed the automatic return call physically opened the gate. For 0.5.1, verify
-normal Yanosik launch, exactly one desktop return and the continuing service/warning overlay,
-without manually pressing HOME. Five seconds is a startup allowance, not a readiness callback;
+The owner confirmed the automatic return call physically opened the gate. For 0.5.5, verify
+the first true sleep/wake after full boot, normal launch, exactly one desktop return and
+the continuing service/warning overlay without manually pressing HOME.
+Ten seconds is a startup allowance, not a readiness callback;
 a future/slower Yanosik could still open another Activity afterward. No guarantee of universal
 compatibility. Current request outcomes do not claim a running service or available warnings.
 

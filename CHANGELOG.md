@@ -1,5 +1,14 @@
 # Change history
 
+## 0.5.5-local - preserve the first vendor wake opportunity
+
+- Distinguish verified empty cold-start properties from uncertain reads; persist baseline zero.
+- Keep first numeric migration conservative and rearm only on a verified counter increase.
+- Fail closed across session instances after persistence failure, without stopping home monitoring.
+- Preserve asynchronous reads, late-callback rejection, route flags and executor safety.
+- Add parser/process, persistence-failure and isolated monitor integration regressions.
+- Source verified locally; radio installation and first-wake acceptance remain pending.
+
 ## 0.5.4-local - allow cold Yanosik startup before one desktop return
 
 - Extend one-shot HOME grace from 5 to 10 s after captured late dashboard startup on DUDU7.

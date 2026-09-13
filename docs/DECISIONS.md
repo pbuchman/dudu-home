@@ -1,5 +1,18 @@
 # Design decisions
 
+## First-wake baseline - 0.5.5
+
+- A complete successful read with boot-completed guards and consistently empty vendor
+  properties is an observed baseline zero on the analyzed firmware, not an unknown read.
+- Baseline establishment preserves consumed. Only a later increasing counter rearms; first
+  numeric observation without an earlier baseline remains conservative on update/restart.
+- Failed JourneySession commits latch that store closed across instances until process exit.
+  Cached preference changes are not proof of durable storage. No retry/reset UI is added.
+- Only REARMED clears existing movement/progress and cancels pending HOME. Invalid reads
+  finish the initial read barrier without disabling the existing cold-boot opportunity.
+- Preserve the wake-task repair, presence guard, 10-second HOME grace and all home actions.
+- Full boot followed by the first actual vendor sleep/wake is the required hardware check.
+
 ## Wake task trimming - 0.5.3
 
 - Preserve read-only failure evidence before opening the app or updating the radio.

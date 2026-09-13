@@ -8,7 +8,7 @@ Private, locally configured route detection connects those actions to leaving an
 It also starts Yanosik after sustained driving, then requests the radio desktop once after ten seconds.
 Yanosik can briefly appear during startup; this does not restore a previously open navigation app.
 
-> **Current source and last installed version: `0.5.4-local` (code 11).**
+> **Current source: `0.5.5-local` (code 12). Last verified installation: `0.5.4-local` (code 11).**
 > Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.
 > Notification access requires a one-time system grant. Detection of an already-running
 > Yanosik passed on DUDU7 without reopening it or requesting HOME.
@@ -18,8 +18,9 @@ Yanosik can briefly appear during startup; this does not restore a previously op
 > On `0.5.0`, monitoring recovered automatically after full reboot and one real ignition cycle.
 > The real movement banner and an automatic return call passed; the owner confirmed gate opening.
 > On 0.5.4, automatic launch, desktop return and real warning overlays passed on DUDU7.
-> A separate first-wake baseline bug remains: monitoring recovers, but the first vendor sleep
-> can leave Yanosik's previous attempt consumed. The next numeric cycle rearmed correctly.
+> Version 0.5.5 fixes the first-wake session baseline in code: a verified empty cold-start
+> observation establishes zero without granting an extra attempt. Unknown reads never do.
+> **Installation and the first real sleep/wake test of 0.5.5 remain pending.**
 > Gate and Roborock manual actions were verified on the preceding package version.
 > **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
@@ -67,7 +68,7 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   desktop once so Yanosik can work in the background. No repeated hiding, foreground-app
   tracking or automatic retry. A stop or process restart does not rearm it. The DUDU ignition
   task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
-  and [limitations](docs/YANOSIK.md) for the remaining first-wake defect.
+  and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions

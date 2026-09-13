@@ -1,6 +1,6 @@
 # Automation progress: UI and background contract
 
-Source version `0.5.4-local`, versionCode 11, progress based on `911d18b`. Java 17, native Views/XML,
+Source version `0.5.5-local`, versionCode 12, progress based on `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
@@ -125,10 +125,11 @@ streets, phone fragments, credentials or server payloads. UI never parses logs.
 - Synthetic screenshots are generated in ignored build/ui-checks. Reviewed copies belong in
   docs/images. The action screenshot is a renderer preview, without a call or HTTP request.
 
-Hardware update: 0.5.3 is installed with the presence guard and earlier return stages.
-Existing-Yanosik skip and one full reboot passed; 5 s desktop timing failed on a cold launch.
-0.5.4 extends the one-shot grace to 10 s. Pending: updated desktop presentation, early/inward
-banner on a real return, plus remaining outbound/cleaning and repeated manufacturer wake checks.
+Hardware update: 0.5.4/code 11 is the last verified installation. Existing-Yanosik skip,
+automatic desktop return after 10 s and actual warning overlays passed. Version 0.5.5 adds
+typed cycle observations: baseline establishment never resets UI; only a verified increase
+resets old progress. Its installation/first-wake test remains pending, as do early/inward
+return presentation and remaining outbound/cleaning acceptance checks.
 Verify real warning-overlay behavior, menu restoration and no duplicate
 banner/actions. Do not repeat calibration without a specific evidence gap. Local success
 does not establish physical acceptance or manufacturer wake recovery.

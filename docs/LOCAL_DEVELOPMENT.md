@@ -6,7 +6,19 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
-**Newest source and installed: 0.5.4-local / code 11.** One-shot HOME now waits 10 seconds.
+**Current source: 0.5.5-local / code 12; last verified radio installation: 0.5.4/code 11.**
+The typed cycle reader distinguishes confirmed empty cold-start properties from unavailable
+reads. An observed zero establishes the missing baseline without changing consumed state;
+the first increasing numeric wake rearms once. Failed session writes block that store for
+the rest of the process. No gate/cleaning/presence/timing changes. See STARTUP_DIAGNOSTICS
+for the read protocol, conservative migration and acceptance sequence.
+Radio access ended during implementation. Installation and new hardware acceptance are
+pending. The next test is full boot with baseline zero, then real sleep and first wake with
+fresh motion. Short ignition interruption alone cannot cover the defect.
+Source branch: codex/first-wake-baseline; dbf806c preserves the preceding dirty work.
+The entries below are historical checkpoints, not current source version declarations.
+
+**Preceding source and installed: 0.5.4-local / code 11.** One-shot HOME now waits 10 seconds.
 Desktop plus real Yanosik warning overlays passed. After real sleep, monitoring recovered;
 the first observed vendor counter did not rearm the consumed navigation attempt. Counter 2
 did rearm and subsequent movement launched Yanosik once. This first-baseline defect is open.
