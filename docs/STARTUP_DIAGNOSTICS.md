@@ -1,6 +1,28 @@
 # DUDU startup recovery and private diagnostics
 
-## Latest report - 2026-09-13
+## Intermittent wake race - 2026-09-13
+
+The owner clarified that failures also follow short and medium stops, not only overnight
+parking. A read-only capture before opening/updating the app found an existing process but
+no HomeMonitorService. The last two vendor wake launches created HomeWakeActivity tasks,
+started/bound the process, then destroyed the tasks with `recent-task-trimmed` before any
+app-side WAKE_ENTRY or MONITOR_CREATE. The last manual Yanosik launch came from the vendor
+launcher, not Dudu Home. Raw event/system logs and both journals are archived privately with
+verified checksums. This establishes a concrete failure path, not every reported occurrence.
+
+Version 0.5.3 removes manifest-time `excludeFromRecents` from the isolated NoDisplay entry.
+Android's [RecentTasks policy](https://github.com/aosp-mirror/platform_frameworks_base/blob/android13-release/services/core/java/com/android/server/wm/RecentTasks.java)
+can trim excluded tasks when another startup task takes the most recent position. The entry
+now calls `finishAndRemoveTask()` only after requesting monitoring. It still does not show
+the menu, reserve actions or infer a new ignition from its invocation. No retry loop, alarm,
+Application-level action dispatch or broad battery-policy change is added.
+
+The backed-up code 10 update, import and actual notification-listener binding passed.
+Fresh GPS then produced YANOSIK_ALREADY_RUNNING without another launch or HOME request.
+Full reboot and repeated manufacturer sleep/wake acceptance are recorded separately below
+or in VERIFICATION.md; this fix alone is not proof of universal wake reliability.
+
+## Initial report - 2026-09-13, superseded by the investigation above
 
 The owner reports neither home actions nor Yanosik started after overnight parking. The
 radio was unavailable for read-only inspection, so the specific failure point is unknown.

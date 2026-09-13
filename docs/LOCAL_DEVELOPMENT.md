@@ -6,7 +6,21 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
-**Newest source: 0.5.2-local / code 9, not installed.** Notification-based Yanosik presence
+**Newest source and installed: 0.5.4-local / code 11.** One-shot HOME now waits 10 seconds.
+Desktop plus real Yanosik warning overlays passed. After real sleep, monitoring recovered;
+the first observed vendor counter did not rearm the consumed navigation attempt. Counter 2
+did rearm and subsequent movement launched Yanosik once. This first-baseline defect is open.
+An artificial simultaneous HOME/wake probe deferred one Activity; monitoring was restored
+explicitly afterward. Do not count that restoration as automatic wake acceptance.
+
+**Preceding 0.5.3/code 10 evidence:** Before-update radio evidence captured
+two wake entries destroyed by recent-task-trimmed before onCreate, leaving an empty process.
+Manifest exclusion is removed; finishAndRemoveTask performs cleanup after monitor handoff.
+Build/lint and full emulator checks passed. Backed-up update/import and fresh GPS passed;
+the notification presence guard skipped an already-running Yanosik. See latest VERIFICATION
+and STARTUP_DIAGNOSTICS for subsequent reboot/wake checks. Reports include shorter stops.
+
+**Previous source: 0.5.2-local / code 9, not installed separately.** Notification-based Yanosik presence
 guard and earlier return banner are implemented on top of the 0.5.1 work below.
 Read YANOSIK.md/PROGRESS_UI.md for the grant, unknown-state behavior and return stages.
 Owner reported no automation after overnight parking on 2026-09-13. No radio connection

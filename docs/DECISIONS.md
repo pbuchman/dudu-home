@@ -1,5 +1,13 @@
 # Design decisions
 
+## Wake task trimming - 0.5.3
+
+- Preserve read-only failure evidence before opening the app or updating the radio.
+- Do not exclude the isolated wake task before its onCreate callback. Remove it explicitly
+  after requesting monitoring; keep NoDisplay and the existing cycle-based rearming rules.
+- A process without a foreground location service is not successful monitor startup.
+- Test real vendor sleep separately from full reboot. Short and medium stops are in scope.
+
 ## Presence guard and earlier return - 0.5.2
 
 - Owner approved notification access and a return banner before the turn.

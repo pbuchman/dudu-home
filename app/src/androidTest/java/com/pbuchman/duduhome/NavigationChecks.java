@@ -41,7 +41,7 @@ final class NavigationChecks {
         int[] homes={0};
         java.util.List<Runnable> callbacks = new java.util.ArrayList<>();
         YanosikLauncher.Delay delay = (callback, millis) -> {
-            require(millis == 5000); callbacks.add(callback);
+            require(millis == 10000); callbacks.add(callback);
         };
         YanosikLauncher missing=new YanosikLauncher(new JourneySession(prefs,44), new YanosikLauncher.Launch(){
             public Intent resolve(){return null;}

@@ -92,6 +92,7 @@ public final class SafetyChecks extends Instrumentation {
             RoborockChecks.run(this);
             NavigationChecks.run(this);
             NotificationChecks.run(this);
+            WakeChecks.run(this);
             ProgressChecks.run(this);
             store.reserveDial();
             result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/no-touch, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");

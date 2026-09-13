@@ -16,7 +16,7 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
-| Yanosik bez sygnału pracy | Potwierdzony ruch, start, pulpit po 5 s, wynik żądania przez 2 s |
+| Yanosik bez sygnału pracy | Potwierdzony ruch, start, jednorazowy pulpit po 10 s, wynik żądania przez 2 s |
 | Nieznany stan Yanosika | Pominięcie startu z krótkim komunikatem; brak samoczynnego ponowienia |
 | Powrót przed skrętem | „Sprawdzam trasę powrotu”, następnie potwierdzanie dojazdu; postęp z GPS, nie zegara |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |

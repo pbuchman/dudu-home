@@ -9,7 +9,9 @@ import android.util.Log;
 /** Package verified on the physical DUDU7; resolve its launcher at runtime. */
 public final class YanosikLauncher {
     public static final String PACKAGE = "pl.neptis.yanosik.mobi.android";
-    public static final long HOME_DELAY_MS = 5000;
+    // Physical cold start opened its dashboard just after the previous 5 s callback.
+    // One bounded grace period only; never repeatedly hide a later manual launch.
+    public static final long HOME_DELAY_MS = 10000;
     public interface Launch {
         Intent resolve();
         void open(Intent intent);

@@ -2,7 +2,7 @@
 
 ## Implemented
 
-### Presence guard - 0.5.2, radio validation pending
+### Presence guard - introduced in 0.5.2, installed with 0.5.3
 
 The owner approved NotificationListenerService access. YanosikPresence reads a fresh complete
 active-notification snapshot only while connected and granted access. It filters the exact
@@ -20,9 +20,10 @@ current notifications, including those posted before Dudu Home started. No disk-
 Settings exposes grant status and the system notification-access screen, never an automatic
 permission dialog on the road. Android's grant is broad, even though our processing is narrow.
 No Accessibility, usage-history permission, shell process query or private service bypass.
-The installed Yanosik notification must be validated while running/stopped on the radio before
-acceptance; service flags do not prove GNSS/warning readiness. This does not fix the unresolved
-overnight monitor startup reported on 2026-09-13. Last installed version remains 0.5.1/code 8.
+The installed Yanosik foreground-service signal was validated on the radio: real motion
+skipped an already-running service, with no launch/HOME. Service flags alone do not prove
+GNSS/warning readiness. The separate intermittent monitor startup fault includes shorter stops;
+0.5.3 addresses the captured pre-onCreate task trimming, not through this listener.
 
 Reference: [Android notification listener lifecycle](https://developer.android.com/reference/android/service/notification/NotificationListenerService).
 
@@ -41,7 +42,8 @@ YanosikLauncher uses `getLaunchIntentForPackage` for `pl.neptis.yanosik.mobi.and
 The complete package and launcher were verified on the physical radio on 2026-09-09;
 the earlier shortened package name was incorrect and could not resolve the installed app.
 The component is resolved at runtime instead of hardcoded. Version 0.5.1 uses a normal launch,
-then one ACTION_MAIN/CATEGORY_HOME request five seconds later. The owner explicitly accepted
+then one ACTION_MAIN/CATEGORY_HOME request. Since 0.5.4 its grace is ten seconds: the radio's
+cold dashboard appeared just after the earlier five-second HOME. The owner explicitly accepted
 brief startup UI and returning to the desktop instead of restoring another app. No foreground
 app tracking, repeated hiding or launch retry. Monitor destruction/new verified cycle cancels
 the pending callback; process restart cannot replay it. Missing/throwing launch does not schedule
