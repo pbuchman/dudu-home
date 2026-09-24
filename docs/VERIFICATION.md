@@ -9,6 +9,9 @@ and full emulator instrumentation plus the first-run form/no-dial check. A new i
 fixture initially left an orphan WAITING snapshot by clearing its queue directly; replacing
 that shortcut with runtime cleanup restored the downstream banner-expiry check. The complete
 emulator run was repeated successfully. CI builds are separate from this actual local run.
+The initial remote CI failed before compilation because setup-android's default requested the
+retired SDK package `tools`. The workflow now explicitly requests `platform-tools`; all privacy,
+test, build and lint steps remain enabled.
 
 Correction to the historical entry below: installation of 0.5.5/code 12 was confirmed on
 September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 has not
