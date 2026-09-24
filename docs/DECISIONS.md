@@ -1,5 +1,19 @@
 # Design decisions
 
+## Ordered automation and Spotify - 0.5.6
+
+- Supersedes earlier no-queue and delayed-HOME decisions below: ready gate, cleaning,
+  Yanosik and Spotify actions use an explicit bounded in-memory priority queue.
+- Reserve daily cleaning at enqueue, including while gate execution is busy; no retry or replay.
+- Preserve executor cleanup and screen ownership independently. Never cover a manual menu,
+  configuration or error with media startup. Gate wait is 5 s; other waiting tasks expire at 120 s.
+- Separate durable Spotify attempt in JourneySession, rearmed atomically with Yanosik.
+- Launch Spotify after Yanosik's 10 s allowance; no HOME. Resume only an exact-package,
+  unambiguous local media session, with one play and bounded callback waits.
+- Existing notification-listener grant/component is reused. No SDK, OAuth or global media keys.
+- Native session availability after cold Spotify launch requires a physical test; do not add
+  a workaround without agreement. See AUTOMATION_SEQUENCE for the full contract.
+
 ## First-wake baseline - 0.5.5
 
 - A complete successful read with boot-completed guards and consistently empty vendor

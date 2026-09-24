@@ -1,5 +1,35 @@
 # Verification ledger
 
+## 0.5.6 implementation and current installation status - 2026-09-24
+
+Final local acceptance passed: assembleDebug, assembleDebugAndroidTest, lintDebug, detector
+and coordinator checks, progress differential checks (20,000 home and 20,000 movement samples,
+zero private replay files in this run), seven private-tool tests, five fresh-installer tests,
+and full emulator instrumentation plus the first-run form/no-dial check. A new integration
+fixture initially left an orphan WAITING snapshot by clearing its queue directly; replacing
+that shortcut with runtime cleanup restored the downstream banner-expiry check. The complete
+emulator run was repeated successfully. CI builds are separate from this actual local run.
+The initial remote CI failed before compilation because setup-android's default requested the
+retired SDK package `tools`. The workflow now explicitly requests `platform-tools`; all privacy,
+test, build and lint steps remain enabled.
+
+Correction to the historical entry below: installation of 0.5.5/code 12 was confirmed on
+September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 has not
+been installed on the radio; the read-only connection check finds no authorized physical radio.
+
+Local instrumentation exercises fake media transport and timers, including existing playback,
+single resume, buffering, missing/late/remote/ambiguous sessions, permission loss, timeouts,
+manual pause and late callbacks. No real music, gate call or robot action is performed.
+Scheduling tests cover four-task priority, gate interruption of the Yanosik allowance, queue
+expiry, day rollover, UI exclusion and generations. The monitor integration checks verify
+cleaning quota reservation while the shared executor is occupied, duplicate suppression and
+no queue replay or quota restoration in a replacement runtime.
+
+Remaining physical checks: cold Spotify session availability, audible radio playback, Yanosik
+warnings behind Spotify, gate/cleaning contention, manual-menu protection, real first and
+subsequent sleep/wake, and a short stop without duplicate startup. Local checks and CI cannot
+certify any of these. Existing screenshots remain unchanged and are not new hardware evidence.
+
 ## 0.5.5 local first-wake regression - 2026-09-13
 
 Build and Android test APK passed. Emulator instrumentation passed parser framing, invalid
@@ -16,9 +46,9 @@ no private recordings were replayed in this run. Seven private-tool and five fre
 tests passed. Existing public UI images were not replaced with private radio screenshots.
 The pre-change work is preserved separately in dbf806c and an owner-only snapshot.
 
-Radio became unreachable during implementation, including a reconnect attempt. Version
-0.5.5 has NOT been installed or tested through real first sleep/wake. The last verified
-installation is code 11. Required hardware sequence is documented in STARTUP_DIAGNOSTICS
+At that September 13 checkpoint radio became unreachable, including a reconnect attempt.
+The later September 14 installation of code 12 supersedes that installation status, not the
+outstanding full first-wake test. Required hardware sequence is documented in STARTUP_DIAGNOSTICS
 and OPERATIONS. Local tests and CI do not establish manufacturer wake acceptance.
 
 ## Code 11 real reboot and sleep observations - 2026-09-13

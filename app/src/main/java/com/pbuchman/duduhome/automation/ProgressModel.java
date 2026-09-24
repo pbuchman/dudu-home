@@ -78,8 +78,8 @@ public final class ProgressModel {
         }
         for (State s : snapshot()) {
             if (s.expiresAt <= now || s.kind == Kind.MOP) continue;
-            if (s.evidenceId == -1 && s.kind != Kind.YANOSIK
-                    && s.phase != Phase.SKIPPED) continue; // Existing full-screen executor UI owns these.
+            if (s.evidenceId == -1 && s.kind != Kind.YANOSIK && s.kind != Kind.SPOTIFY
+                    && s.phase != Phase.SKIPPED && s.phase != Phase.WAITING) continue;
             if (best == null || priority(s.kind) < priority(best.kind)
                     || (priority(s.kind) == priority(best.kind) && terminal(best.phase) && !terminal(s.phase))
                     || (priority(s.kind) == priority(best.kind) && terminal(s.phase) == terminal(best.phase)

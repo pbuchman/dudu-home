@@ -20,7 +20,8 @@ public final class AutomationBanner {
         view.setTag(state);
         int title = switch (state.kind()) { case DEPARTURE -> R.string.progress_departure;
             case RETURN -> R.string.progress_return; case CLEANING -> R.string.full_cleaning;
-            case YANOSIK -> R.string.progress_yanosik; case MOP -> R.string.full_mop; };
+            case YANOSIK -> state.evidenceId() >= 0 ? R.string.progress_driving : R.string.progress_yanosik;
+            case SPOTIFY -> R.string.progress_spotify; case MOP -> R.string.full_mop; };
         int accent = switch (state.kind()) { case DEPARTURE, RETURN -> R.color.gate_sand;
             case CLEANING -> R.color.cleaning_mint; default -> R.color.mop_sky; };
         ((TextView) view.findViewById(R.id.banner_title)).setText(title);
@@ -32,7 +33,7 @@ public final class AutomationBanner {
         ProgressBar bar = view.findViewById(R.id.banner_progress);
         bar.setProgressTintList(ColorStateList.valueOf(view.getContext().getColor(accent)));
         bar.setProgress((int) Math.round(state.value() * 1000));
-        bar.setVisibility(ProgressModel.terminal(state.phase()) ? View.GONE : View.VISIBLE);
+        bar.setVisibility(ProgressModel.terminal(state.phase()) || state.phase() == Phase.WAITING ? View.GONE : View.VISIBLE);
         view.setContentDescription(view.getContext().getString(title) + ". " + view.getContext().getString(detail(state)));
     }
     private static int detail(ProgressModel.State s) {
@@ -51,10 +52,21 @@ public final class AutomationBanner {
             case TARGET_UNAVAILABLE -> R.string.progress_target_unavailable;
             case TARGET_STATUS_UNKNOWN -> R.string.progress_target_status_unknown;
             case REQUEST_FAILED -> R.string.progress_request_failed;
+            case PRIORITY -> R.string.progress_priority;
+            case EXPIRED -> R.string.progress_expired;
+            case RESUMING -> R.string.spotify_resuming;
+            case MEDIA_REMOTE -> R.string.spotify_remote;
+            case MEDIA_NO_SESSION -> R.string.spotify_no_session;
+            case MEDIA_TIMEOUT -> R.string.spotify_timeout;
+            case MEDIA_NO_ACCESS -> R.string.spotify_no_access;
+            case TARGET_ALREADY_RUNNING -> R.string.progress_already_running;
             case BUSY_OR_MAINTENANCE, UI_BUSY -> R.string.operation_busy;
             default -> R.string.progress_conditions;
         };
         if (s.kind() == Kind.YANOSIK && s.phase() == Phase.SUCCEEDED) return R.string.progress_launch_requested;
+        if (s.kind() == Kind.SPOTIFY && s.phase() == Phase.SUCCEEDED) return R.string.spotify_playing;
+        if (s.kind() == Kind.SPOTIFY && s.phase() == Phase.STARTED) return R.string.spotify_starting;
+        if (s.kind() == Kind.YANOSIK && s.phase() == Phase.STARTED) return R.string.yanosik_starting;
         if (s.phase() == Phase.STARTED || s.phase() == Phase.ACCEPTED || s.phase() == Phase.REQUESTED)
             return R.string.progress_launching;
         if (s.phase() == Phase.CONFIRMED) return R.string.progress_confirmed;

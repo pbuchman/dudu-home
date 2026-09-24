@@ -5,10 +5,11 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-It also starts Yanosik after sustained driving, then requests the radio desktop once after ten seconds.
-Yanosik can briefly appear during startup; this does not restore a previously open navigation app.
+After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
+Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
+Spotify stays on screen; there is no additional desktop request. This new sequence awaits radio acceptance.
 
-> **Current source: `0.5.5-local` (code 12). Last verified installation: `0.5.4-local` (code 11).**
+> **Current source: `0.5.6-local` (code 13). Last verified installation: `0.5.5-local` (code 12), September 14.**
 > Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.
 > Notification access requires a one-time system grant. Detection of an already-running
 > Yanosik passed on DUDU7 without reopening it or requesting HOME.
@@ -20,7 +21,7 @@ Yanosik can briefly appear during startup; this does not restore a previously op
 > On 0.5.4, automatic launch, desktop return and real warning overlays passed on DUDU7.
 > Version 0.5.5 fixes the first-wake session baseline in code: a verified empty cold-start
 > observation establishes zero without granting an extra attempt. Unknown reads never do.
-> **Installation and the first real sleep/wake test of 0.5.5 remain pending.**
+> **Full wake acceptance remains pending. The new 0.5.6 sequence has not been installed or tested on the radio.**
 > Gate and Roborock manual actions were verified on the preceding package version.
 > **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
@@ -58,17 +59,21 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
-  attempt. No automatic retry or offline queue.** Manual cleaning remains independent.
+  attempt. No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
+  action and its result screen; the daily attempt remains consumed. Manual cleaning remains independent.
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
   ten seconds of qualified GPS movement. First check its foreground-service notification.
-  If work is detected, do not reopen Yanosik or request the desktop. Unknown state (including
-  missing notification access) skips this cycle, without retry. With no work signal, launch;
-  ten seconds after the launch request, request the
-  desktop once so Yanosik can work in the background. No repeated hiding, foreground-app
-  tracking or automatic retry. A stop or process restart does not rearm it. The DUDU ignition
+  If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
+  skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
+  gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
+  retry. A stop or process restart does not rearm it. The DUDU ignition
   task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
   and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
+- **Spotify resume:** open the radio's Spotify, then use only its unambiguous local Android
+  media session. Send at most one `play()` and confirm `PLAYING`, not merely an accepted request.
+  No playlist selection or remote Spotify Connect control. Cold-start session availability is
+  unverified; see [queue and Spotify contract](docs/AUTOMATION_SEQUENCE.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -142,10 +147,11 @@ or manual tiles. No gate number blocks calls;
 no Roborock bundle blocks cleaning. Saving a number imposes a persistent 60-second call block.
 Saving Roborock credentials never starts cleaning or resets the daily limit.
 
-For automatic Yanosik startup, open **Ustawienia > Yanosik: wykrywanie pracy > Ustawienia systemowe**
+For media automation, open **Ustawienia > Yanosik i Spotify: dostęp > Ustawienia systemowe**
 and grant notification access to Dudu Home. Android grants broad access; our code only inspects
 Yanosik's package and foreground-service flag, never notification contents or actions. Other
-notifications are ignored. Granting access does not launch anything or reset a consumed cycle.
+notifications are ignored. Spotify uses that same grant for Android media-session access,
+without reading track metadata. Granting access does not launch anything or reset a consumed cycle.
 The Yanosik notification signal passed on this radio; absence is not a universal
 process-liveness check, and a detected service does not certify working hazard warnings.
 

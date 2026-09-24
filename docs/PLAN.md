@@ -1,5 +1,11 @@
 # Dudu Home - plan wdrożenia i odbioru
 
+## Aktualizacja 0.5.6
+
+Bieżąca kolejka i start Spotify są opisane w [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
+Zastępuje to wcześniejszy brak kolejki i powrót do pulpitu po Yanosiku. Odbiór na radiu
+pozostaje otwarty; poniższe sekcje są historycznym planem wcześniejszych wersji.
+
 ## Aktualizacja 0.5: pasek automatyzacji
 
 [PROGRESS_UI.md](PROGRESS_UI.md) opisuje kontrakt i implementację w osobnej gałęzi

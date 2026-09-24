@@ -2,7 +2,14 @@
 
 ## Implemented
 
-### First-wake session fix - 0.5.5, installation and radio test pending
+### Current sequence - 0.5.6
+
+Gate → cleaning → Yanosik → Spotify, considering only qualified tasks. Yanosik retains its
+presence guard. A sent launch allows ten seconds before Spotify; a skipped Yanosik does not
+block Spotify. No HOME request remains. The queue yields to home actions and manual UI,
+expires stale work, and is never persisted. Details: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
+
+### First-wake session fix - 0.5.5, installed September 14, full radio acceptance pending
 
 The cycle adapter distinguishes a fully verified empty cold-start observation from a
 failed/partial read. It records baseline zero without rearming a consumed attempt. The first
@@ -46,20 +53,20 @@ An implausible jump resets evidence. No home geometry is needed for this hook. H
 still require their private geometry and enabled configuration. All monitoring respects
 permissions and maintenance/import. No new tile, UI setting or periodic launch timer.
 
-MotionHook waits while HomeActions or a setup/error/result screen blocks external navigation.
-It only reevaluates on a valid GPS fix; a stop or outage cancels waiting. Home events have
-priority on the same fix. The launch does not call, send a robot command or change a daily quota.
+MotionHook qualifies movement on fresh GPS. The runtime reserves independent Yanosik and Spotify
+attempts and queues them, rather than discarding recognition while another action owns the UI.
+Screen locks, priority and expiry decide when a queued launch may execute. Events from the same
+fix are collected before dispatch. Media launch does not call or send a robot command.
 
 YanosikLauncher uses `getLaunchIntentForPackage` for `pl.neptis.yanosik.mobi.android`.
 The complete package and launcher were verified on the physical radio on 2026-09-09;
 the earlier shortened package name was incorrect and could not resolve the installed app.
-The component is resolved at runtime instead of hardcoded. Version 0.5.1 uses a normal launch,
-then one ACTION_MAIN/CATEGORY_HOME request. Since 0.5.4 its grace is ten seconds: the radio's
-cold dashboard appeared just after the earlier five-second HOME. The owner explicitly accepted
-brief startup UI and returning to the desktop instead of restoring another app. No foreground
-app tracking, repeated hiding or launch retry. Monitor destruction/new verified cycle cancels
-the pending callback; process restart cannot replay it. Missing/throwing launch does not schedule
-HOME. HOME failure is logged once without retry. The manifest queries only Yanosik and SYU.
+The component is resolved at runtime instead of hardcoded. Earlier versions requested HOME
+after launch; 0.5.6 removes that behavior. The coordinator now owns the ten-second allowance
+before Spotify, which stays foreground. No foreground-app tracking, repeated hiding or launch
+retry. Monitor destruction/new verified cycle cancels queued work; process restart cannot replay
+it. Missing or throwing Yanosik is skipped without preventing Spotify. The manifest queries
+the exact Yanosik, Spotify and SYU packages.
 No Accessibility, shell launches, fake radio coordinates or QUERY_ALL_PACKAGES.
 
 JourneySession persists reservation before resolving/starting. Missing app, thrown failure
@@ -94,9 +101,9 @@ However its dashboard opened in front, so this run failed background presentatio
 
 ## Verification and next exact step
 
-The owner confirmed the automatic return call physically opened the gate. For 0.5.5, verify
-the first true sleep/wake after full boot, normal launch, exactly one desktop return and
-the continuing service/warning overlay without manually pressing HOME.
+The owner confirmed the earlier automatic return call physically opened the gate. For 0.5.6,
+verify the first true sleep/wake after full boot, normal launch, Spotify foreground playback
+and the continuing Yanosik service/warning overlay. There must be no HOME request.
 Ten seconds is a startup allowance, not a readiness callback;
 a future/slower Yanosik could still open another Activity afterward. No guarantee of universal
 compatibility. Current request outcomes do not claim a running service or available warnings.
@@ -105,7 +112,7 @@ compatibility. Current request outcomes do not claim a running service or availa
   gap, jump, deferred and cancelled execution.
 - Android NavigationChecks: durable reservation/reconstruction, boot changes, duplicate
   verified wake IDs, missing target and launch exception with no retry; fake launch only.
-  One delayed HOME, no early/duplicate HOME, cancellation and HOME exception are also tested.
+  Coordinator tests cover the delayed Spotify slot, priority, expiry and generation cancellation.
 - Existing UI tests assert setup/error/five-second success do not allow external launch.
 - Configure and verify the actual DUDU ignition shortcut and two real wake sequences before
   reporting full wake readiness. App-side cycle access alone has already passed.

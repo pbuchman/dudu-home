@@ -69,6 +69,7 @@ final class FirstWakeChecks {
             failed.fail = false;
             JourneySession another = new JourneySession(failed.prefs, 20);
             check(!another.ensureBoot() && !another.available() && !another.reserve(), "same store stays blocked");
+            check(!another.available(JourneySession.Target.SPOTIFY) && !another.reserve(JourneySession.Target.SPOTIFY), "Spotify fails closed too");
             check(another.observeAwakeCycle(cycle(2)) == STATE_WRITE_FAILED, "no recovery from cached memory");
             check(failed.writes == writes, "no implicit retry");
             check(another.takeStorageFailureReport() && !session.takeStorageFailureReport(), "one failure report across instances");

@@ -4,14 +4,16 @@ Od 0.5.5 potwierdzony pusty stan właściwości producenta po zakończeniu start
 zapisuje początkowy licznik zero, bez uruchamiania ani odblokowywania dodatkowej akcji.
 Dopiero jego późniejszy wzrost odblokowuje Yanosika po świeżym ruchu. Nieudany odczyt
 nie jest zerem. Błąd zapisu sesji blokuje Yanosika do końca procesu, nie monitoring bramy.
-Instalacja i odbiór tej poprawki na radiu pozostają osobnymi krokami.
+Instalacja 0.5.5 została potwierdzona 14 września; pełny odbiór wybudzeń nadal jest otwarty.
+Od 0.5.6 kolejność gotowych akcji to brama → sprzątanie → Yanosik → Spotify.
+Szczegółowy kontrakt kolejki i odtwarzania: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
 
 ## Cel
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
-Obecny zakres obejmuje trzy duże kafelki. Full Mop działa wyłącznie ręcznie; Spotify i inne
-urządzenia pozostają poza nim. Obecny hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
+Obecny zakres obejmuje trzy duże kafelki. Full Mop działa wyłącznie ręcznie. Spotify wznawia
+muzykę na radiu po potwierdzeniu jazdy, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
 a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Menu i akcje
@@ -22,13 +24,13 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
-| Yanosik bez sygnału pracy | Potwierdzony ruch, start, jednorazowy pulpit po 10 s, wynik żądania przez 2 s |
+| Yanosik bez sygnału pracy | Potwierdzony ruch, start, po 10 s dopuszczenie Spotify; bez żądania pulpitu |
 | Nieznany stan Yanosika | Pominięcie startu z krótkim komunikatem; brak samoczynnego ponowienia |
 | Powrót przed skrętem | „Sprawdzam trasę powrotu”, następnie potwierdzanie dojazdu; postęp z GPS, nie zegara |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |
 | Automatyczne zdarzenie przy schowanej aplikacji | Ten sam ekran postępu → wynik → schowanie aplikacji; monitor pozostaje aktywny |
 | Automatyczne zdarzenie przy otwartym menu | Ten sam ekran postępu → wynik → poprzednio otwarte menu |
-| Formularz lub błąd czeka na użytkownika | Nowa automatyzacja nie przerywa tego widoku; nie ma kolejki |
+| Formularz lub błąd czeka na użytkownika | Nie przerywamy widoku; kolejka ma limit 5 s dla bramy i 120 s dla pozostałych akcji |
 | Sukces | Animacja i 5000 ms prezentacji dla bramy oraz obu rutyn |
 | Informacja o blokadzie bramy | Dotychczasowe 2500 ms |
 | Błąd wykonania | Pozostaje do „Ponów” albo „Zamknij”; brak samoczynnego ponowienia |

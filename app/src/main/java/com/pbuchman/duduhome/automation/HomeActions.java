@@ -23,16 +23,28 @@ public final class HomeActions {
     private static HomeAction pendingAction;
     private static long pendingAttempt;
     private static final Handler handler = new Handler(Looper.getMainLooper());
+    private static Runnable schedulingListener;
+    private static Runnable configurationListener;
+    public static void setConfigurationListener(Runnable listener) { configurationListener = listener; }
+    public static void clearConfigurationListener(Runnable listener) {
+        if (configurationListener == listener) configurationListener = null;
+    }
+    public static void configurationChanged() { if (configurationListener != null) configurationListener.run(); }
+    public static void setSchedulingListener(Runnable listener) { schedulingListener = listener; }
+    public static void clearSchedulingListener(Runnable listener) { if (schedulingListener == listener) schedulingListener = null; }
+    public static void schedulingChanged() {
+        handler.post(() -> { if (schedulingListener != null) schedulingListener.run(); });
+    }
     public record Request(HomeAction action, long attempt) { }
     private static boolean busy;
-    public static synchronized boolean begin() { if (busy) return false; busy = true; return true; }
-    public static synchronized void end() { busy = false; }
+    public static synchronized boolean begin() { if (busy) return false; busy = true; schedulingChanged(); return true; }
+    public static synchronized void end() { busy = false; schedulingChanged(); }
     public static synchronized boolean busy() { return busy; }
     private static WeakReference<MainActivity> visible = new WeakReference<>(null);
     private static WeakReference<MainActivity> screen = new WeakReference<>(null);
 
-    public static void visible(MainActivity activity) { visible = new WeakReference<>(activity); screen = new WeakReference<>(activity); }
-    public static void hidden(MainActivity activity) { if (visible.get() == activity) visible.clear(); }
+    public static void visible(MainActivity activity) { visible = new WeakReference<>(activity); screen = new WeakReference<>(activity); schedulingChanged(); }
+    public static void hidden(MainActivity activity) { if (visible.get() == activity) visible.clear(); schedulingChanged(); }
     public static MainActivity visibleActivity() { return visible.get(); }
 
     public static boolean allowsExternalLaunch() {
@@ -44,17 +56,23 @@ public final class HomeActions {
     public static boolean callsGate(HomeEvent event) {
         return event == HomeEvent.DEPARTURE_STARTED || event == HomeEvent.RETURN_APPROACH;
     }
+    public static boolean allowsMediaLaunch() {
+        MainActivity activity = visible.get();
+        return allowsExternalLaunch() && (activity == null || activity.isFinishing() || activity.isDestroyed());
+    }
 
     public static void dispatch(Context context, HomeEvent event) {
         if (!callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT) return;
         long attempt = ProgressBus.request(context, ProgressBus.kind(event));
-        HomeAction action;
-        if (callsGate(event)) action = HomeAction.GATE;
-        else if (event == HomeEvent.OUTBOUND_CHECKPOINT) {
+        if (event == HomeEvent.OUTBOUND_CHECKPOINT) {
             if (!DailyCleaning.reserve(context)) { skip(context, attempt, Reason.DAILY_LIMIT_OR_STORAGE, "SKIP_CLEANING_DAILY_LIMIT_OR_STORAGE"); return; }
-            action = HomeAction.CLEANING;
         }
-        else return;
+        dispatchReserved(context, event, attempt);
+    }
+
+    /** Daily quota was reserved at enqueue; this path never reserves again. */
+    public static void dispatchReserved(Context context, HomeEvent event, long attempt) {
+        HomeAction action = callsGate(event) ? HomeAction.GATE : HomeAction.CLEANING;
         if (busy() || PrivateImport.pending(context)) { skip(context, attempt, Reason.BUSY_OR_MAINTENANCE, "SKIP_" + action + "_BUSY_OR_MAINTENANCE"); return; }
         if (action == HomeAction.GATE) {
             GateNumberStore store = new GateNumberStore(context);
@@ -63,7 +81,7 @@ public final class HomeActions {
         } else if (new RoborockStore(context).read() == null) { skip(context, attempt, Reason.NO_CONFIG, "SKIP_CLEANING_NO_CONFIG"); return; }
         Diagnostics.record(context, "DISPATCH_" + action);
         MainActivity activity = visible.get();
-        if (activity != null) {
+        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
             ProgressBus.update(context, attempt, Phase.ACCEPTED, Reason.NONE);
             activity.automaticAction(action, attempt);
             return;
@@ -77,7 +95,7 @@ public final class HomeActions {
         pendingAttempt = attempt;
         String token = pendingToken;
         Context app = context.getApplicationContext();
-        handler.postDelayed(() -> { if (token.equals(pendingToken)) expirePending(app); }, 5000);
+        handler.postDelayed(() -> { if (token.equals(pendingToken)) { expirePending(app); schedulingChanged(); } }, 5000);
         try {
             context.startActivity(new Intent(context, MainActivity.class).setAction(ACTION)
                     .putExtra("request_token", pendingToken).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -100,6 +118,11 @@ public final class HomeActions {
                 && SystemClock.elapsedRealtime() - pendingSince < 5000;
         if (valid) pendingToken = null;
         return valid;
+    }
+    public static void cancelPending(Context context, Reason reason, long ownerAttempt) {
+        if (pendingToken == null || pendingAttempt != ownerAttempt) return;
+        pendingToken = null;
+        ProgressBus.update(context, pendingAttempt, Phase.SKIPPED, reason);
     }
     public static HomeAction consumeAction(Intent intent) { return consume(intent) ? pendingAction : null; }
     public static Request consumeRequest(Context context, Intent intent) {

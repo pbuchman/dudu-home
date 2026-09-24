@@ -1,5 +1,16 @@
 # Change history
 
+## 0.5.6-local - ordered automation and native Spotify resume
+
+- Explicit in-memory gate, cleaning, Yanosik, Spotify priorities with bounded waiting.
+- Reserve cleaning at enqueue and preserve its daily limit through failures and restarts.
+- Independent durable Spotify attempt; retain verified first-wake and failed-write protections.
+- Replace Yanosik's delayed HOME with a ten-second allowance before Spotify launch.
+- Exact-package local media-session control, at most one play, callback timeouts and cleanup.
+- Preserve executor safety, manual menu, result/error precedence and all route thresholds.
+- Add scheduling and fake-media regressions. Hardware acceptance remains pending.
+- Correct installation history: 0.5.5 was installed September 14; full wake acceptance was not completed.
+
 ## 0.5.5-local - preserve the first vendor wake opportunity
 
 - Distinguish verified empty cold-start properties from uncertain reads; persist baseline zero.
@@ -7,7 +18,7 @@
 - Fail closed across session instances after persistence failure, without stopping home monitoring.
 - Preserve asynchronous reads, late-callback rejection, route flags and executor safety.
 - Add parser/process, persistence-failure and isolated monitor integration regressions.
-- Source verified locally; radio installation and first-wake acceptance remain pending.
+- Source verified locally; installed September 14. Full first-wake acceptance remains pending.
 
 ## 0.5.4-local - allow cold Yanosik startup before one desktop return
 

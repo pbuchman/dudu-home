@@ -10,3 +10,5 @@ javac -d build/detector app/src/main/java/com/pbuchman/duduhome/location/MotionD
   app/src/main/java/com/pbuchman/duduhome/automation/DetectionProgress.java \
   app/src/main/java/com/pbuchman/duduhome/automation/MotionHook.java scripts/MotionChecks.java
 java -cp build/detector com.pbuchman.duduhome.location.MotionChecks
+javac -cp build/detector -d build/detector app/src/main/java/com/pbuchman/duduhome/automation/AutomationCoordinator.java scripts/CoordinatorChecks.java
+java -cp build/detector com.pbuchman.duduhome.automation.CoordinatorChecks
