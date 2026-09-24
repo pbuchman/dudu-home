@@ -14,6 +14,7 @@
         <package android:name="com.syu.ms" />
         <package android:name="pl.neptis.yanosik.mobi.android" />
         <package android:name="com.spotify.music" />
+        <package android:name="com.google.android.apps.maps" />
     </queries>
 
     <application

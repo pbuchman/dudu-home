@@ -1,5 +1,33 @@
 # Verification ledger
 
+## 1.0.0-rc1 navigation candidate - 2026-09-24
+
+Local checks passed: debug and instrumentation APK build, lint, detector/progress checks,
+Python private-tool/fresh-installer/navigation validation, and the privacy scanner regression.
+The full emulator suite passed strict JSON/UTF-8 validation, stable slot order, empty cards,
+exact explicit driving intents, missing Maps, launch/storage failures, persistent media
+priority, delayed wake baseline handling, and selected-file import/cancel/error paths.
+The complete emulator update test passed signature comparison, private backup, one-time
+navigation import, separated credential/geometry storage and daily quota preservation after
+restart. It uses synthetic input and never performs a physical call or robot command.
+
+The menu was inspected at 2000 x 1200 with empty and synthetic configured destinations.
+All six touch targets fit without scrolling at normal text size. A long generic label wraps
+onto two lines. The same layout remains readable with the font scale set to 1.3. Screenshots
+in this section are emulator evidence, not radio acceptance.
+
+Private-denylist scans of the working tree and all history passed, with one manually reviewed
+historical ordinary-noun match in the illustration description. No private destination was
+present there. Both APKs were scanned after ZIP decompression and through DEX string tables:
+no actual configured labels, address words, coordinates or credentials were found. Public
+art and screenshots were visually inspected; text metadata is absent from the new assets.
+
+The recorded code 13 hardware results below are preserved. Code 14 installation and actual
+Google Maps guidance remain pending: the physical radio stopped appearing in ADB and the
+previously recorded endpoint did not reconnect. No physical deployment or guidance success
+is claimed for this candidate. The release remains `1.0.0-rc1`; repeated wake, journey and
+other outstanding historical acceptance checks still block a final 1.0 release claim.
+
 ## 0.5.6 implementation and current installation status - 2026-09-24
 
 Final local acceptance passed: assembleDebug, assembleDebugAndroidTest, lintDebug, detector
@@ -14,8 +42,21 @@ retired SDK package `tools`. The workflow now explicitly requests `platform-tool
 test, build and lint steps remain enabled.
 
 Correction to the historical entry below: installation of 0.5.5/code 12 was confirmed on
-September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 has not
-been installed on the radio; the read-only connection check finds no authorized physical radio.
+September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 was
+installed on September 24 using the signature-preserving update, private APK/data backup,
+and one-time configuration import. APK and configuration checks passed without data clearing.
+
+Before that update, logs from the current departure showed an automatic gate-call success
+followed by Yanosik. Automatic cleaning was skipped after an earlier same-day request had
+already returned ACCEPTED. This is evidence of the daily limit, not physical robot movement.
+
+After a full reboot, without manually opening Dudu Home, monitoring started automatically.
+Fresh movement caused one Yanosik launch and Spotify approximately ten seconds later.
+The initially unavailable vendor read was followed by a persisted zero baseline without
+another attempt. Spotify exposed a local native session and reported PLAYING after resume.
+Private screenshots showed Spotify and Yanosik warnings together; a later screenshot showed
+navigation in front with Spotify still playing. No claim is made about who changed foreground.
+Monitoring remained active with fresh GPS for at least fifteen minutes after reboot.
 
 Local instrumentation exercises fake media transport and timers, including existing playback,
 single resume, buffering, missing/late/remote/ambiguous sessions, permission loss, timeouts,
@@ -25,10 +66,10 @@ expiry, day rollover, UI exclusion and generations. The monitor integration chec
 cleaning quota reservation while the shared executor is occupied, duplicate suppression and
 no queue replay or quota restoration in a replacement runtime.
 
-Remaining physical checks: cold Spotify session availability, audible radio playback, Yanosik
-warnings behind Spotify, gate/cleaning contention, manual-menu protection, real first and
-subsequent sleep/wake, and a short stop without duplicate startup. Local checks and CI cannot
-certify any of these. Existing screenshots remain unchanged and are not new hardware evidence.
+Remaining physical checks: audible radio playback, gate/cleaning contention on the new version,
+manual-menu protection, real first and subsequent sleep/wake, and a short stop without duplicate
+startup. Full reboot does not replace actual ignition sleep. Local checks and CI cannot certify
+these outstanding checks. Public screenshots remain unchanged; new radio evidence stays private.
 
 ## 0.5.5 local first-wake regression - 2026-09-13
 

@@ -23,7 +23,8 @@
     <style name="ActionTile">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_height">280dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">234dp</item>
         <item name="android:orientation">vertical</item>
         <item name="android:gravity">center</item>
         <item name="android:padding">16dp</item>
@@ -34,7 +35,7 @@
     </style>
     <style name="TileIllustration">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">174dp</item>
+        <item name="android:layout_height">144dp</item>
         <item name="android:scaleType">fitCenter</item>
         <item name="android:importantForAccessibility">no</item>
     </style>

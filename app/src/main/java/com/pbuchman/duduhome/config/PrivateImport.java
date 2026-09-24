@@ -6,6 +6,8 @@ import com.pbuchman.duduhome.roborock.RoborockCredentials;
 import com.pbuchman.duduhome.roborock.RoborockStore;
 
 import android.content.Context;
+import com.pbuchman.duduhome.navigation.NavigationConfig;
+import com.pbuchman.duduhome.navigation.NavigationStore;
 import android.util.AtomicFile;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,6 +29,8 @@ public final class PrivateImport {
             JSONObject data = new JSONObject(new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
             if (data.getInt("schema_version") != 2) return false;
             HomeConfiguration.validateImport(data);
+            NavigationConfig navigation = data.has("navigation")
+                    ? NavigationConfig.parse(data.getJSONObject("navigation").toString()) : null;
             String phone = data.isNull("gate_number") ? null : GateNumberStore.normalize(data.getString("gate_number"));
             if (!data.isNull("gate_number") && (phone == null || !data.optBoolean("gate_number_verified_on_current_device"))) return false;
             RoborockCredentials rr = data.isNull("roborock") ? null : new RoborockCredentials(data.getJSONObject("roborock").toString());
@@ -47,6 +51,7 @@ public final class PrivateImport {
                 out = target.startWrite(); out.write(geometry.toString().getBytes(StandardCharsets.UTF_8));
                 target.finishWrite(out);
             } catch (Exception failure) { if (out != null) target.failWrite(out); return false; }
+            if (navigation != null) new NavigationStore(c).save(navigation);
             if (!source.delete()) return false;
             File maintenance = new File(c.getNoBackupFilesDir(), "maintenance");
             return !maintenance.exists() || maintenance.delete();

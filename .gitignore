@@ -29,3 +29,7 @@ config.json
 *.enc
 output/
 __pycache__/
+
+navigation.json
+navigation.proposed.json
+*navigation-private*

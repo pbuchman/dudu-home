@@ -1,5 +1,19 @@
 # Design decisions
 
+## Private manual Maps destinations - 1.0.0-rc1
+
+- Three stable slots below the existing actions; configuration is an external JSON document,
+  never a source constant. Generic home, sport and pin art; address labels are supported.
+- Validate before replacing an AtomicFile in no-backup storage. Android's document picker
+  gives access only to the selected file; no broad storage permission or retained URI grant.
+- Explicit Android Maps driving intent with coordinates, no browser, SDK, key or geocoding.
+- Manual navigation suppresses pending media startup durably. Rebaseline the next vendor
+  read to avoid a stale current-wake result immediately undoing that choice. Home actions
+  remain independent; do not stop already-playing music or launch anything during import.
+- Keep all real configuration and screenshots private. Public examples are empty or synthetic.
+- Use a 1.0 release candidate while historical wake/journey acceptance remains incomplete.
+  See NAVIGATION for the contract and VERIFICATION for evidence.
+
 ## Ordered automation and Spotify - 0.5.6
 
 - Supersedes earlier no-queue and delayed-HOME decisions below: ready gate, cleaning,

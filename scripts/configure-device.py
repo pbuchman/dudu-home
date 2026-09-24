@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Private atomic import; optional backed-up APK update. Never launches or triggers actions."""
+from navigation_config import read_navigation, validate_navigation
 import argparse
 import hashlib
 import json
@@ -24,7 +25,7 @@ def private_path(value):
     return path
 
 
-def validate(data, robot, enabled):
+def validate(data, robot, enabled, navigation=None):
     if not isinstance(data, dict): raise ValueError('Configuration must be an object')
     if data.get('schema_version') not in (1, 2): raise ValueError('Unsupported schema')
     phone = data.get('gate_number')
@@ -63,6 +64,7 @@ def validate(data, robot, enabled):
     result = dict(schema_version=2, gate_number=phone,
                   gate_number_verified_on_current_device=bool(data.get('gate_number_verified_on_current_device')),
                   points=points, automation_enabled=enabled, roborock=robot)
+    if navigation is not None: result['navigation'] = validate_navigation(navigation)
     if len(json.dumps(result).encode()) > 16384: raise ValueError('Configuration too large')
     return result
 
@@ -72,6 +74,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('serial'); p.add_argument('config', type=private_path)
     p.add_argument('--roborock', type=private_path)
+    p.add_argument('--navigation', type=private_path)
     p.add_argument('--enable-automation', action='store_true'); p.add_argument('--dry-run', action='store_true')
     p.add_argument('--apk', type=Path); p.add_argument('--backup-dir', type=private_path)
     sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home()/'Library/Android/sdk')))
@@ -79,11 +82,11 @@ def main():
     p.add_argument('--apksigner', default=str(sdk/'build-tools/35.0.0/apksigner'))
     p.add_argument('--aapt', default=str(sdk/'build-tools/35.0.0/aapt'))
     a = p.parse_args()
-    for source in (a.config, a.roborock):
+    for source in (a.config, a.roborock, a.navigation):
         if source and source.stat().st_mode & 0o077: raise ValueError('Private input must have owner-only permissions (chmod 600)')
     data = json.loads(a.config.read_text())
     robot = json.loads(a.roborock.read_text()) if a.roborock else data.get('roborock')
-    payload = validate(data, robot, a.enable_automation)
+    payload = validate(data, robot, a.enable_automation, read_navigation(a.navigation) if a.navigation else None)
     if a.dry_run:
         print('Syntax valid; device, phone, signature and authorization NOT verified.'); return
     adb = [a.adb, '-s', a.serial]
@@ -106,6 +109,8 @@ def main():
         target = re.search(r"package: name='([^']+)' versionCode='(\d+)'", metadata)
         if not target or target.group(1) != PACKAGE or int(target.group(2)) < 3:
             raise ValueError('APK is not the expected Full Cleaning application')
+        if int(target.group(2)) < int(version.group(1)):
+            raise ValueError('Refusing APK downgrade; use a documented recovery procedure')
         backup = Path(tempfile.mkdtemp(prefix='before-update-', dir=a.backup_dir))
         remote = run(['shell', 'pm', 'path', PACKAGE]).decode().strip().removeprefix('package:')
         if not remote.startswith('/') or '\n' in remote: raise ValueError('Unsupported installed APK layout')
@@ -130,7 +135,7 @@ def main():
             if hashlib.sha256((backup/name).read_bytes()).hexdigest() != digest: raise ValueError('Backup checksum mismatch')
         run(['shell', 'am', 'force-stop', PACKAGE])
         shell(f"run-as {PACKAGE} sh -c 'umask 077; mkdir -p no_backup; touch no_backup/maintenance'")
-        disabled = dict(payload, automation_enabled=False, roborock=None)
+        disabled = dict(schema_version=2, points=payload['points'], automation_enabled=False)
         shell(f"run-as {PACKAGE} sh -c 'cat > no_backup/home-config.json'", input=json.dumps(disabled).encode())
         run(['install', '-r', str(a.apk)])
         version = re.search(r'versionCode=(\d+)', run(['shell', 'dumpsys', 'package', PACKAGE]).decode())

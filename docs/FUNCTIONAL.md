@@ -1,5 +1,14 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+## Manual Google Maps navigation - 1.0.0-rc1
+
+Three fixed-order slots sit below the gate and routine actions. Import their private JSON
+through Settings or the installer. Missing slots show a dashed empty state; configured slots
+request driving navigation in Google Maps. Configuration never executes an action. A manual
+Maps choice prevents pending media startup from covering it, with persistent, conservative
+wake rearming. Existing gate/cleaning behavior remains unchanged. See [NAVIGATION.md](NAVIGATION.md)
+for exact schema, error handling and limits. Actual guidance requires physical acceptance.
+
 Od 0.5.5 potwierdzony pusty stan właściwości producenta po zakończeniu startu Androida
 zapisuje początkowy licznik zero, bez uruchamiania ani odblokowywania dodatkowej akcji.
 Dopiero jego późniejszy wzrost odblokowuje Yanosika po świeżym ruchu. Nieudany odczyt
@@ -12,7 +21,7 @@ Szczegółowy kontrakt kolejki i odtwarzania: [AUTOMATION_SEQUENCE.md](AUTOMATIO
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
-Obecny zakres obejmuje trzy duże kafelki. Full Mop działa wyłącznie ręcznie. Spotify wznawia
+Obecny zakres obejmuje trzy kafelki akcji oraz trzy kafelki nawigacji. Full Mop działa wyłącznie ręcznie. Spotify wznawia
 muzykę na radiu po potwierdzeniu jazdy, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
 a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 

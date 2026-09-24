@@ -1,5 +1,9 @@
 # Functional packages and installation identity
 
+Navigation uses `navigation.NavigationConfig` (strict schema), `NavigationStore` (private atomic
+file), `MapsLauncher` (explicit intent) and `ui.NavigationPanel` (three tiles/document picker).
+It shares only manual media priority with `JourneySession` and `AutomationRuntime`.
+
 Local version 0.4.0 uses `com.pbuchman.duduhome` for both namespace and application ID.
 This intentionally requires migration from the published `pl.piotrbuchman.dudugate`.
 Radio migration was authorized and completed on 2026-09-09. The owner subsequently authorized

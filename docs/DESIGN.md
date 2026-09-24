@@ -2,9 +2,9 @@
 
 ## Kierunek
 
-To panel trzech konkretnych akcji w samochodzie, nie dashboard smart home. Duże cele dotykowe,
+To panel trzech konkretnych akcji i trzech celów nawigacji w samochodzie, nie dashboard smart home. Duże cele dotykowe,
 krótkie podpisy, rozpoznawalne ilustracje i brak rozpraszających animacji w stanie spoczynku.
-Dom z rozbłyskiem zastępuje dawny symbol listy: łączy wjazd do domu z jego sprzątaniem.
+Budynek z rozbłyskiem zastępuje dawny symbol listy: łączy wjazd do domu z jego sprzątaniem.
 
 Paleta: tło `#101B27`, głęboki błękit `#172C3A`, tekst kafelków `#162934`, piaskowa brama
 `#F0D5AE`, miętowe Cleaning `#C0E8D8`, błękitne Mop `#BDDAF4`. Kolor rozróżnia akcje, ale nie
@@ -13,8 +13,10 @@ Platformowy sans-serif / sans-serif-medium: nagłówek 32 sp, kafelki 26 sp.
 Bez pobierania fontów, zależności UI i logotypów Google/Roborock.
 
 Układ: nagłówek z ikoną po lewej, ustawienia po prawej; poniżej trzy równe cele dotykowe
-o wysokości 280 dp. Ilustracja nad nazwą, razem wyśrodkowane w pionie. Na prośbę właściciela
-usunięto podpis nagłówka i opisy powielające nazwy akcji. Status automatyzacji pod akcjami,
+o minimalnej wysokości 234 dp. Ilustracja nad nazwą, razem wyśrodkowane w pionie. Na prośbę właściciela
+usunięto podpis nagłówka i opisy powielające nazwy akcji. Pod akcjami jest podpis Nawigacja i trzy poziome kafelki o minimalnej wysokości 132 dp.
+Ilustracja po lewej, etykieta 22 sp do dwóch wierszy, opis 16 sp i strzałka po prawej.
+Puste miejsce ma przerywaną ramkę i obrys pinezki. Status automatyzacji pod nawigacją,
 bez udawania potwierdzonej pozycji czy działania robota. Poniżej 600 dp szerokości kafelki
 układają się pionowo w przewijanej zawartości. Ekrany postępu/sukcesu używają ilustracji akcji.
 
@@ -86,3 +88,12 @@ mint accents to cool sky blue. Replace both floating sparkles with one clearly r
 glossy blue water droplet just above the robot, fully inside frame. Show a subtle short clean
 watery swoosh beside its base, not a puddle. No words, no logos, no extra objects. This is a
 distinct companion tile for manual mopping in the same app. Highest quality, keep transparent alpha.
+
+## Materiały nawigacji
+
+`art_navigation_home.png`, `art_navigation_squash.png` i `art_navigation_pin.png` to nowe
+wygenerowane ilustracje na przezroczystym tle: budynek z pinezką, rakiety z piłką oraz zwykła
+pinezka nad złożoną mapą. Nie przedstawiają rzeczywistych miejsc. Ogólne prompty określały
+zaokrąglone formy 3D, matową ceramikę, pastelową paletę i brak tekstu, logo oraz oznaczeń relacji.
+Metadane tekstowe PNG zostały usunięte bez zmiany pikseli. Prywatne makiety i wizytówki miejsc
+pozostają poza repozytorium. Publiczne zrzuty nowego menu używają wyłącznie danych syntetycznych.

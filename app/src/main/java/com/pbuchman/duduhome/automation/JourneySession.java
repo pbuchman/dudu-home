@@ -29,7 +29,7 @@ public final class JourneySession {
             int previous = state.getInt("boot", -1);
             if (previous > boot) return false;
             return previous == boot || commitOrBlock(state.edit().putInt("boot", boot).putBoolean("consumed", false)
-                    .putBoolean("spotify_consumed", false).remove("wake_id"));
+                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false).remove("wake_id"));
         }
     }
     public boolean reserve() {
@@ -40,6 +40,20 @@ public final class JourneySession {
             String key = target == Target.YANOSIK ? "consumed" : "spotify_consumed";
             return ensureBoot() && !state.getBoolean(key, false)
                     && commitOrBlock(state.edit().putBoolean(key, true));
+        }
+    }
+    /** Manual Maps wins, including after a process restart. Rebaseline the next vendor read
+     * so an outstanding observation of the current wake cannot immediately undo the choice. */
+    public boolean chooseManualNavigation() {
+        synchronized (JourneySession.class) {
+            return ensureBoot() && commitOrBlock(state.edit().putBoolean("consumed", true)
+                    .putBoolean("spotify_consumed", true).putBoolean("manual_navigation", true).remove("wake_id"));
+        }
+    }
+    public boolean manualNavigationChosen() {
+        synchronized (JourneySession.class) {
+            return FAILED.contains(state) || boot < 0 || (state.getInt("boot", -1) == boot
+                    && state.getBoolean("manual_navigation", false));
         }
     }
     /** Read-only presentation eligibility; never establishes a boot or reserves an attempt. */
@@ -65,7 +79,7 @@ public final class JourneySession {
             if (observation.kind() == DuduCycle.Kind.ABSENT_COLD_BASELINE
                     || observation.counter() <= state.getLong("wake_id", -1)) return ObservationResult.UNCHANGED;
             return commitOrBlock(state.edit().putLong("wake_id", observation.counter()).putBoolean("consumed", false)
-                    .putBoolean("spotify_consumed", false))
+                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false))
                     ? ObservationResult.REARMED : ObservationResult.STATE_WRITE_FAILED;
         }
     }

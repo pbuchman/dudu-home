@@ -1,15 +1,18 @@
 # Dudu Home
 
-**Your gate. Your cleaning routines. One touch - or the right moment on your journey.**
+**Your gate. Your cleaning routines. Your destinations. One touch.**
 
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
 After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
 Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
-Spotify stays on screen; there is no additional desktop request. This new sequence awaits radio acceptance.
+Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
+pending media startup so it cannot cover the chosen navigation.
 
-> **Current source: `0.5.6-local` (code 13). Last verified installation: `0.5.5-local` (code 12), September 14.**
+> **Current source: `1.0.0-rc1` (code 14). Last verified radio installation: `0.5.6-local` (code 13), September 24.**
+> Adds three private, file-configured Google Maps navigation tiles. Radio installation and
+> guidance acceptance for this candidate are pending. It is not a final 1.0 release.
 > Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.
 > Notification access requires a one-time system grant. Detection of an already-running
 > Yanosik passed on DUDU7 without reopening it or requesting HOME.
@@ -21,13 +24,21 @@ Spotify stays on screen; there is no additional desktop request. This new sequen
 > On 0.5.4, automatic launch, desktop return and real warning overlays passed on DUDU7.
 > Version 0.5.5 fixes the first-wake session baseline in code: a verified empty cold-start
 > observation establishes zero without granting an extra attempt. Unknown reads never do.
-> **Full wake acceptance remains pending. The new 0.5.6 sequence has not been installed or tested on the radio.**
+> On 0.5.6, a backed-up update and full reboot passed: automatic monitoring, cold baseline zero,
+> movement-triggered Yanosik, then Spotify with a local session reporting PLAYING. Yanosik warnings
+> remained visible. Audible sound still needs confirmation; playback state alone is not proof.
+> **Full wake acceptance and gate/cleaning contention on 0.5.6 remain pending.**
 > Gate and Roborock manual actions were verified on the preceding package version.
 > **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
 > fully verified production release. No public APK is provided.
 
-![Dudu Home menu - actual DUDU7 screenshot with Polish labels, 2026-09-09](docs/images/menu-dudu7.png)
+![Dudu Home with three navigation slots - synthetic emulator capture](docs/images/navigation-populated.png)
+
+[Empty navigation slots](docs/images/navigation-empty.png) · [Earlier radio menu](docs/images/menu-dudu7.png)
+
+The new screenshot uses invented labels and synthetic coordinates. Actual destination files and
+radio screenshots remain private.
 
 ### See what the automation is detecting
 
@@ -61,6 +72,8 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
   action and its result screen; the daily attempt remains consumed. Manual cleaning remains independent.
+- **Three Google Maps destinations:** private JSON import, generic icons, empty-slot guidance and
+  one-tap driving navigation. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
   ten seconds of qualified GPS movement. First check its foreground-service notification.
@@ -72,8 +85,8 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
 - **Spotify resume:** open the radio's Spotify, then use only its unambiguous local Android
   media session. Send at most one `play()` and confirm `PLAYING`, not merely an accepted request.
-  No playlist selection or remote Spotify Connect control. Cold-start session availability is
-  unverified; see [queue and Spotify contract](docs/AUTOMATION_SEQUENCE.md).
+  No playlist selection or remote Spotify Connect control. Cold-start session availability passed
+  on the recorded code 13 radio test; see [queue and Spotify contract](docs/AUTOMATION_SEQUENCE.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
@@ -108,6 +121,8 @@ There are no external Android runtime libraries.
 bash scripts/check-detector.sh
 python3 scripts/check-progress.py
 python3 scripts/test-private-tools.py
+python3 scripts/test-navigation.py
+python3 scripts/test-public-tree.py
 python3 scripts/test-fresh-installer.py
 ./scripts/run-emulator-check.sh
 python3 scripts/test-install-emulator.py emulator-5554
@@ -126,11 +141,12 @@ for that transition, not an ordinary update. Keep the matching signing certifica
 
 Use the [migration runbook](docs/MIGRATION.md) for the old radio package. For an already
 migrated installation, use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
-signature comparison and all three configuration sections. For an existing radio installation:
+signature comparison and all supplied configuration sections. For an existing radio installation:
 
 ```sh
 python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
   --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
+  --navigation "$PRIVATE_DIR/navigation.json" \
   --apk app/build/outputs/apk/debug/app-debug.apk \
   --backup-dir "$PRIVATE_DIR/radio-backups" --enable-automation
 ```
@@ -173,6 +189,7 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 
 ## Documentation for the next developer
 
+- [Private navigation destinations](docs/NAVIGATION.md): JSON schema, import and Maps launch.
 - [Functional contract](docs/FUNCTIONAL.md): buttons, triggers, once-a-day behavior and failure cases.
 - [Architecture and Roborock protocol](docs/ROBOROCK.md): native HTTPS, credentials and boundaries.
 - [DUDU/SYU technical notes](docs/TECHNICAL_NOTES.md): preserved calling safety and IPC details.

@@ -92,4 +92,18 @@
     <string name="success_icon_description">Sukces</string>
     <string name="error_icon_description">Błąd</string>
     <string name="error_message_format">%1$s\n\nKod: %2$s</string>
+    <string name="navigation_title">Nawigacja</string>
+    <string name="navigation_go">Jedź z Google Maps</string>
+    <string name="navigation_slot">Miejsce %1$d</string>
+    <string name="navigation_empty">Brak konfiguracji</string>
+    <string name="navigation_import">Wczytaj miejsca z pliku</string>
+    <string name="navigation_empty_help">Dodaj miejsce w pliku konfiguracji, a następnie wybierz Ustawienia → Wczytaj miejsca z pliku.</string>
+    <string name="navigation_imported">Miejsca zapisane</string>
+    <string name="navigation_import_failed">Nie udało się wczytać miejsc. Sprawdź plik JSON. Poprzednia konfiguracja została zachowana.</string>
+    <string name="navigation_invalid">Nie można odczytać miejsc. Wczytaj poprawny plik konfiguracji.</string>
+    <string name="navigation_loading">Wczytywanie miejsc…</string>
+    <string name="navigation_picker_missing">Na urządzeniu brakuje aplikacji do wyboru plików.</string>
+    <string name="navigation_maps_missing">Google Maps nie jest zainstalowane lub jest wyłączone.</string>
+    <string name="navigation_launch_failed">Nie udało się uruchomić Google Maps.</string>
+    <string name="navigation_storage_failed">Nie udało się zapisać stanu nawigacji. Spróbuj ponownie.</string>
 </resources>

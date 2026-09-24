@@ -1,5 +1,18 @@
 # Change history
 
+## 1.0.0-rc1 (code 14) - 2026-09-24
+
+- Add three file-configured Google Maps driving destinations below the existing actions,
+  with generic illustrations and outlined empty states. No actual destinations in the APK.
+- Import a bounded, strictly validated UTF-8 document using the Android picker or private
+  installer. Atomic no-backup storage; cancellation and invalid input preserve saved places.
+- Persist manual navigation priority over pending Yanosik/Spotify startup, including after
+  process restart and delayed vendor wake observations. Existing playback is not stopped.
+- Extend private-value auditing to navigation labels, addresses and encoded/rounded values.
+  Add parser, intent, media-priority, document import and complete installer tests.
+- Candidate version only: repeated manufacturer wake and remaining journey acceptance are
+  still open. No final 1.0 tag or public APK.
+
 ## 0.5.6-local - ordered automation and native Spotify resume
 
 - Explicit in-memory gate, cleaning, Yanosik, Spotify priorities with bounded waiting.
