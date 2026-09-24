@@ -38,34 +38,52 @@ final class MonitorCycleChecks {
                 callback.invoke(old, FirstWakeChecks.cold());
                 check(movement.equals(motion.progress()) && get(old,"motionOrigin") != null
                         && (long)get(old,"progressEpoch") == epoch, "late baseline preserves movement and UI");
-                int[] homes = {0};
-                var delayed = new ArrayList<Runnable>();
-                YanosikLauncher target = new YanosikLauncher(session,new YanosikLauncher.Launch() {
-                    public Intent resolve() { return new Intent(); }
-                    public void open(Intent intent) { }
-                    public void home() { homes[0]++; }
-                },(task,delay)->delayed.add(task),()->YanosikPresence.State.NO_WORK_SIGNAL);
-                set(old,"yanosik",target); target.attempt();
-                check((boolean)get(target,"pendingHome"), "fake pending HOME");
+                AutomationRuntime target = new AutomationRuntime(context);
+                AutomationCoordinator queue = (AutomationCoordinator)get(target,"queue");
+                queue.enqueue(0,AutomationCoordinator.Type.SPOTIFY,null,now,0);
+                queue.yanosikLaunched(now);
+                set(old,"automation",target);
+                check(session.reserve(), "consume old cycle");
                 HomeDetector detector = new HomeDetector(new HomeDetector.Geometry(new HomeDetector.Point(0,0),
                         new HomeDetector.Point(0,60),new HomeDetector.Point(0,160),new HomeDetector.Point(100,200)),29);
                 set(old,"detector",detector);
                 callback.invoke(old, FirstWakeChecks.cycle(1));
-                delayed.get(0).run();
-                check(homes[0] == 0 && !(boolean)get(target,"pendingHome"), "new wake cancels HOME");
+                check(queue.next(now+20000,true,true)==null, "new wake cancels queued media");
                 check(!motion.fresh(now) && get(old,"motionOrigin") == null
                         && (long)get(old,"progressEpoch") != epoch && detector.flags()==29, "wake clears evidence not flags");
                 check(session.available(), "wake rearms without dispatch");
-                target.attempt(); // Fake executor only, used to prove late callback cannot cancel it.
+                queue.enqueue(0,AutomationCoordinator.Type.SPOTIFY,null,now,0);
                 HomeMonitorService current = new HomeMonitorService(); attach.invoke(current,context);
-                set(current,"yanosik",target);
+                set(current,"automation",target);
                 callback.invoke(current, FirstWakeChecks.cycle(1));
                 set(old,"destroyed",true);
                 var saved = new HashMap<>(prefs.getAll()); var snapshots = ProgressBus.snapshot();
                 callback.invoke(old, FirstWakeChecks.cycle(2));
-                check(saved.equals(prefs.getAll()) && snapshots.equals(ProgressBus.snapshot())
-                        && (boolean)get(target,"pendingHome"), "old callback cannot affect current session or HOME");
-                delayed.get(1).run(); check(homes[0] == 1,"current callback still runs once");
+                check(saved.equals(prefs.getAll()) && snapshots.equals(ProgressBus.snapshot()), "old callback cannot affect current session");
+                check(queue.next(now,true,true)!=null,"current queue remains intact");
+                target.close();
+                // Production enqueue adapter, while a synthetic executor owns the shared lock.
+                var daily = context.getSharedPreferences("daily_cleaning", 0);
+                check(daily.edit().clear().commit(), "isolated daily quota");
+                check(HomeActions.begin(), "synthetic executor ownership");
+                AutomationRuntime waiting = new AutomationRuntime(context);
+                waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
+                AutomationCoordinator waitingQueue = (AutomationCoordinator)get(waiting,"queue");
+                check(waitingQueue.hasHomeWaiting() && !DailyCleaning.reserve(context),
+                        "busy gate queues cleaning and reserves quota immediately");
+                waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
+                check(((java.util.Map<?,?>)get(waitingQueue,"queued")).size() == 1,
+                        "duplicate cleaning cannot enqueue twice");
+                HomeActions.configurationChanged();
+                check(!waitingQueue.hasHomeWaiting() && !DailyCleaning.reserve(context),
+                        "configuration invalidates pending work without restoring quota");
+                waiting.close();
+                AutomationRuntime replacement = new AutomationRuntime(context);
+                check(!DailyCleaning.reserve(context) &&
+                        ((AutomationCoordinator)get(replacement,"queue")).next(now,true,true)==null,
+                        "new runtime neither restores quota nor replays cleaning");
+                replacement.close(); HomeActions.end();
+                check(daily.edit().clear().commit(), "daily test cleanup");
                 ((java.util.concurrent.ExecutorService)get(old,"cycleReader")).shutdownNow();
                 ((java.util.concurrent.ExecutorService)get(current,"cycleReader")).shutdownNow();
                 check(prefs.edit().clear().commit(), "test cleanup");

@@ -1,5 +1,12 @@
 # DUDU startup recovery and private diagnostics
 
+Current source 0.5.6 preserves the cycle adapter and baseline-zero fix below. Installation
+of 0.5.5/code 12 was confirmed September 14, but full wake acceptance is still pending.
+The media sequence now uses Spotify instead of HOME and independently reserves both targets.
+QUEUE task categories and attempt IDs record waiting, start and expiry; SPOTIFY categories
+report outcomes without metadata or tokens. See AUTOMATION_SEQUENCE and VERIFICATION.
+Earlier HOME evidence below describes preceding versions, not the current implementation.
+
 ## First-wake baseline repair - 0.5.5, hardware acceptance pending
 
 Code 11 recovered monitoring after sleep but retained a consumed Yanosik attempt at the

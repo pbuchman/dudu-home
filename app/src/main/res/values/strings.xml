@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="yanosik_notification_access">Yanosik: wykrywanie pracy</string>
+    <string name="yanosik_notification_access">Yanosik i Spotify: dostęp</string>
     <string name="yanosik_access_granted">Dostęp do powiadomień jest włączony.</string>
-    <string name="yanosik_access_missing">Brak dostępu do powiadomień. Automatyczny start Yanosika zostanie pominięty.</string>
-    <string name="yanosik_access_explanation">Android nadaje dostęp do powiadomień aplikacji. Dudu Home sprawdza tylko pakiet i oznaczenie usługi Yanosika, bez czytania ani zapisywania treści. Nadanie zgody nie uruchamia żadnej akcji.</string>
+    <string name="yanosik_access_missing">Brak dostępu do powiadomień. Automatyczny start Yanosika i Spotify zostanie pominięty.</string>
+    <string name="yanosik_access_explanation">Android nadaje dostęp do powiadomień aplikacji. Dudu Home sprawdza oznaczenie usługi Yanosika i steruje lokalną sesją Spotify. Nie czyta treści powiadomień ani nazw utworów. Nadanie zgody nie uruchamia żadnej akcji.</string>
+    <string name="progress_driving">Rozpoczęcie jazdy</string>
+    <string name="progress_already_running">Aplikacja już pracuje. Pomijam ponowne uruchomienie</string>
+    <string name="progress_spotify">Spotify</string>
+    <string name="progress_priority">Czekam na zakończenie wcześniejszego zadania lub zamknięcie menu</string>
+    <string name="progress_expired">Minął czas oczekiwania. Pomijam tę próbę</string>
+    <string name="spotify_resuming">Wznawiam muzykę</string>
+    <string name="spotify_remote">Spotify wskazuje inne urządzenie. Nie zmieniam odtwarzania</string>
+    <string name="spotify_no_session">Spotify nie udostępniło sterowania odtwarzaniem</string>
+    <string name="spotify_timeout">Nie potwierdzono odtwarzania muzyki</string>
+    <string name="spotify_no_access">Brak dostępu do sterowania Spotify</string>
+    <string name="spotify_playing">Spotify odtwarza</string>
+    <string name="spotify_starting">Uruchamiam Spotify</string>
+    <string name="yanosik_starting">Uruchamiam Yanosika</string>
     <string name="yanosik_access_settings">Ustawienia systemowe</string>
     <string name="yanosik_access_unavailable">Nie można otworzyć ustawień dostępu do powiadomień.</string>
-    <string name="progress_target_status_unknown">Nie mogę sprawdzić pracy Yanosika. Pomijam start.</string>
+    <string name="progress_target_status_unknown">Nie mogę potwierdzić stanu aplikacji. Pomijam tę próbę.</string>
     <string name="progress_return_checking_route">Sprawdzam trasę powrotu</string>
     <string name="progress_departure">Wyjazd z domu</string>
     <string name="progress_return">Powrót do domu</string>

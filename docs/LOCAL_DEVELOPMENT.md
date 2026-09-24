@@ -6,7 +6,13 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Where development stands
 
-**Current source: 0.5.5-local / code 12; last verified radio installation: 0.5.4/code 11.**
+**Current source: 0.5.6-local / code 13; last verified radio installation: 0.5.5/code 12 (September 14).**
+Branch codex/spotify-priority, based on public main 04a767c. Ordered automation, separate Spotify
+reservation and native local resume are implemented. See AUTOMATION_SEQUENCE. No HOME request
+remains in YanosikLauncher. Radio is unavailable on September 24; no new installation or
+hardware acceptance is claimed. First test must establish cold Spotify session availability.
+
+**Historical implementation checkpoint for 0.5.5 (before its September 14 installation):**
 The typed cycle reader distinguishes confirmed empty cold-start properties from unavailable
 reads. An observed zero establishes the missing baseline without changing consumed state;
 the first increasing numeric wake rearms once. Failed session writes block that store for

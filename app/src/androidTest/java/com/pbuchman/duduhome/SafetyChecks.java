@@ -91,6 +91,7 @@ public final class SafetyChecks extends Instrumentation {
                     "lifecycle close releases shared lease only after cleanup");
             RoborockChecks.run(this);
             NavigationChecks.run(this);
+            SpotifyChecks.run();
             MonitorCycleChecks.run(this);
             NotificationChecks.run(this);
             WakeChecks.run(this);

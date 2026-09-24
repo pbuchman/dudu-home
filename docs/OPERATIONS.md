@@ -1,5 +1,19 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
+## Odbiór wersji 0.5.6
+
+Ostatnia potwierdzona instalacja to 0.5.5/code 12 z 14 września. Pełny odbiór wybudzeń
+pozostaje otwarty. Wersja 0.5.6/code 13 nie została jeszcze zainstalowana na radiu.
+Najpierw pobierz logi bez otwierania aplikacji, potem wykonaj procedurę aktualizacji poniżej.
+Sprawdź bieżącą wersję i podpis; nie nadpisuj nowszej wersji ani nie czyść danych.
+Istniejąca zgoda obserwatora powiadomień służy teraz również Spotify.
+
+Pierwsza próba: pełny restart, bez ręcznego startu Spotify, potwierdzony ruch, Yanosik,
+następnie Spotify i rzeczywisty dźwięk na radiu. Brak sterowalnej sesji jest ograniczeniem,
+nie zaliczonym testem. Następnie sprawdź już działającego Yanosika, priorytety bramy i
+sprzątania, ochronę ręcznego menu, prawdziwe uśpienie/wybudzenie oraz krótki postój.
+Szczegóły i granice: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
+
 Wersja lokalna 0.4 zmienia identyfikator na `com.pbuchman.duduhome`. Przejście ze starej
 instalacji wymaga [MIGRATION.md](MIGRATION.md), nie komendy aktualizacji poniżej.
 Nowy komponent menu to `.ui.MainActivity`, wybudzenia `.startup.HomeWakeActivity`.

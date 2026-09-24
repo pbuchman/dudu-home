@@ -41,7 +41,8 @@ Do not wire an unverified screen/GPS-gap signal to ignition rearming or claim wa
 Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
 Automatic cleaning reserves one attempt per Europe/Warsaw day BEFORE execution; failure, missing
-configuration or a busy action consume that opportunity. No automatic retry or queue. Manual
+configuration or an expired queued action consume that opportunity. Since 0.5.6 a busy gate
+defers cleaning in a bounded in-memory queue; no persisted queue or automatic retry. Manual
 cleaning remains independent. Saving any configuration must never execute an action or reset quota.
 Preserve shared action exclusion until actual Binder/HTTP cleanup, not just until the UI closes.
 Stage complete private configuration outside Git; compare radio phone and APK signature before

@@ -122,7 +122,9 @@ public final class MainActivity extends Activity {
         findViewById(R.id.cancel_number_button).setOnClickListener(view -> { hideKeyboard(); showMenu(); });
         findViewById(R.id.cancel_roborock_button).setOnClickListener(view -> showMenu());
         findViewById(R.id.save_roborock_button).setOnClickListener(view -> {
-            if (new RoborockStore(this).save(roborockInput.getText().toString())) { showMenu(); HomeMonitorService.ensureStarted(this); }
+            if (new RoborockStore(this).save(roborockInput.getText().toString())) {
+                HomeActions.configurationChanged(); showMenu(); HomeMonitorService.ensureStarted(this);
+            }
             else roborockMessage.setText(R.string.roborock_setup_invalid);
         });
         saveNumberButton.setOnClickListener(view -> saveGateNumber());
@@ -196,7 +198,7 @@ public final class MainActivity extends Activity {
         automaticAction(HomeAction.GATE);
     }
     public boolean allowsExternalLaunch() {
-        return isFinishing() || (!actionRunning && menuContent.getVisibility() == View.VISIBLE
+        return isFinishing() || isDestroyed() || (!actionRunning && menuContent.getVisibility() == View.VISIBLE
                 && (!resumed || getWindow().getDecorView().hasWindowFocus()));
     }
     public void automaticAction(HomeAction action) {
@@ -232,6 +234,7 @@ public final class MainActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (menuContent != null) ProgressBus.presentationChanged();
+        HomeActions.schedulingChanged();
     }
 
     private void startSelected() { if (currentAction != HomeAction.GATE) startCleaning(); else startAttempt(); }
@@ -247,6 +250,7 @@ public final class MainActivity extends Activity {
         menuContent.setVisibility(View.VISIBLE);
         numberSetupContent.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.GONE);
+        HomeActions.schedulingChanged();
         HomeConfiguration config = HomeConfiguration.load(this);
         automationStatus.setText(PrivateImport.pending(this) ? R.string.import_failed : config == null || !config.enabled ? R.string.automation_not_configured
                 : HomeMonitorService.ready(this) ? R.string.automation_enabled : R.string.automation_permissions_missing);
@@ -281,6 +285,7 @@ public final class MainActivity extends Activity {
             coordinator.close();
         }
         super.onDestroy();
+        HomeActions.hidden(this);
     }
 
     private void startAttempt() {
@@ -392,6 +397,7 @@ public final class MainActivity extends Activity {
         }
 
         gateNumber = normalized;
+        HomeActions.configurationChanged();
         configurationSaved = true;
         gateNumberError.setVisibility(View.GONE);
         hideKeyboard();

@@ -1,6 +1,6 @@
 # Automation progress: UI and background contract
 
-Source version `0.5.5-local`, versionCode 12, progress based on `911d18b`. Java 17, native Views/XML,
+Source version `0.5.6-local`, versionCode 13, progress based on `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
@@ -19,7 +19,7 @@ the same layout inline. Only one host owns it at a time.
 | Return before turn | Powrót do domu | Sprawdzam trasę powrotu | Supported road approach, reducing distance to junction |
 | Return after turn | Powrót do domu | Potwierdzam dojazd do bramy | Junction sequence plus inward movement, then inbound checkpoint |
 | Cleaning | Pełne sprzątanie | Potwierdzam wyjazd z osiedla | Consumed departure plus outward movement, then outward checkpoint |
-| Navigation | Yanosik | Potwierdzam jazdę | Minimum of qualified duration and displacement requirements |
+| Media startup | Rozpoczęcie jazdy | Potwierdzam jazdę | Minimum of qualified duration and displacement requirements |
 
 Return fills 0-30% as junction distance reduces from the existing 300 m approach boundary to
 35 m. The inward stage fills 30-95% from junction-to-checkpoint distance down to the existing
@@ -33,12 +33,13 @@ come from the detector. Time passing in UI cannot increase them. Radio start alo
 prediction. Manual buttons bypass detection; Mop stays manual only.
 
 No animation delays dispatch. Full fill means recognized event, not successful execution.
-Gate/cleaning immediately use the existing full screen: success 5 s, errors until retry/close,
-return to previously open menu or hide. Since 0.5.1 navigation launches normally and requests
-the desktop once after a grace period (10 s since 0.5.4). Its request result then lasts 2 s and does
-not claim service, warning icon or hazard-display confirmation. Brief target UI is acceptable.
-Version 0.5.2 checks fresh notification presence before launch: detected work skips silently
-without STARTED or HOME; unknown status produces a short skipped message, not a launch.
+Gate/cleaning use the existing full screen after bounded priority scheduling: success 5 s,
+errors until retry/close, return to previously open menu or hide. WAITING has no progress fill.
+Yanosik request results last 2 s and do not claim a running service or warning display.
+Fresh notification presence prevents reopening a working Yanosik; unknown status skips it.
+Spotify follows after the launch allowance, with startup/resume messages and a 2 s result.
+Only local PLAYING produces playback success. No additional HOME request is made in 0.5.6.
+See AUTOMATION_SEQUENCE for queue deadlines, reservations and presentation priority.
 
 ## Communication and ownership
 
