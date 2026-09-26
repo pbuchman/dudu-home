@@ -25,6 +25,14 @@ public final class HomeActions {
     private static final Handler handler = new Handler(Looper.getMainLooper());
     private static Runnable schedulingListener;
     private static Runnable configurationListener;
+    private static java.util.function.Supplier<Runnable> gateSuccessListener;
+    public static void setGateSuccessListener(java.util.function.Supplier<Runnable> listener) { gateSuccessListener = listener; }
+    public static void clearGateSuccessListener(java.util.function.Supplier<Runnable> listener) {
+        if (gateSuccessListener == listener) gateSuccessListener = null;
+    }
+    public static Runnable gateSuccessCallback() {
+        return gateSuccessListener == null ? () -> { } : gateSuccessListener.get();
+    }
     public static void setConfigurationListener(Runnable listener) { configurationListener = listener; }
     public static void clearConfigurationListener(Runnable listener) {
         if (configurationListener == listener) configurationListener = null;

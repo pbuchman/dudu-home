@@ -1,5 +1,17 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+## Pierwszeństwo obszaru bramy - 1.0.0-rc3
+
+Przed odliczaniem ruchu dla Yanosika i Spotify sprawdzamy, czy aktualna pozycja i trasa
+pasują do możliwego wyjazdu do bramy lub powrotu. Jeśli tak, te aplikacje czekają na
+udane zakończenie telefonu. Samo zgłoszenie, blokada, błąd ani upływ czasu nie zwalniają
+tego oczekiwania. Świeży GPS potwierdzający opuszczenie obszaru pozwala przejść do zwykłego
+rozpoznawania jazdy. Brak wiarygodnego GPS nie oznacza, że jesteśmy poza obszarem.
+Po zwolnieniu warunku nadal wymagany jest świeży ruch przez 10 sekund i co najmniej 15 m.
+Ręczne menu, wybrana nawigacja Maps i ekran wyniku zachowują pierwszeństwo.
+Nie zmieniają się progi wykrywania telefonu ani warunki bezpieczeństwa połączeń.
+Szczegóły i ograniczenia: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
+
 ## Manual Google Maps navigation - 1.0.0-rc1
 
 Three fixed-order slots sit below the gate and routine actions. Import their private JSON

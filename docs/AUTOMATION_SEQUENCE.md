@@ -1,9 +1,44 @@
-# Ordered automation and local Spotify playback (0.5.6)
+# Ordered automation and local Spotify playback
+
+## Gate-area precondition (1.0.0-rc3)
+
+Before the generic driving countdown, evaluate the current GPS fix with the existing home
+detector. Its separate `GateArea` observation has no authority to dial or change consumed flags.
+The departure area reuses the detector's 85-metre envelope around the configured parking point,
+including the fix's accuracy margin. It covers alternate parking and manoeuvring before a
+directional candidate. The return precondition reuses the approach/junction route evidence,
+including traffic stops, without requiring a visible progress candidate or ready call event.
+Movement away from the junction on the external road does not hold media as a return.
+
+In either area, `GatePrecondition` blocks media detection, reservations and pending launches
+until the gate executor reports a successful call. A request, consumed route flag, skipped call,
+timeout or dismissed error is not success. Executor cleanup and the result/error/menu screen
+keep their existing independent locks. A manual successful gate call can satisfy the same
+area, but cannot let media cover its menu. Outside the applicable area, fresh GPS allows the
+usual ten-second/fifteen-metre motion test without waiting for home actions.
+
+No timer bypasses an applicable gate area. Bad/missing GPS means UNKNOWN, not outside; it
+clears generic movement and hides that countdown. A successful call in the same area survives
+a temporary GPS gap, but media still waits for a fresh valid fix. Leaving and re-entering an
+area requires a new decision. Wake/configuration reset and service replacement discard the
+process-local completion, and old executor callbacks cannot satisfy the new generation.
+No/disabled home configuration preserves independent driving startup and manual actions.
+
+The barrier does not invent a call when the existing detector cannot arm: departure still
+requires its stationary baseline and sustained directional movement. If no call succeeds,
+media remains deferred while the area applies. Investigate missing calls independently;
+do not weaken Bluetooth/cooldown rules or reset consumed events to force a result.
+
+Safe diagnostics add `MEDIA_GATE_AREA_UNKNOWN/NONE/DEPARTURE/RETURN` on transitions and
+`MEDIA_GATE_CALL_COMPLETED` when a current-area call releases the barrier. No positions,
+phone data or extra raw GPS logger. The queued-action deadlines below remain unchanged;
+media is not queued/reserved merely because motion occurred inside the blocked area.
 
 ## Scheduling contract
 
 `AutomationCoordinator` has explicit numeric priorities: GATE 0, CLEANING 1, YANOSIK 2,
-SPOTIFY 3. Only already-qualified events compete; driving elsewhere never waits for home events.
+SPOTIFY 3. Qualified events compete after the gate-area precondition; driving elsewhere never
+waits for home events.
 `AutomationRuntime` batches offers from one GPS callback before draining on the main thread.
 The queue is process-local, deduplicates pending attempt IDs, and never replays commands after restart.
 Detectors and UI snapshots cannot directly launch media or bypass the existing executors.
