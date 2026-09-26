@@ -1,8 +1,8 @@
 # Kolejka rozwoju
 
-Bieżący etap 0.5.6: jawna kolejność brama → sprzątanie → Yanosik → Spotify i natywne
-wznowienie muzyki na radiu. Implementacja lokalna nie jest odbiorem sprzętowym.
-Kontrakt i minimalny następny test: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
+Bieżący etap: przygotowanie wydania 1.0.0-rc2, code 15, zainstalowanego na radiu.
+Nawigacja z trzech kafelków i kolejność brama → sprzątanie → Yanosik → Spotify są w main.
+Wyniki testów oraz pozostałe warunki finalnego 1.0: [RELEASE_READINESS.md](RELEASE_READINESS.md).
 Poniżej wcześniejsze etapy i ograniczenia, nie deklaracja pełnego odbioru wybudzeń.
 
 Aktualizacja lokalna 0.4: refaktoryzacja i migracja są zaimplementowane i sprawdzone

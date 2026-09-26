@@ -30,7 +30,8 @@ pending media startup so it cannot cover the chosen navigation.
 > movement-triggered Yanosik, then Spotify with a local session reporting PLAYING. Yanosik warnings
 > remained visible. Audible sound still needs confirmation; playback state alone is not proof.
 > **Full wake acceptance and gate/cleaning contention on 0.5.6 remain pending.**
-> Gate and Roborock manual actions were verified on the preceding package version.
+> Code 15 passed a fresh full-boot/monitoring check, a manual gate call and Full Cleaning cloud
+> acceptance. Physical effects and remaining combined scenarios are listed in [release readiness](docs/RELEASE_READINESS.md).
 > **Remaining departure, cleaning and repeated wake checks are still pending.**
 > The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
 > fully verified production release. No public APK is provided.
@@ -198,6 +199,7 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 - [Installation, recovery and credential renewal](docs/OPERATIONS.md).
 - [Implementation and acceptance plan](docs/PLAN.md), [verification evidence](docs/VERIFICATION.md).
 - [Decisions](docs/DECISIONS.md), [change history](CHANGELOG.md), [handoff](docs/LOCAL_DEVELOPMENT.md).
+- [Release readiness and remaining hardware checks](docs/RELEASE_READINESS.md).
 - [Design and illustration prompts](docs/DESIGN.md), [next queued work](docs/ROADMAP.md).
 - [Progress UI and background communication](docs/PROGRESS_UI.md).
 
