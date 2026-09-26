@@ -90,6 +90,7 @@ public final class SafetyChecks extends Instrumentation {
             require(cleaned.await(5, java.util.concurrent.TimeUnit.SECONDS) && !HomeActions.busy(),
                     "lifecycle close releases shared lease only after cleanup");
             RoborockChecks.run(this);
+            MapsChecks.run(this);
             NavigationChecks.run(this);
             SpotifyChecks.run();
             MonitorCycleChecks.run(this);

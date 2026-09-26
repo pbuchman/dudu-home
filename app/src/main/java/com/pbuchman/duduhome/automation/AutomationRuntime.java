@@ -55,10 +55,18 @@ public final class AutomationRuntime {
         if (closed) return;
         handler.removeCallbacks(drain); handler.post(drain);
     }
-    private boolean mediaReady() { return HomeActions.allowsMediaLaunch() && !queue.hasHomeWaiting(); }
+    private boolean mediaReady() { return !new JourneySession(context).manualNavigationChosen()
+            && HomeActions.allowsMediaLaunch() && !queue.hasHomeWaiting(); }
     private void drain() {
         if (closed) return;
         if (PrivateImport.pending(context)) { reset(Reason.CONFIGURATION); return; }
+        if (new JourneySession(context).manualNavigationChosen()) {
+            for (Job j : queue.discardMedia()) ProgressBus.update(context, j.id(), Phase.SKIPPED, Reason.UI_BUSY);
+            if (spotify != null) {
+                spotify.cancel(); spotify = null;
+                ProgressBus.update(context, spotifyAttempt, Phase.SKIPPED, Reason.UI_BUSY); spotifyAttempt = 0;
+            }
+        }
         long now = SystemClock.elapsedRealtime();
         for (Job j : queue.expire(now, day())) {
             Diagnostics.record(context, "QUEUE_" + j.type() + "_EXPIRED ID=" + j.id());

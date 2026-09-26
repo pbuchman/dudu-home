@@ -1,9 +1,12 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Odbiór wersji 0.5.6
+## Odbiór kandydata 1.0.0-rc2
 
-Ostatnia potwierdzona instalacja to 0.5.5/code 12 z 14 września. Pełny odbiór wybudzeń
-pozostaje otwarty. Wersja 0.5.6/code 13 nie została jeszcze zainstalowana na radiu.
+Ostatnia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
+jednego celu poprawnie wyświetlił jego zapisaną etykietę w Maps; pozostałe sloty nie zmieniły się.
+Wcześniejsza aktualizacja rc1 z kopią
+zapasową, import prywatnych danych i start prowadzenia z każdego z trzech kafelków przeszły
+weryfikację na radiu. Pełny odbiór wybudzeń i historyczne testy przejazdów pozostają otwarte.
 Najpierw pobierz logi bez otwierania aplikacji, potem wykonaj procedurę aktualizacji poniżej.
 Sprawdź bieżącą wersję i podpis; nie nadpisuj nowszej wersji ani nie czyść danych.
 Istniejąca zgoda obserwatora powiadomień służy teraz również Spotify.
@@ -42,6 +45,7 @@ odtwarzania czatu. Nie kopiuj zawartości do Git ani publicznych issue.
 PRIVATE_DIR/
   config.json                       # prywatny numer, GPS, źródła i instalacyjne metadane
   roborock/routine-credentials.json  # minimalny pakiet do wykonania Full Cleaning
+  navigation.json                   # trzy prywatne cele nawigacji, schemat w NAVIGATION.md
   radio-backups/                    # APK, dane i sumy przed kolejnymi aktualizacjami
   archive-.../                      # oryginalny projekt, APK, podpis i pełne logi kalibracji
   replay/                          # prywatne dane wejściowe detektora
@@ -95,6 +99,7 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
    ```sh
    python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
      --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
+     --navigation "$PRIVATE_DIR/navigation.json" \
      --apk app/build/outputs/apk/debug/app-debug.apk \
      --backup-dir "$PRIVATE_DIR/radio-backups" --enable-automation
    ```
@@ -241,3 +246,14 @@ Właściciel zatwierdził publikację kodu rozwojowego po audycie prywatności i
 weryfikacji na radiu. Nie oznaczaj go jako finalnej wersji przed ukończeniem wszystkich
 prób przejazdów/rozruchu. Publiczny baseline pozostaje punktem powrotu; dokumentuj
 osobno wykonane testy i brakujące próby sprzętowe. Nie publikuj APK ani danych prywatnych.
+
+## Trzy cele nawigacji
+
+Format i import z systemowego selektora plików: [NAVIGATION.md](NAVIGATION.md).
+Opcja instalatora `--navigation` jest opcjonalna: brak zachowuje istniejący plik na radiu,
+puste sloty czyszczą tylko cele nawigacji. Prywatny plik musi mieć uprawnienia 0600 i znajdować
+się poza Git. Instalator odrzuca starszy versionCode oraz inny podpis APK; nie czyści danych.
+Po aktualizacji otwórz menu, potwierdź usunięcie staging/maintenance, wersję i wszystkie sloty.
+Sprawdź każdy cel przez kliknięcie w aplikacji, aktywny ekran prowadzenia Maps i powrót do menu.
+Nie umieszczaj tych zrzutów ani intentów z koordynatami w PR. Brak połączenia ADB nie jest
+udanym wdrożeniem; zapisuj status jako oczekujący aż do odczytu wersji z fizycznego urządzenia.

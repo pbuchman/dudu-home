@@ -4,13 +4,25 @@ Read this file first when resuming without the conversation. The accepted behavi
 [FUNCTIONAL.md](FUNCTIONAL.md), implementation details in [ROBOROCK.md](ROBOROCK.md),
 and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
-## Where development stands
+## Navigation candidate
 
-**Current source: 0.5.6-local / code 13; last verified radio installation: 0.5.5/code 12 (September 14).**
+Current branch `codex/maps-navigation`, based on public main `e5416b7`, builds
+`1.0.0-rc1` / code 14. Three Maps tiles, private document import and manual-media priority
+are implemented. See NAVIGATION for schema, limits and privacy. Local build/lint and
+emulator validation are recorded in VERIFICATION. Radio update to code 14 remains pending;
+the installation recorded below is code 13. Keep the private configuration and device
+connection data outside this repository. Do not release a final 1.0 tag yet.
+
+## Previous source and radio checkpoint
+
+**Current source and verified radio installation: 0.5.6-local / code 13 (September 24).**
 Branch codex/spotify-priority, based on public main 04a767c. Ordered automation, separate Spotify
 reservation and native local resume are implemented. See AUTOMATION_SEQUENCE. No HOME request
-remains in YanosikLauncher. Radio is unavailable on September 24; no new installation or
-hardware acceptance is claimed. First test must establish cold Spotify session availability.
+remains in YanosikLauncher. Backed-up update/import and full reboot passed on September 24.
+Without manual app startup, monitoring recovered, cold baseline zero was persisted, and
+movement started Yanosik followed by Spotify after about ten seconds. Spotify exposed a
+local session and reported PLAYING. Warnings were visible; audible sound is not confirmed.
+See VERIFICATION for evidence and outstanding real sleep/wake and action-contention checks.
 
 **Historical implementation checkpoint for 0.5.5 (before its September 14 installation):**
 The typed cycle reader distinguishes confirmed empty cold-start properties from unavailable

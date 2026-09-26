@@ -1,5 +1,83 @@
 # Verification ledger
 
+## 1.0.0-rc2 address-target correction - 2026-09-26
+
+A coordinate-selected destination resolved to an unwanted business listing on the radio.
+An explicit full-address probe selected the intended building and existing saved label.
+Added per-destination `navigate_by: address`; default coordinate behavior is unchanged.
+No public Maps listing or account label was edited.
+
+Debug/test APK builds, lint, four Python navigation tests, seven private-tool tests, five
+fresh-installer tests, privacy-scanner regression and the full emulator safety/UI suite passed.
+Synthetic instrumentation verifies URI encoding, required address/mode validation, private
+round trips and unchanged coordinate intents for default/explicit coordinate mode and other
+slots. Working-tree/history private-denylist and decompressed APK/DEX checks passed.
+
+The guarded, signature-checked update installed code 15 (`1.0.0-rc2`) with a private APK/data
+rollback backup. Installed APK bytes and backup checksums were verified. The imported file
+matches the private source: only the first slot's target mode changed; the other two slots,
+gate number, geometry, enabled automation and daily quota were retained. Staging was removed.
+
+Tapping the actual corrected tile opened Maps directly with the intended saved label and
+full address instead of the business name. Because the vehicle was already near the target,
+the observed screen was the navigation arrival view; this was not a new full-route road test.
+Test guidance was closed and the menu restored. Screenshots and destination values remain
+private. Historical wake/journey acceptance remains open; this is still a release candidate.
+
+## 1.0.0-rc1 physical navigation acceptance - 2026-09-26
+
+Updated the physical DUDU7 from code 13 to code 14 using the guarded installer. The
+installed signature matched, and the previous APK/data were backed up privately before
+the in-place update. The installed APK is byte-identical to the locally verified candidate
+built from `e434ae9`; versionName is `1.0.0-rc1`. No uninstall, data clearing or radio reboot.
+
+After opening the menu, the one-time import completed and removed staging/maintenance files.
+The installed three-slot navigation document matches the private source semantically.
+The gate number, geometry, enabled automation and daily cleaning quota were retained;
+encrypted routine configuration remains present and the monitor service is registered.
+
+All six tiles fit on the physical display. The third destination uses an address and a
+generic pin. Each navigation tile was tapped separately in Dudu Home: Google Maps opened
+directly into active driving guidance with a route, ETA, exit control and turn instructions,
+without another Start tap. Route summaries were visually checked after exiting guidance.
+Maps may display its own nearby place/business or saved label for a coordinate; this is
+separate from the private label shown by Dudu Home. System activity output confirms Maps
+foreground, but redacts the URI payload, so exact-coordinate intent assertions remain
+covered by the existing instrumentation tests rather than claimed from device logs.
+
+Test guidance was stopped and the Dudu Home menu restored. No gate or cleaning tile was
+tapped. This session verifies installation and manual navigation; it does not close the
+historical repeated-wake, journey or gate/cleaning contention checks. The version remains
+a release candidate. Actual destinations, screenshots, logs and rollback files stay outside
+Git; public evidence contains no private location values.
+
+## 1.0.0-rc1 navigation candidate - 2026-09-24
+
+Local checks passed: debug and instrumentation APK build, lint, detector/progress checks,
+Python private-tool/fresh-installer/navigation validation, and the privacy scanner regression.
+The full emulator suite passed strict JSON/UTF-8 validation, stable slot order, empty cards,
+exact explicit driving intents, missing Maps, launch/storage failures, persistent media
+priority, delayed wake baseline handling, and selected-file import/cancel/error paths.
+The complete emulator update test passed signature comparison, private backup, one-time
+navigation import, separated credential/geometry storage and daily quota preservation after
+restart. It uses synthetic input and never performs a physical call or robot command.
+
+The menu was inspected at 2000 x 1200 with empty and synthetic configured destinations.
+All six touch targets fit without scrolling at normal text size. A long generic label wraps
+onto two lines. The same layout remains readable with the font scale set to 1.3. Screenshots
+in this section are emulator evidence, not radio acceptance.
+
+Private-denylist scans of the working tree and all history passed, with one manually reviewed
+historical ordinary-noun match in the illustration description. No private destination was
+present there. Both APKs were scanned after ZIP decompression and through DEX string tables:
+no actual configured labels, address words, coordinates or credentials were found. Public
+art and screenshots were visually inspected; text metadata is absent from the new assets.
+
+At this September 24 checkpoint, code 14 installation and actual Google Maps guidance were
+pending because the radio was unavailable through ADB. The September 26 entry above records
+their subsequent completion. Recorded code 13 results remain below; repeated wake, journey
+and other outstanding historical acceptance checks still block a final 1.0 release claim.
+
 ## 0.5.6 implementation and current installation status - 2026-09-24
 
 Final local acceptance passed: assembleDebug, assembleDebugAndroidTest, lintDebug, detector
@@ -14,8 +92,21 @@ retired SDK package `tools`. The workflow now explicitly requests `platform-tool
 test, build and lint steps remain enabled.
 
 Correction to the historical entry below: installation of 0.5.5/code 12 was confirmed on
-September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 has not
-been installed on the radio; the read-only connection check finds no authorized physical radio.
+September 14. Full first-wake acceptance was not completed. Version 0.5.6/code 13 was
+installed on September 24 using the signature-preserving update, private APK/data backup,
+and one-time configuration import. APK and configuration checks passed without data clearing.
+
+Before that update, logs from the current departure showed an automatic gate-call success
+followed by Yanosik. Automatic cleaning was skipped after an earlier same-day request had
+already returned ACCEPTED. This is evidence of the daily limit, not physical robot movement.
+
+After a full reboot, without manually opening Dudu Home, monitoring started automatically.
+Fresh movement caused one Yanosik launch and Spotify approximately ten seconds later.
+The initially unavailable vendor read was followed by a persisted zero baseline without
+another attempt. Spotify exposed a local native session and reported PLAYING after resume.
+Private screenshots showed Spotify and Yanosik warnings together; a later screenshot showed
+navigation in front with Spotify still playing. No claim is made about who changed foreground.
+Monitoring remained active with fresh GPS for at least fifteen minutes after reboot.
 
 Local instrumentation exercises fake media transport and timers, including existing playback,
 single resume, buffering, missing/late/remote/ambiguous sessions, permission loss, timeouts,
@@ -25,10 +116,10 @@ expiry, day rollover, UI exclusion and generations. The monitor integration chec
 cleaning quota reservation while the shared executor is occupied, duplicate suppression and
 no queue replay or quota restoration in a replacement runtime.
 
-Remaining physical checks: cold Spotify session availability, audible radio playback, Yanosik
-warnings behind Spotify, gate/cleaning contention, manual-menu protection, real first and
-subsequent sleep/wake, and a short stop without duplicate startup. Local checks and CI cannot
-certify any of these. Existing screenshots remain unchanged and are not new hardware evidence.
+Remaining physical checks: audible radio playback, gate/cleaning contention on the new version,
+manual-menu protection, real first and subsequent sleep/wake, and a short stop without duplicate
+startup. Full reboot does not replace actual ignition sleep. Local checks and CI cannot certify
+these outstanding checks. Public screenshots remain unchanged; new radio evidence stays private.
 
 ## 0.5.5 local first-wake regression - 2026-09-13
 

@@ -50,6 +50,15 @@ public final class AutomationCoordinator {
         queued.clear(); mediaNotBefore = 0; generation++;
         return removed;
     }
+    public List<Job> discardMedia() {
+        List<Job> removed = new ArrayList<>();
+        queued.values().removeIf(j -> {
+            if (j.type == Type.YANOSIK || j.type == Type.SPOTIFY) { removed.add(j); return true; }
+            return false;
+        });
+        mediaNotBefore = 0;
+        return removed;
+    }
     public boolean current(Job job) { return job.generation == generation; }
     public boolean hasHomeWaiting() {
         return queued.values().stream().anyMatch(j -> j.type == Type.GATE || j.type == Type.CLEANING);

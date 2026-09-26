@@ -35,6 +35,7 @@ public final class MainActivity extends Activity {
     public static final long SUCCESS_DISPLAY_MS = 5000L;
     private static final long INFORMATION_DISPLAY_MS = 2500L;
 
+    private NavigationPanel navigation;
     private ProgressBar progress;
     private ImageView statusIcon;
     private TextView statusTitle;
@@ -89,6 +90,9 @@ public final class MainActivity extends Activity {
         automationStatus = findViewById(R.id.automation_status);
         gateNumberInput = findViewById(R.id.gate_number_input);
         gateNumberError = findViewById(R.id.gate_number_error);
+        navigation = new NavigationPanel(this, () -> configurationSaved && !actionRunning
+                && !HomeActions.busy() && !PrivateImport.pending(this)
+                && menuContent.getVisibility() == View.VISIBLE, savedInstanceState);
         Button retryButton = findViewById(R.id.retry_button);
         Button closeButton = findViewById(R.id.close_button);
         Button saveNumberButton = findViewById(R.id.save_number_button);
@@ -109,9 +113,10 @@ public final class MainActivity extends Activity {
             if (busyNotice()) return;
             new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
                     .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja",
-                            getString(R.string.yanosik_notification_access)}, (dialog, which) -> {
+                            getString(R.string.yanosik_notification_access), getString(R.string.navigation_import)}, (dialog, which) -> {
                         if (which == 0) { returnToMenu = true; showNumberSetup(); }
                         else if (which == 1) showRoborockSetup(false);
+                        else if (which == 4) navigation.pick();
                         else if (which == 3) showYanosikAccess();
                         else new android.app.AlertDialog.Builder(this).setTitle("Lokalizacja")
                                 .setMessage(HomeConfiguration.load(this) == null ? "Brak konfiguracji GPS. Dostarcz prywatny plik instalatorem."
@@ -167,9 +172,23 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         resumed = true;
+        if (navigation != null) navigation.resumed();
         HomeActions.visible(this);
         ProgressBus.presentationChanged();
         HomeMonitorService.ensureStarted(this);
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        if (navigation != null) navigation.saveState(state);
+    }
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (navigation != null) navigation.result(request, result, data);
+    }
+    @Override public void onConfigurationChanged(android.content.res.Configuration config) {
+        super.onConfigurationChanged(config); prepareActionTiles();
+        if (navigation != null) navigation.render();
     }
 
     private void showYanosikAccess() {
@@ -198,7 +217,7 @@ public final class MainActivity extends Activity {
         automaticAction(HomeAction.GATE);
     }
     public boolean allowsExternalLaunch() {
-        return isFinishing() || isDestroyed() || (!actionRunning && menuContent.getVisibility() == View.VISIBLE
+        return isFinishing() || isDestroyed() || ((navigation == null || !navigation.busy()) && !actionRunning && menuContent.getVisibility() == View.VISIBLE
                 && (!resumed || getWindow().getDecorView().hasWindowFocus()));
     }
     public void automaticAction(HomeAction action) {
@@ -211,7 +230,7 @@ public final class MainActivity extends Activity {
             ProgressBus.update(this, attempt, Phase.SKIPPED, Reason.BUSY_OR_MAINTENANCE);
             com.pbuchman.duduhome.diagnostics.Diagnostics.record(this, "SKIP_AUTO_UI_NOT_READY"); return;
         }
-        if (actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
+        if ((navigation != null && navigation.busy()) || actionRunning || numberSetupContent.getVisibility() == View.VISIBLE
                 || roborockSetup.getVisibility() == View.VISIBLE
                 || (callStatusContent.getVisibility() == View.VISIBLE && errorActions.getVisibility() == View.VISIBLE)) {
             ProgressBus.update(this, attempt, Phase.SKIPPED, Reason.UI_BUSY);
@@ -248,6 +267,7 @@ public final class MainActivity extends Activity {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
         actionRunning = false;
         menuContent.setVisibility(View.VISIBLE);
+        navigation.render();
         numberSetupContent.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.GONE);
         HomeActions.schedulingChanged();
@@ -435,13 +455,11 @@ public final class MainActivity extends Activity {
     private void prepareActionTiles() {
         android.widget.LinearLayout row = findViewById(R.id.action_tiles);
         boolean narrow = getResources().getConfiguration().screenWidthDp < 600;
-        if (narrow) {
-            row.setOrientation(android.widget.LinearLayout.VERTICAL);
-            Button settings = findViewById(R.id.settings_button);
-            settings.setTextSize(14);
-            int padding = Math.round(12 * getResources().getDisplayMetrics().density);
-            settings.setPaddingRelative(padding, 0, padding, 0);
-        }
+        row.setOrientation(narrow ? android.widget.LinearLayout.VERTICAL : android.widget.LinearLayout.HORIZONTAL);
+        Button settings = findViewById(R.id.settings_button);
+        settings.setTextSize(narrow ? 14 : 18);
+        int padding = Math.round((narrow ? 12 : 24) * getResources().getDisplayMetrics().density);
+        settings.setPaddingRelative(padding, 0, padding, 0);
         for (int index = 0; index < row.getChildCount(); index++) {
             View tile = row.getChildAt(index);
             tile.setAccessibilityDelegate(new View.AccessibilityDelegate() {
@@ -450,7 +468,12 @@ public final class MainActivity extends Activity {
                     info.setClassName(Button.class.getName());
                 }
             });
-            if (narrow) {
+            if (!narrow) {
+                android.widget.LinearLayout.LayoutParams params = (android.widget.LinearLayout.LayoutParams) tile.getLayoutParams();
+                params.width = 0; params.weight = 1; params.topMargin = 0;
+                params.setMarginStart(index == 0 ? 0 : Math.round(16 * getResources().getDisplayMetrics().density));
+                tile.setLayoutParams(params);
+            } else {
                 android.widget.LinearLayout.LayoutParams params = (android.widget.LinearLayout.LayoutParams) tile.getLayoutParams();
                 params.width = android.widget.LinearLayout.LayoutParams.MATCH_PARENT; params.weight = 0;
                 params.setMarginStart(0); params.topMargin = index == 0 ? 0 : Math.round(16 * getResources().getDisplayMetrics().density);
@@ -639,7 +662,7 @@ public final class MainActivity extends Activity {
     }
 
     private boolean busyNotice() {
-        if (!HomeActions.busy()) return false;
+        if (!HomeActions.busy() && (navigation == null || !navigation.busy())) return false;
         android.widget.Toast.makeText(this, R.string.operation_busy, android.widget.Toast.LENGTH_SHORT).show();
         return true;
     }

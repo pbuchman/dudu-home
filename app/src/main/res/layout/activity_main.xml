@@ -16,9 +16,9 @@
             android:gravity="center"
             android:orientation="vertical"
             android:paddingStart="32dp"
-            android:paddingTop="28dp"
+            android:paddingTop="24dp"
             android:paddingEnd="32dp"
-            android:paddingBottom="28dp">
+            android:paddingBottom="24dp">
 
             <LinearLayout
                 android:id="@+id/menu_content"
@@ -27,7 +27,7 @@
                 android:gravity="start"
                 android:orientation="vertical"
                 android:visibility="gone">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="72dp"
+                <LinearLayout android:layout_width="match_parent" android:layout_height="64dp"
                     android:orientation="horizontal" android:gravity="center_vertical">
                     <ImageView android:layout_width="56dp" android:layout_height="56dp"
                         android:src="@drawable/ic_launcher" android:importantForAccessibility="no" />
@@ -47,7 +47,7 @@
                 <FrameLayout android:id="@+id/automation_progress_host" android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
                 <LinearLayout android:id="@+id/action_tiles" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp" android:orientation="horizontal" android:gravity="top" android:baselineAligned="false">
+                    android:layout_marginTop="16dp" android:orientation="horizontal" android:gravity="top" android:baselineAligned="false">
                     <LinearLayout android:id="@+id/open_gate_button" style="@style/ActionTile"
                         android:background="@drawable/tile_gate" android:contentDescription="@string/open_gate">
                         <ImageView style="@style/TileIllustration" android:src="@drawable/art_gate" />
@@ -66,11 +66,17 @@
                         <TextView style="@style/TileTitle" android:text="@string/mop_name" />
                     </LinearLayout>
                 </LinearLayout>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp" android:text="@string/navigation_title"
+                    android:textSize="22sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_secondary" />
+                <LinearLayout android:id="@+id/navigation_tiles" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                    android:orientation="horizontal" android:baselineAligned="false" />
                 <TextView
                     android:id="@+id/automation_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="16dp"
                     android:gravity="start"
                     android:textColor="@color/text_secondary"
                     android:textSize="16sp" />

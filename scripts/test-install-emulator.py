@@ -34,8 +34,10 @@ def main():
                      auth=dict(u='example-user', s='example-session', h='example-secret'))
         config = dict(schema_version=2, gate_number='0000', points=None, roborock=robot)
         source = private/'input.json'; source.write_text(json.dumps(config))
+        navigation = dict(schema_version=1, slots=[dict(slot=1, destination=dict(label='Fixture A', icon='pin', latitude=0, longitude=0))])
+        nav_source = private/'navigation.json'; nav_source.write_text(json.dumps(navigation))
         command = [sys.executable, str(ROOT/'scripts/configure-device.py'), a.serial, str(source),
-                   '--apk', str(ROOT/'app/build/outputs/apk/debug/app-debug.apk'), '--backup-dir', str(private/'backups')]
+                   '--navigation', str(nav_source), '--apk', str(ROOT/'app/build/outputs/apk/debug/app-debug.apk'), '--backup-dir', str(private/'backups')]
         rejected = subprocess.run(command, capture_output=True)
         if rejected.returncode == 0 or b'Phone differs' not in rejected.stderr:
             raise RuntimeError('Mismatched phone was not rejected')
@@ -53,8 +55,11 @@ def main():
         cipher = run('exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/roborock.enc')
         if len(cipher) < 28 or b'example-secret' in cipher: raise RuntimeError('Encrypted credentials not installed')
         geometry = json.loads(run('exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/home-config.json'))
-        if geometry.get('automation_enabled') or 'roborock' in geometry or 'gate_number' in geometry:
+        if geometry.get('automation_enabled') or any(key in geometry for key in ('roborock', 'gate_number', 'navigation')):
             raise RuntimeError('Private sections were not separated')
+        saved_navigation = json.loads(run('exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/navigation.json'))
+        if saved_navigation['slots'][0]['destination']['label'] != 'Fixture A' or saved_navigation['slots'][2]['destination'] is not None:
+            raise RuntimeError('Navigation import or empty slots failed')
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Update reset daily quota')
         run('shell', 'am', 'force-stop', PACKAGE)
@@ -63,7 +68,7 @@ def main():
             raise RuntimeError('Restart reset daily quota')
     # Clear only synthetic robot credentials, preserving a safe menu for visual inspection.
     run('shell', 'run-as', PACKAGE, 'rm', 'no_backup/roborock.enc')
-    print('PASS: mismatched phone refused; signature-checked backup/update, encrypted one-time import, quota across restart; no calls or cleaning')
+    print('PASS: mismatched phone refused; signature-checked backup/update, encrypted one-time import, private navigation, quota across restart; no calls or cleaning')
 
 
 if __name__ == '__main__': main()
