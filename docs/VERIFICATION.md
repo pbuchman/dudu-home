@@ -1,5 +1,32 @@
 # Verification ledger
 
+## 1.0.0-rc1 physical navigation acceptance - 2026-09-26
+
+Updated the physical DUDU7 from code 13 to code 14 using the guarded installer. The
+installed signature matched, and the previous APK/data were backed up privately before
+the in-place update. The installed APK is byte-identical to the locally verified candidate
+built from `e434ae9`; versionName is `1.0.0-rc1`. No uninstall, data clearing or radio reboot.
+
+After opening the menu, the one-time import completed and removed staging/maintenance files.
+The installed three-slot navigation document matches the private source semantically.
+The gate number, geometry, enabled automation and daily cleaning quota were retained;
+encrypted routine configuration remains present and the monitor service is registered.
+
+All six tiles fit on the physical display. The third destination uses an address and a
+generic pin. Each navigation tile was tapped separately in Dudu Home: Google Maps opened
+directly into active driving guidance with a route, ETA, exit control and turn instructions,
+without another Start tap. Route summaries were visually checked after exiting guidance.
+Maps may display its own nearby place/business or saved label for a coordinate; this is
+separate from the private label shown by Dudu Home. System activity output confirms Maps
+foreground, but redacts the URI payload, so exact-coordinate intent assertions remain
+covered by the existing instrumentation tests rather than claimed from device logs.
+
+Test guidance was stopped and the Dudu Home menu restored. No gate or cleaning tile was
+tapped. This session verifies installation and manual navigation; it does not close the
+historical repeated-wake, journey or gate/cleaning contention checks. The version remains
+a release candidate. Actual destinations, screenshots, logs and rollback files stay outside
+Git; public evidence contains no private location values.
+
 ## 1.0.0-rc1 navigation candidate - 2026-09-24
 
 Local checks passed: debug and instrumentation APK build, lint, detector/progress checks,
@@ -22,11 +49,10 @@ present there. Both APKs were scanned after ZIP decompression and through DEX st
 no actual configured labels, address words, coordinates or credentials were found. Public
 art and screenshots were visually inspected; text metadata is absent from the new assets.
 
-The recorded code 13 hardware results below are preserved. Code 14 installation and actual
-Google Maps guidance remain pending: the physical radio stopped appearing in ADB and the
-previously recorded endpoint did not reconnect. No physical deployment or guidance success
-is claimed for this candidate. The release remains `1.0.0-rc1`; repeated wake, journey and
-other outstanding historical acceptance checks still block a final 1.0 release claim.
+At this September 24 checkpoint, code 14 installation and actual Google Maps guidance were
+pending because the radio was unavailable through ADB. The September 26 entry above records
+their subsequent completion. Recorded code 13 results remain below; repeated wake, journey
+and other outstanding historical acceptance checks still block a final 1.0 release claim.
 
 ## 0.5.6 implementation and current installation status - 2026-09-24
 

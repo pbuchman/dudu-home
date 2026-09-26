@@ -2,8 +2,9 @@
 
 ## Odbiór kandydata 1.0.0-rc1
 
-Ostatnia zapisana, potwierdzona instalacja to 0.5.6/code 13 z 24 września. Pełny odbiór
-wybudzeń pozostaje otwarty. Instalacja kandydata 1.0.0-rc1/code 14 wymaga weryfikacji na radiu.
+Ostatnia potwierdzona instalacja to 1.0.0-rc1/code 14 z 26 września. Aktualizacja z kopią
+zapasową, import prywatnych danych i start prowadzenia z każdego z trzech kafelków przeszły
+weryfikację na radiu. Pełny odbiór wybudzeń i historyczne testy przejazdów pozostają otwarte.
 Najpierw pobierz logi bez otwierania aplikacji, potem wykonaj procedurę aktualizacji poniżej.
 Sprawdź bieżącą wersję i podpis; nie nadpisuj nowszej wersji ani nie czyść danych.
 Istniejąca zgoda obserwatora powiadomień służy teraz również Spotify.

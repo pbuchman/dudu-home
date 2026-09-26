@@ -12,6 +12,8 @@
   Add parser, intent, media-priority, document import and complete installer tests.
 - Candidate version only: repeated manufacturer wake and remaining journey acceptance are
   still open. No final 1.0 tag or public APK.
+- Installed on DUDU7 on September 26 with a private rollback backup and preserved data.
+  All three tiles started Google Maps turn-by-turn guidance; see the verification ledger.
 
 ## 0.5.6-local - ordered automation and native Spotify resume
 

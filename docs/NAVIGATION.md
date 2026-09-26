@@ -78,6 +78,10 @@ Maps controls route availability, GPS/permission prompts, first-run dialogs and 
 an accepted intent alone is not proof of active guidance. Missing Maps or a launch failure
 produces a fixed message, without a fallback or automatic retry.
 
+The tile label is local to Dudu Home. Google Maps names the coordinate using its own place
+data or saved labels, so a nearby business name can appear in the route summary instead of
+the tile label. The configured coordinate remains the destination sent by Dudu Home.
+
 Before launching, Dudu Home durably consumes pending Yanosik/Spotify startup opportunities.
 Queued media work and a pending Spotify resume are cancelled; an already-playing session is
 not stopped. Gate/cleaning rules and pending home work remain unchanged. The choice survives
