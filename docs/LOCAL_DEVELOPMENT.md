@@ -4,18 +4,20 @@ Read this file first when resuming without the conversation. The accepted behavi
 [FUNCTIONAL.md](FUNCTIONAL.md), implementation details in [ROBOROCK.md](ROBOROCK.md),
 and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
-## Navigation candidate
+## Current release candidate
 
-Current branch `codex/maps-navigation`, based on public main `e5416b7`, builds
-`1.0.0-rc1` / code 14. Three Maps tiles, private document import and manual-media priority
-are implemented. See NAVIGATION for schema, limits and privacy. Local build/lint and
-emulator validation are recorded in VERIFICATION. Radio update to code 14 remains pending;
-the installation recorded below is code 13. Keep the private configuration and device
-connection data outside this repository. Do not release a final 1.0 tag yet.
+Public main includes PRs #1, #2 and #3. `1.0.0-rc2` / code 15 is installed on DUDU7.
+Three Maps tiles, private import, manual-media priority and per-destination address mode are
+verified as recorded in VERIFICATION. The merged-main build matches the installed APK exactly.
+Fresh build/lint, emulator, installer, recorded-route replay and privacy checks passed.
+Full reboot/automatic monitoring, manual gate and Full Cleaning cloud acceptance also passed
+on code 15. See [RELEASE_READINESS.md](RELEASE_READINESS.md) for the remaining physical checks.
+Use the latest private navigation file, including the one destination's address-mode setting;
+older rollback files must not replace it. Keep configuration and device data outside Git.
 
 ## Previous source and radio checkpoint
 
-**Current source and verified radio installation: 0.5.6-local / code 13 (September 24).**
+**Historical source and radio installation: 0.5.6-local / code 13 (September 24).**
 Branch codex/spotify-priority, based on public main 04a767c. Ordered automation, separate Spotify
 reservation and native local resume are implemented. See AUTOMATION_SEQUENCE. No HOME request
 remains in YanosikLauncher. Backed-up update/import and full reboot passed on September 24.

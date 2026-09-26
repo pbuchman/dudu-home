@@ -1,5 +1,28 @@
 # Verification ledger
 
+## Merged-main release preparation - 2026-09-26
+
+PR #3 was merged at `694adb5`; PRs #1 and #2 were already merged. A fresh checkout passed
+debug/instrumentation builds, lint, detector/coordinator/progress checks, all Python checks,
+the full emulator suite and the complete emulator installer/update/import test. Eight private
+recordings were replayed alongside synthetic input: 22,644 home and 20,000 motion samples
+retained identical events, timing and flags. Merged-main CI passed. The rebuilt APK is
+byte-identical to installed code 15, so another radio update was unnecessary.
+
+On that installed candidate, a full radio reboot increased the Android boot count. Before
+any manual menu launch, WAKE_ENTRY/MONITOR_CREATE, BOOT_RECEIVED, fresh GPS and a confirmed
+VENDOR_BASELINE_ZERO were captured. Continued GPS summaries arrived. No real vendor sleep
+occurred in this session; reboot success does not close first/subsequent ignition acceptance.
+
+The actual manual gate tile completed one dial/outgoing/five-second wait/hangup/success
+sequence and returned to the menu. One manual Full Cleaning tile request returned ACCEPTED,
+showed its result and restored the menu. Its daily automatic quota was byte-for-byte unchanged.
+No robot stop/pause/dock command or second routine was issued. These results prove the device
+integrations; physical gate movement and robot movement were not independently observed.
+
+Private snapshots and rollback artifacts remain outside Git. The final 1.0 hardware gaps
+and release contents are consolidated in [RELEASE_READINESS.md](RELEASE_READINESS.md).
+
 ## 1.0.0-rc2 address-target correction - 2026-09-26
 
 A coordinate-selected destination resolved to an unwanted business listing on the radio.
