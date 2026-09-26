@@ -1,5 +1,31 @@
 # Verification ledger
 
+## Gate-area media precondition - 1.0.0-rc3, 2026-09-26
+
+Started from current merged main including the rc2 address-navigation and release-readiness
+changes. Older dirty worktrees were preserved. The new barrier covers potential gate activity
+before a ready gate job exists; it does not change the call detector or prove the cause of
+every reported missing call. There was no authorized physical radio attached for this change.
+
+Pure checks pass for generic movement already qualified inside the departure envelope while
+no gate event exists, alternate parking, consumed flags from an earlier trip, return approach,
+GPS uncertainty, successful-call-only release, re-entry and stale callbacks after reset.
+Eight private recordings plus synthetic differential input retained identical home events,
+timing and flags: 22,644 home samples and 20,000 motion samples. No locations or recordings
+were added to the public tree. Hardware call safety is preserved, not newly certified.
+
+Final debug/instrumentation builds and lint passed. The full emulator suite passed, including
+the new production-adapter checks: no media reservation before gate resolution, executor cleanup
+before release, stale completion rejection and fresh area evidence for delayed media launches.
+Existing Maps, call protection, media, wake, progress and first-run/no-dial checks also passed.
+Seven private-tool, five fresh-installer, four navigation and one privacy-scanner Python tests
+passed. Working-tree/history checks include private home, robot and navigation data; no public
+images were changed. The existing ordinary-prose short-label match was reviewed separately.
+
+Remaining radio checks: backed-up update, departure from both parking
+positions, success/error/skipped-call behavior, outside-home startup, gate/cleaning contention,
+manual Maps/menu protection and real wake cycles. No final release or public APK.
+
 ## Merged-main release preparation - 2026-09-26
 
 PR #3 was merged at `694adb5`; PRs #1 and #2 were already merged. A fresh checkout passed

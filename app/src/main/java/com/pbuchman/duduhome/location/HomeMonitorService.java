@@ -66,6 +66,7 @@ public final class HomeMonitorService extends Service implements LocationListene
                 Diagnostics.record(HomeMonitorService.this, "GPS_GAP_RESUBSCRIBE");
                 progressEpoch = ProgressBus.reset(HomeMonitorService.this, Reason.GPS_UNRELIABLE);
                 if (detector != null) detector.clearEvidence();
+                updateGateArea(0);
                 motion.clear(); motionOrigin = null;
                 if (registered) locations.removeUpdates(HomeMonitorService.this);
                 registered = false;
@@ -140,6 +141,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         }
         Diagnostics.record(this, "MONITOR_START HOME=" + (detector == null ? 0 : 1)
                 + " FLAGS=" + (detector == null ? 0 : detector.flags()));
+        if (detector == null) automation.noHomeConfiguration();
         checkCycle();
         subscribe();
         handler.removeCallbacks(watchdog);
@@ -217,6 +219,12 @@ public final class HomeMonitorService extends Service implements LocationListene
                 location.getSpeed(), location.hasSpeed(), lastFix - fixTime, location.isFromMockProvider());
         // Home actions get first opportunity on the same fix; Yanosik never masks their result.
         if (detector != null && !acceptHome(location, fixTime)) return;
+        updateGateArea(fixTime + 3000);
+        if (!automation.allowsMotionDetection()) {
+            motion.clear(); motionOrigin = null;
+            ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION, java.util.List.of());
+            return;
+        }
         motion.accept(motionFix, cycleReady && !PrivateImport.pending(this),
                 observed -> ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION,
                         (new JourneySession(this).available(JourneySession.Target.SPOTIFY)
@@ -247,10 +255,16 @@ public final class HomeMonitorService extends Service implements LocationListene
         }
         return true;
     }
+    private void updateGateArea(long validUntil) {
+        if (automation == null) return;
+        if (detector == null) automation.noHomeConfiguration();
+        else automation.gateArea(detector.gateArea(), validUntil);
+    }
     @Override public void onProviderDisabled(String provider) {
         Diagnostics.record(this, "GPS_PROVIDER_DISABLED");
         progressEpoch = ProgressBus.reset(this, Reason.GPS_UNRELIABLE);
         if (detector != null) detector.clearEvidence();
+        updateGateArea(0);
         motion.clear(); motionOrigin = null;
     }
     @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }

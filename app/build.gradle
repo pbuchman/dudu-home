@@ -10,8 +10,8 @@ android {
         applicationId 'com.pbuchman.duduhome'
         minSdk 26
         targetSdk 36
-        versionCode 15
-        versionName '1.0.0-rc2'
+        versionCode 16
+        versionName '1.0.0-rc3'
         testInstrumentationRunner 'com.pbuchman.duduhome.SafetyChecks'
     }
 

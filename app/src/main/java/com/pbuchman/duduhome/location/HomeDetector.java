@@ -15,6 +15,11 @@ public final class HomeDetector {
     }
     public record Geometry(Point parking, Point gate, Point approach, Point junction) { }
     public record Fix(long elapsedMs, Point point, double accuracy, double speed, long ageMs, boolean mock) { }
+    public enum GateArea { UNKNOWN, NONE, DEPARTURE, RETURN }
+    private static final double DEPARTURE_RADIUS = 85;
+    private GateArea gateArea = GateArea.UNKNOWN;
+    /** Broad precondition only, independent of whether the one-shot event was consumed. */
+    public GateArea gateArea() { return gateArea; }
     private final Geometry geometry;
     private boolean departureConsumed, returnConsumed, checkpointConsumed, exitConsumed, wasAway;
     private boolean homeArmed, roadApproach, visitedJunction;
@@ -85,7 +90,7 @@ public final class HomeDetector {
 
         boolean movingTowardGate = homeArmed && !departureConsumed && fix.speed >= 0.7
                 && p.distance(anchor) >= Math.max(12, fix.accuracy * 2)
-                && anchorGateDistance - gateDistance >= 12 && parkingDistance < 85;
+                && anchorGateDistance - gateDistance >= 12 && parkingDistance < DEPARTURE_RADIUS;
         if (movingTowardGate) {
             if (movingSince < 0) movingSince = fix.elapsedMs;
             if (fix.elapsedMs - movingSince >= 3000) {
@@ -126,6 +131,15 @@ public final class HomeDetector {
             exitConsumed = true;
             events.add(HomeEvent.JOURNEY_EXIT);
         }
+        // Reuse the departure envelope and return route evidence. Include uncertainty at the
+        // departure boundary; no position, consumed flag or timer alone may release media here.
+        boolean inward = previous == null || gateDistance < previous.distance(geometry.gate);
+        boolean towardJunction = previous == null || junctionDistance < previous.distance(geometry.junction);
+        boolean possibleReturn = (roadApproach && (fix.speed < 0.7 || towardJunction))
+                || (visitedJunction && (junctionDistance <= 35
+                    || (jx < -35 && (fix.speed < 0.7 || inward))));
+        gateArea = parkingDistance - fix.accuracy < DEPARTURE_RADIUS ? GateArea.DEPARTURE
+                : possibleReturn ? GateArea.RETURN : GateArea.NONE;
         // Observe the decisions above without introducing a new event condition.
         DetectionProgress.Reason lost = fix.speed < 0.7 ? STOPPED : CONDITIONS_CHANGED;
         progress.update(DEPARTURE, movingTowardGate && !departureConsumed,
@@ -170,6 +184,7 @@ public final class HomeDetector {
     private static double clamp(double value) { return Math.max(0, Math.min(1, value)); }
 
     public void clearEvidence() {
+        gateArea = GateArea.UNKNOWN;
         progress.clear(RESET);
         homeArmed = false;
         anchor = previous = null;

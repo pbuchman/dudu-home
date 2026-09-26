@@ -7,10 +7,15 @@ A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetoo
 Private, locally configured route detection connects those actions to leaving and returning home.
 After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
 Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
+Before generic driving detection, a location precondition gives a possible gate departure or
+return priority even when its call event is not ready yet. Media waits for a successful gate
+call or fresh evidence that the gate area no longer applies. No fixed delay bypasses this check.
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Current source and verified radio installation: `1.0.0-rc2` (code 15), September 26.**
+> **Current source: `1.0.0-rc3` (code 16). Last verified radio installation: `1.0.0-rc2` (code 15), September 26.**
+> The rc3 gate-area precondition is not yet verified on the radio. It changes media scheduling,
+> not the gate-call detector or its safety checks. A missing call still needs diagnostic evidence.
 > All three tiles started Google Maps guidance in rc1. In rc2, one destination explicitly
 > uses its full address to avoid an unwanted business name; its saved label passed on DUDU7.
 > The backed-up update preserved existing data. Remaining wake/journey checks still prevent

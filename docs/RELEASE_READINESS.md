@@ -1,6 +1,13 @@
 # Release readiness - 2026-09-26
 
-Candidate: **1.0.0-rc2 / versionCode 15**. Application source was merged to main at
+New development candidate: **1.0.0-rc3 / versionCode 16**, with a gate-area barrier before
+generic media motion. Its local tests are recorded in VERIFICATION; it is not installed on
+the radio. All physical rc2 evidence below remains historical and does not certify rc3.
+In addition to the remaining checks below, verify that manoeuvring near home does not start
+the media countdown before a successful gate call, and that ordinary driving away from home
+still starts the media sequence. A skipped/failed call must not silently release the barrier.
+
+Previous candidate: **1.0.0-rc2 / versionCode 15**. Application source was merged to main at
 `694adb5af2d8d9a427e0ff75be2ce7bb2fe61878` through PR #3. PRs #1 and #2 were already merged.
 The fresh merged-main build is byte-identical to the APK installed on DUDU7. Subsequent
 release-preparation documentation does not change that application artifact.

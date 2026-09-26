@@ -1,5 +1,17 @@
 # Design decisions
 
+## Gate area before generic motion - 1.0.0-rc3
+
+- Ready-action queue priority alone cannot protect a gate event that is not ready yet.
+  Owner requested a geographic precondition before Yanosik/Spotify motion recognition.
+- Reuse detector geometry and return evidence, not street names, another GPS subscription,
+  new configuration or UI-owned thresholds. Consumed event flags are not proof of a call.
+- Inside the applicable area wait for executor success; otherwise require fresh outside
+  evidence. No elapsed-time shortcut. Unknown GPS does not mean outside.
+- Start fresh generic movement recognition after resolution. Preserve call safety, result
+  screens, manual menu and Maps suppression, cleaning quota and all route event thresholds.
+- Completion is process-local and generation guarded. No new retry or persisted command.
+
 ## Per-destination Maps address target - 1.0.0-rc2
 
 - Preserve coordinate navigation as the default, including for existing files with address text.

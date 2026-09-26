@@ -6,7 +6,12 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Current release candidate
 
-Public main includes PRs #1, #2 and #3. `1.0.0-rc2` / code 15 is installed on DUDU7.
+Current development: `1.0.0-rc3` / code 16, branched from merged main including PRs #1-4.
+Adds a gate-area precondition before media movement detection/reservation, with success-only
+release or fresh outside evidence. No fixed timer, route threshold or call-safety change.
+See AUTOMATION_SEQUENCE and VERIFICATION. This change is not installed or tested on the radio.
+
+`1.0.0-rc2` / code 15 is the last verified installation on DUDU7.
 Three Maps tiles, private import, manual-media priority and per-destination address mode are
 verified as recorded in VERIFICATION. The merged-main build matches the installed APK exactly.
 Fresh build/lint, emulator, installer, recorded-route replay and privacy checks passed.

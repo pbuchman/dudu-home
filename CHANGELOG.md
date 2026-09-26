@@ -1,5 +1,15 @@
 # Change history
 
+## 1.0.0-rc3 (code 16) - 2026-09-26
+
+- Check the applicable gate area before generic driving progress and media reservations,
+  rather than giving priority only to already-ready gate jobs.
+- Hold Yanosik/Spotify through manoeuvring and return evidence until a successful gate call
+  or fresh outside-area evidence. Unknown/stale GPS and failed/skipped calls cannot bypass it.
+- Keep generation-safe executor completion separate from UI observation, with no timer-based
+  bypass, auto-retry, call threshold, quota or Maps-navigation regression.
+- Add synthetic area and Android scheduling regressions. Physical rc3 acceptance is pending.
+
 ## 1.0.0-rc2 (code 15) - 2026-09-26
 
 - Allow an individual navigation destination to use its full address when Maps associates

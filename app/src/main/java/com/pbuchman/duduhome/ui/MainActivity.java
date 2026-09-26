@@ -337,6 +337,7 @@ public final class MainActivity extends Activity {
         int generation = ++uiGeneration;
         if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
+        final Runnable gateSuccess = HomeActions.gateSuccessCallback();
         ProgressBus.update(this, attempt, Phase.ACCEPTED, Reason.NONE);
         gateLease = true;
         roborockSetup.setVisibility(View.GONE);
@@ -365,6 +366,7 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onSuccess() {
+                        gateSuccess.run();
                         ProgressBus.update(MainActivity.this, attempt, Phase.SUCCEEDED, Reason.NONE);
                         if (generation == uiGeneration && !isFinishing()) {
                             showSuccessAnimation();

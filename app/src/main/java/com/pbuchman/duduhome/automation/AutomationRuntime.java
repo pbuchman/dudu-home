@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.diagnostics.Diagnostics;
+import com.pbuchman.duduhome.location.HomeDetector.GateArea;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import static com.pbuchman.duduhome.automation.DetectionProgress.*;
@@ -21,6 +22,21 @@ public final class AutomationRuntime {
     private long spotifyAttempt;
     private long dispatchedHomeAttempt = -1;
     private boolean closed;
+    private final GatePrecondition gate = new GatePrecondition();
+    private GateArea lastGateArea;
+    private boolean homeConfigured = true;
+    private long areaFreshUntil;
+    private final java.util.function.Supplier<Runnable> gateSuccessListener = this::gateSuccessCallback;
+    private Runnable gateSuccessCallback() {
+        Runnable success = gate.successCallback();
+        return () -> {
+            if (closed) return;
+            boolean before = gate.allowsMedia();
+            success.run();
+            if (!before && gate.allowsMedia()) Diagnostics.record(context, "MEDIA_GATE_CALL_COMPLETED");
+            changed();
+        };
+    }
     private final Runnable drain = this::drain;
     private final Runnable listener = this::changed;
     private final Runnable configurationListener = () -> reset(Reason.CONFIGURATION);
@@ -28,6 +44,30 @@ public final class AutomationRuntime {
         this.context = context.getApplicationContext(); yanosik = new YanosikLauncher(this.context);
         HomeActions.setSchedulingListener(listener);
         HomeActions.setConfigurationListener(configurationListener);
+        HomeActions.setGateSuccessListener(gateSuccessListener);
+    }
+    public void gateArea(GateArea area, long validUntil) {
+        if (closed) return;
+        boolean before = gateAllowsMedia();
+        homeConfigured = true;
+        areaFreshUntil = validUntil;
+        gate.observe(area);
+        if (lastGateArea != area) {
+            Diagnostics.record(context, "MEDIA_GATE_AREA_" + area);
+            lastGateArea = area;
+            changed();
+        }
+        if (before != gateAllowsMedia()) changed();
+    }
+    public void noHomeConfiguration() {
+        gateArea(GateArea.NONE, 0);
+        homeConfigured = false;
+    }
+    private boolean gateAllowsMedia() {
+        return gate.allowsMedia() && (!homeConfigured || SystemClock.elapsedRealtime() < areaFreshUntil);
+    }
+    public boolean allowsMotionDetection() {
+        return !closed && gateAllowsMedia() && HomeActions.allowsExternalLaunch();
     }
     public void home(HomeEvent event) {
         if (closed || (!HomeActions.callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT)) return;
@@ -38,7 +78,7 @@ public final class AutomationRuntime {
         enqueue(id, HomeActions.callsGate(event) ? Type.GATE : Type.CLEANING, event);
     }
     public void motion() {
-        if (closed || PrivateImport.pending(context)) return;
+        if (!allowsMotionDetection() || PrivateImport.pending(context)) return;
         JourneySession session = new JourneySession(context);
         if (session.reserve(JourneySession.Target.YANOSIK))
             enqueue(ProgressBus.request(context, Kind.YANOSIK), Type.YANOSIK, null);
@@ -55,7 +95,7 @@ public final class AutomationRuntime {
         if (closed) return;
         handler.removeCallbacks(drain); handler.post(drain);
     }
-    private boolean mediaReady() { return !new JourneySession(context).manualNavigationChosen()
+    private boolean mediaReady() { return gateAllowsMedia() && !new JourneySession(context).manualNavigationChosen()
             && HomeActions.allowsMediaLaunch() && !queue.hasHomeWaiting(); }
     private void drain() {
         if (closed) return;
@@ -122,6 +162,7 @@ public final class AutomationRuntime {
         spotify.start();
     }
     public void reset(Reason reason) {
+        gate.reset(); lastGateArea = null; homeConfigured = true; areaFreshUntil = 0;
         handler.removeCallbacksAndMessages(null);
         for (Job j : queue.reset()) ProgressBus.update(context, j.id(), Phase.SKIPPED, reason);
         if (spotify != null) {
@@ -135,6 +176,7 @@ public final class AutomationRuntime {
         reset(Reason.SERVICE_STOPPED); closed = true;
         HomeActions.clearSchedulingListener(listener);
         HomeActions.clearConfigurationListener(configurationListener);
+        HomeActions.clearGateSuccessListener(gateSuccessListener);
     }
     private static long day() { return LocalDate.now(ZoneId.of("Europe/Warsaw")).toEpochDay(); }
 }
