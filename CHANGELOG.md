@@ -1,5 +1,12 @@
 # Change history
 
+## 1.0.0-rc2 (code 15) - 2026-09-26
+
+- Allow an individual navigation destination to use its full address when Maps associates
+  its coordinates with an unwanted business name. Existing files still use coordinates.
+- Validate the optional target mode and require address text; encode the query and preserve
+  the other slots. Add synthetic parser, round-trip and intent regression checks.
+
 ## 1.0.0-rc1 (code 14) - 2026-09-24
 
 - Add three file-configured Google Maps driving destinations below the existing actions,

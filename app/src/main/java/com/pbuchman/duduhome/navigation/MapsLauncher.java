@@ -27,8 +27,10 @@ public final class MapsLauncher {
         this.transport = transport; this.protectMedia = protectMedia;
     }
     public static Intent intent(NavigationConfig.Destination place) {
+        String target = place.navigateBy().equals("address") ? Uri.encode(place.address())
+                : Double.toString(place.latitude()) + "," + Double.toString(place.longitude());
         return new Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q="
-                + Double.toString(place.latitude()) + "," + Double.toString(place.longitude()) + "&mode=d"))
+                + target + "&mode=d"))
                 .setPackage(PACKAGE);
     }
     public Result launch(NavigationConfig.Destination place) {

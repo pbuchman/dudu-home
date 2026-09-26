@@ -1,5 +1,29 @@
 # Verification ledger
 
+## 1.0.0-rc2 address-target correction - 2026-09-26
+
+A coordinate-selected destination resolved to an unwanted business listing on the radio.
+An explicit full-address probe selected the intended building and existing saved label.
+Added per-destination `navigate_by: address`; default coordinate behavior is unchanged.
+No public Maps listing or account label was edited.
+
+Debug/test APK builds, lint, four Python navigation tests, seven private-tool tests, five
+fresh-installer tests, privacy-scanner regression and the full emulator safety/UI suite passed.
+Synthetic instrumentation verifies URI encoding, required address/mode validation, private
+round trips and unchanged coordinate intents for default/explicit coordinate mode and other
+slots. Working-tree/history private-denylist and decompressed APK/DEX checks passed.
+
+The guarded, signature-checked update installed code 15 (`1.0.0-rc2`) with a private APK/data
+rollback backup. Installed APK bytes and backup checksums were verified. The imported file
+matches the private source: only the first slot's target mode changed; the other two slots,
+gate number, geometry, enabled automation and daily quota were retained. Staging was removed.
+
+Tapping the actual corrected tile opened Maps directly with the intended saved label and
+full address instead of the business name. Because the vehicle was already near the target,
+the observed screen was the navigation arrival view; this was not a new full-route road test.
+Test guidance was closed and the menu restored. Screenshots and destination values remain
+private. Historical wake/journey acceptance remains open; this is still a release candidate.
+
 ## 1.0.0-rc1 physical navigation acceptance - 2026-09-26
 
 Updated the physical DUDU7 from code 13 to code 14 using the guarded installer. The

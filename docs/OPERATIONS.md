@@ -1,8 +1,10 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Odbiór kandydata 1.0.0-rc1
+## Odbiór kandydata 1.0.0-rc2
 
-Ostatnia potwierdzona instalacja to 1.0.0-rc1/code 14 z 26 września. Aktualizacja z kopią
+Ostatnia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
+jednego celu poprawnie wyświetlił jego zapisaną etykietę w Maps; pozostałe sloty nie zmieniły się.
+Wcześniejsza aktualizacja rc1 z kopią
 zapasową, import prywatnych danych i start prowadzenia z każdego z trzech kafelków przeszły
 weryfikację na radiu. Pełny odbiór wybudzeń i historyczne testy przejazdów pozostają otwarte.
 Najpierw pobierz logi bez otwierania aplikacji, potem wykonaj procedurę aktualizacji poniżej.

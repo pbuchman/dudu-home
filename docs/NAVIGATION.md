@@ -46,12 +46,17 @@ This is a deliberately synthetic schema example, not a usable driving destinatio
 | `label` | 1 to 64 characters; displayed on the tile, at most two lines |
 | `icon` | `home`, `squash` or `pin`; bundled generic art |
 | `address` | Optional descriptive text, 1 to 160 characters when supplied |
+| `navigate_by` | Optional `coordinates` (default) or `address`; address mode requires a full, unambiguous `address` |
 | `latitude`, `longitude` | Finite JSON numbers in WGS84 degrees, within ±90 and ±180 |
 
 The file must be valid UTF-8 and at most 16 KiB. Duplicate fields/slots, unknown fields,
 unsupported icons, string-valued coordinates, control characters and trailing content are
-rejected. Labels and addresses must not have leading or trailing whitespace. The optional
-address is descriptive only: navigation always uses the explicit coordinate pair.
+rejected. Labels and addresses must not have leading or trailing whitespace. By default,
+address text is descriptive and navigation uses the explicit coordinate pair. Since
+`1.0.0-rc2`, setting `navigate_by` to `address` on one destination sends its encoded address
+instead. Other destinations retain their existing behavior. Coordinates remain required for
+file compatibility and reference, but are not sent in address mode. Older app versions reject
+the new field; update the app before importing a file that uses it.
 
 ## Import on the radio
 
@@ -71,8 +76,9 @@ the one-time importer separates them and removes staging. Never copy the file to
 ## Launch and interaction with automation
 
 A configured tap sends one `ACTION_VIEW` intent, explicitly addressed to the installed Google
-Maps package, with `google.navigation:q=LAT,LON&mode=d`. This requests driving navigation from
-the current position. The app does not use a browser, embed Maps or geocode the private label.
+Maps package, with `google.navigation:q=LAT,LON&mode=d`, or an encoded full address when that
+destination explicitly selects address mode. This requests driving navigation from the current
+position. Google Maps resolves the address; the app does not geocode the private tile label.
 It follows the [Android Google Maps navigation intent contract](https://developer.android.com/guide/components/google-maps-intents#launch_turn-by-turn_navigation).
 Maps controls route availability, GPS/permission prompts, first-run dialogs and actual guidance;
 an accepted intent alone is not proof of active guidance. Missing Maps or a launch failure
@@ -80,7 +86,10 @@ produces a fixed message, without a fallback or automatic retry.
 
 The tile label is local to Dudu Home. Google Maps names the coordinate using its own place
 data or saved labels, so a nearby business name can appear in the route summary instead of
-the tile label. The configured coordinate remains the destination sent by Dudu Home.
+the tile label. Address mode can select the building/address rather than a nearby business
+associated with the coordinate. Google Maps still controls the displayed name and resolved
+endpoint; verify both on the radio. An ambiguous address may select the first match. There is
+no automatic fallback to coordinates and no guaranteed custom-name override.
 
 Before launching, Dudu Home durably consumes pending Yanosik/Spotify startup opportunities.
 Queued media work and a pending Spotify resume are cancelled; an already-playing session is

@@ -1,5 +1,13 @@
 # Design decisions
 
+## Per-destination Maps address target - 1.0.0-rc2
+
+- Preserve coordinate navigation as the default, including for existing files with address text.
+- Optional `navigate_by: address` uses that destination's validated, URI-encoded full address.
+  Maps resolves it; require explicit opt-in and verify the name and endpoint on the device.
+- Keep the other slots, manual media priority and private import behavior unchanged. No fallback,
+  public place edits, custom-name guarantee or real address fixture.
+
 ## Private manual Maps destinations - 1.0.0-rc1
 
 - Three stable slots below the existing actions; configuration is an external JSON document,

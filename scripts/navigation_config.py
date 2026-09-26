@@ -46,11 +46,15 @@ def validate_navigation(value):
             raise ValueError('Invalid navigation slot')
         d = entry['destination']
         if d is not None:
-            obj(d, {'label', 'icon', 'address', 'latitude', 'longitude'})
+            obj(d, {'label', 'icon', 'address', 'latitude', 'longitude', 'navigate_by'})
             d = dict(d)
             text(d.get('label'), 64)
             if d.get('icon') not in ('home', 'squash', 'pin'): raise ValueError('Invalid navigation icon')
             if 'address' in d: text(d['address'], 160)
+            navigate_by = d.get('navigate_by', 'coordinates')
+            if (navigate_by not in ('coordinates', 'address')
+                    or (navigate_by == 'address' and 'address' not in d)):
+                raise ValueError('Invalid navigation target mode')
             for key, limit in [('latitude', 90), ('longitude', 180)]:
                 n = d.get(key)
                 if type(n) not in (int, float) or not math.isfinite(n) or abs(n) > limit:

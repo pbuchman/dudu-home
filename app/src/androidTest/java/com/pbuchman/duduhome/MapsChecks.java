@@ -35,6 +35,31 @@ final class MapsChecks {
         Intent intent=MapsLauncher.intent(config.destination(1));
         require(Intent.ACTION_VIEW.equals(intent.getAction()) && MapsLauncher.PACKAGE.equals(intent.getPackage()),"explicit Maps only");
         require("google.navigation:q=0.001,0.002&mode=d".equals(intent.getDataString()),"exact driving destination");
+        String addressFixture = FIXTURE.replace("\"icon\":\"home\"",
+                "\"icon\":\"home\",\"address\":\"Synthetic Street 1 & 2, Fixture City\",\"navigate_by\":\"address\"");
+        NavigationConfig addressConfig = NavigationConfig.parse(addressFixture);
+        require("google.navigation:q=Synthetic%20Street%201%20%26%202%2C%20Fixture%20City&mode=d"
+                .equals(MapsLauncher.intent(addressConfig.destination(0)).getDataString()), "encoded address driving target");
+        require(MapsLauncher.intent(addressConfig.destination(1)).getDataString().equals(intent.getDataString()),
+                "address mode never changes another slot");
+        require(NavigationConfig.parse(addressConfig.serialize()).destination(0).navigateBy().equals("address"),
+                "address mode survives private round trip");
+        for (String coordinateFixture : new String[]{
+                addressFixture.replace("\"navigate_by\":\"address\"", "\"navigate_by\":\"coordinates\""),
+                addressFixture.replace(",\"navigate_by\":\"address\"", "")}) {
+            require("google.navigation:q=0.0,0.0&mode=d".equals(MapsLauncher.intent(
+                    NavigationConfig.parse(coordinateFixture).destination(0)).getDataString()),
+                    "address text does not opt a coordinate target into address mode");
+        }
+        for (String bad : new String[]{
+                FIXTURE.replace("\"icon\":\"home\"", "\"icon\":\"home\",\"navigate_by\":\"address\""),
+                addressFixture.replace("\"navigate_by\":\"address\"", "\"navigate_by\":\"unknown\""),
+                addressFixture.replace("Synthetic Street 1 & 2, Fixture City", ""),
+                addressFixture.replace("\"navigate_by\":\"address\"", "\"navigate_by\":true")}) {
+            boolean rejected = false;
+            try { NavigationConfig.parse(bad); } catch (Exception expected) { rejected = true; }
+            require(rejected, "invalid address mode rejected before import");
+        }
         int[] opens={0}, protects={0}; boolean[] available={true};
         MapsLauncher launcher=new MapsLauncher(new MapsLauncher.Transport(){
             public boolean available(Intent v){return available[0];}

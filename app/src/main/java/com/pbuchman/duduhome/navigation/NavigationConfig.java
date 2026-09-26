@@ -12,7 +12,8 @@ import java.util.Set;
 public final class NavigationConfig {
     public static final int SLOT_COUNT = 3;
     public static final int MAX_BYTES = 16384;
-    public record Destination(String label, String icon, String address, double latitude, double longitude) { }
+    public record Destination(String label, String icon, String address, double latitude, double longitude,
+                              String navigateBy) { }
     private final Destination[] slots;
     private NavigationConfig(Destination[] slots) { this.slots = slots.clone(); }
     public static NavigationConfig empty() { return new NavigationConfig(new Destination[SLOT_COUNT]); }
@@ -41,13 +42,17 @@ public final class NavigationConfig {
             seen[slot] = true;
             if (entry.isNull("destination")) continue;
             JSONObject d = entry.getJSONObject("destination");
-            keys(d, Set.of("label", "icon", "address", "latitude", "longitude"));
+            keys(d, Set.of("label", "icon", "address", "latitude", "longitude", "navigate_by"));
             String label = text(d.get("label"), 64);
             String icon = text(d.get("icon"), 12);
             if (!Set.of("home", "squash", "pin").contains(icon)) throw new JSONException("Invalid navigation icon");
             String address = d.has("address") ? text(d.get("address"), 160) : "";
+            String navigateBy = d.has("navigate_by") ? text(d.get("navigate_by"), 11) : "coordinates";
+            if (!Set.of("coordinates", "address").contains(navigateBy)
+                    || (navigateBy.equals("address") && address.isEmpty()))
+                throw new JSONException("Invalid navigation target mode");
             slots[slot] = new Destination(label, icon, address,
-                    coordinate(d.get("latitude"), 90), coordinate(d.get("longitude"), 180));
+                    coordinate(d.get("latitude"), 90), coordinate(d.get("longitude"), 180), navigateBy);
         }
         return new NavigationConfig(slots);
     }
@@ -112,6 +117,7 @@ public final class NavigationConfig {
                 JSONObject place = new JSONObject().put("label", d.label()).put("icon", d.icon())
                         .put("latitude", d.latitude()).put("longitude", d.longitude());
                 if (!d.address().isEmpty()) place.put("address", d.address());
+                if (!d.navigateBy().equals("coordinates")) place.put("navigate_by", d.navigateBy());
                 entry.put("destination", place);
             }
             entries.put(entry);

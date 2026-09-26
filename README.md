@@ -10,8 +10,9 @@ Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotif
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Current source and verified radio installation: `1.0.0-rc1` (code 14), September 26.**
-> All three private, file-configured tiles started Google Maps turn-by-turn guidance on DUDU7.
+> **Current source and verified radio installation: `1.0.0-rc2` (code 15), September 26.**
+> All three tiles started Google Maps guidance in rc1. In rc2, one destination explicitly
+> uses its full address to avoid an unwanted business name; its saved label passed on DUDU7.
 > The backed-up update preserved existing data. Remaining wake/journey checks still prevent
 > a final 1.0 release claim; see the [verification ledger](docs/VERIFICATION.md).
 > Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.

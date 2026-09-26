@@ -21,11 +21,22 @@ class NavigationTests(unittest.TestCase):
     def test_rejections(self):
         for key, value in [('label',''),('label','bad\nline'),('label','A'*65),('icon','unknown'),
                            ('latitude','0'),('latitude',True),('latitude',91),('longitude',-181),
-                           ('longitude',float('nan')),('address',None)]:
+                           ('longitude',float('nan')),('address',None),('navigate_by','unknown'),
+                           ('navigate_by',None),('navigate_by',True),('navigate_by','address')]:
             bad=deepcopy(self.value);bad['slots'][0]['destination'][key]=value
             with self.assertRaises(ValueError): validate_navigation(bad)
         for bad in ({}, [], {'schema_version':True,'slots':[]}, {'schema_version':1,'slots':[{'slot':1}]},
                     {'schema_version':1,'slots':[{'slot':1,'destination':None}]*2}):
+            with self.assertRaises(ValueError): validate_navigation(bad)
+    def test_address_mode_is_per_destination_and_requires_address(self):
+        value=deepcopy(self.value)
+        destination=value['slots'][0]['destination']
+        destination.update(address='Synthetic Street 1 & 2, Fixture City', navigate_by='address')
+        result=validate_navigation(value)
+        self.assertEqual(result['slots'][0]['destination'],destination)
+        self.assertEqual(result['slots'][2],self.value['slots'][1])
+        for address in ('', ' ', None, 'bad\nline'):
+            bad=deepcopy(value);bad['slots'][0]['destination']['address']=address
             with self.assertRaises(ValueError): validate_navigation(bad)
     def test_parser_bounds_duplicates_and_trailing(self):
         with TemporaryDirectory() as directory:
