@@ -1,6 +1,6 @@
 # Three private Google Maps navigation slots
 
-Version `1.0.0-rc4` supports up to twelve destinations per navigation slot. Slot order is
+Version `1.1.0` supports up to twelve destinations per navigation slot. Slot order is
 always 1, 2, 3. Zero destinations shows the existing empty tile; one opens Maps directly;
 two or more opens a modal in file order. The list length determines behavior, without a toggle.
 The modal dims and blocks the underlying app; X, Back and outside touch cancel without navigating.
@@ -32,7 +32,8 @@ This is a deliberately synthetic schema example, not a usable driving destinatio
       "icon": "squash",
       "destinations": [
         {"label": "Fixture A", "icon": "pin", "address": "Synthetic address A", "latitude": 0.001, "longitude": 0.001},
-        {"label": "Fixture B", "icon": "pin", "address": "Synthetic address B", "latitude": 0.002, "longitude": 0.002}
+        {"label": "Fixture B", "icon": "pin", "address": "Synthetic address B", "latitude": 0.002, "longitude": 0.002},
+        {"label": "Fixture C", "icon": "pin", "address": "Synthetic address C", "latitude": 0.003, "longitude": 0.003}
       ]
     }
   ]
@@ -74,6 +75,25 @@ validation rejects an oversized combined import before changing the device.
 Address text is descriptive by default: navigation uses coordinates. `navigate_by: address`
 sends its encoded full address instead; coordinates remain required for reference but are not
 sent in that mode. Existing address-mode targets keep their behavior. No automatic fallback.
+
+## Adding a third destination to an existing group
+
+The application is not limited to two places. Append a third destination object to the
+existing slot's `destinations` array in the **complete private configuration**. Do not add
+a fourth slot, replace the earlier entries, or change source code. The list order is the
+menu order, so appending preserves the first two choices. Keep the slot's label/icon and
+other slots unchanged, including each destination's `navigate_by` mode.
+
+After validation and reimport, the same tile displays `3 miejsca` and its modal contains
+three rows. Select the third row and verify the actual Maps endpoint and guidance screen,
+not just the menu label or a successful intent. Check that the first two entries still have
+their original targets. Changing the private JSON does not require rebuilding an APK on
+code 17 or later, but editing the computer-side file alone does not update the radio.
+
+Keep a private before/after copy and record which source file is now canonical in the private
+handoff. Never reuse an older two-entry file on a later install. Put only synthetic examples
+like Fixture A/B/C in public documentation and tests, even when a club's address is public:
+its association with the owner's configured destinations is private.
 
 ## Agent configuration runbook
 

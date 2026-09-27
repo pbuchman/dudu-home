@@ -25,13 +25,13 @@ public final class NavigationGroupChecks {
         return new JSONObject().put("schema_version", 2).put("slots", new JSONArray().put(slot)).toString();
     }
     public static void run(Instrumentation i) throws Exception {
-        for (int count : new int[]{0, 1, 2, 12}) {
+        for (int count : new int[]{0, 1, 2, 3, 12}) {
             NavigationConfig config = NavigationConfig.parse(fixture(count));
             require(count == 0 ? config.slot(1) == null : config.slot(1).destinations().size() == count, "list count");
             require(NavigationConfig.parse(config.serialize()).serialize().equals(config.serialize()), "group round trip");
             require(count == 1 || config.destination(1) == null, "no implicit first group destination");
         }
-        String sample = fixture(2);
+        String sample = fixture(3);
         for (String bad : new String[]{fixture(13), sample.replace("\"destinations\":", "\"destination\":null,\"destinations\":"),
                 sample.replace("\"label\":\"Fixture group\",", ""),
                 sample.replace("\"slot\":2", "\"slot\":true"),
@@ -66,7 +66,7 @@ public final class NavigationGroupChecks {
         try {
             i.runOnMainSync(() -> {
                 panel.render();
-                require(screen.findViewById(R.id.navigation_slot_2).getContentDescription().toString().contains("2 miejsca"),
+                require(screen.findViewById(R.id.navigation_slot_2).getContentDescription().toString().contains("3 miejsca"),
                         "Polish plural follows UI language, not system locale");
                 screen.findViewById(R.id.navigation_slot_2).performClick();
                 require(panel.busy() && opens.isEmpty() && reservations[0] == 0, "opening is inert");
@@ -78,32 +78,33 @@ public final class NavigationGroupChecks {
                 screen.findViewById(R.id.navigation_slot_2).performClick();
                 click(panel, "Zamknij");
                 require(!panel.busy(), "close button releases selector");
-                for (String label : new String[]{"Fixture A", "Fixture B"}) {
+                for (String label : new String[]{"Fixture A", "Fixture B", "Fixture C"}) {
                     panel.resumed(); screen.findViewById(R.id.navigation_slot_2).performClick();
                     View choice = find(dialog(panel).getWindow().getDecorView(), label);
                     require(choice != null, "destination is accessible"); choice.performClick(); choice.performClick();
                     require(!panel.busy(), "choice closes selector");
                 }
-                require(opens.size() == 2 && reservations[0] == 2, "one launch per selection despite double tap");
+                require(opens.size() == 3 && reservations[0] == 3, "one launch per selection despite double tap");
                 require(opens.get(0).getDataString().equals("google.navigation:q=0.0,0.0&mode=d")
-                        && opens.get(1).getDataString().equals("google.navigation:q=0.001,0.002&mode=d"), "exact selection order");
+                        && opens.get(1).getDataString().equals("google.navigation:q=0.001,0.002&mode=d")
+                        && opens.get(2).getDataString().equals("google.navigation:q=0.002,0.004&mode=d"), "exact selection order including third row");
                 panel.resumed(); screen.findViewById(R.id.navigation_slot_2).performClick();
                 available[0] = false; click(panel, "Fixture A");
-                require(panel.busy() && opens.size() == 2 && reservations[0] == 2, "missing Maps keeps selector without reservation");
+                require(panel.busy() && opens.size() == 3 && reservations[0] == 3, "missing Maps keeps selector without reservation");
                 available[0] = true; protectedWrite[0] = false; click(panel, "Fixture A");
-                require(panel.busy() && opens.size() == 2, "storage error never opens Maps");
+                require(panel.busy() && opens.size() == 3, "storage error never opens Maps");
                 protectedWrite[0] = true; allowed[0] = false; click(panel, "Fixture A");
-                require(!panel.busy() && opens.size() == 2, "guard rechecked on selection"); allowed[0] = true;
+                require(!panel.busy() && opens.size() == 3, "guard rechecked on selection"); allowed[0] = true;
                 screen.findViewById(R.id.navigation_slot_2).performClick();
                 Bundle state = new Bundle(); panel.saveState(state); panel.destroy();
                 NavigationPanel restored = new NavigationPanel(screen, () -> true, state, maps);
-                restored.render(); require(restored.busy() && opens.size() == 2, "recreation restores selector without navigation");
+                restored.render(); require(restored.busy() && opens.size() == 3, "recreation restores selector without navigation");
                 restored.destroy();
             });
             store.save(NavigationConfig.parse(fixture(1)));
             i.runOnMainSync(() -> {
                 panel.render(); panel.resumed(); screen.findViewById(R.id.navigation_slot_2).performClick();
-                require(!panel.busy() && opens.size() == 3, "singleton bypasses modal");
+                require(!panel.busy() && opens.size() == 4, "singleton bypasses modal");
             });
             store.save(NavigationConfig.parse(fixture(12)));
             i.runOnMainSync(() -> { panel.resumed(); panel.render(); screen.findViewById(R.id.navigation_slot_2).performClick();

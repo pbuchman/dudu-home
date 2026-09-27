@@ -12,11 +12,14 @@ Ręczne menu, wybrana nawigacja Maps i ekran wyniku zachowują pierwszeństwo.
 Nie zmieniają się progi wykrywania telefonu ani warunki bezpieczeństwa połączeń.
 Szczegóły i ograniczenia: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
 
-## Manual Google Maps navigation - 1.0.0-rc1
+## Manual Google Maps navigation - 1.1.0
 
 Three fixed-order slots sit below the gate and routine actions. Import their private JSON
-through Settings or the installer. Missing slots show a dashed empty state; configured slots
-request driving navigation in Google Maps. Configuration never executes an action. A manual
+through Settings or the installer. Each slot holds 0..12 destinations in file order. Missing
+slots show a dashed empty state, a singleton starts Maps directly, and multiple places open
+a modal chooser. Three choices use the same mechanism as two; append to the private list and
+reimport the complete file. X, Back and outside touch cancel without navigation. Only the
+selected row requests driving navigation in Google Maps. Configuration never executes an action. A manual
 Maps choice prevents pending media startup from covering it, with persistent, conservative
 wake rearming. Existing gate/cleaning behavior remains unchanged. See [NAVIGATION.md](NAVIGATION.md)
 for exact schema, error handling and limits. Actual guidance requires physical acceptance.

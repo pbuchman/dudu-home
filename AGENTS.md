@@ -30,8 +30,11 @@ Verify with ./gradlew assembleDebug lintDebug and scripts/run-emulator-check.sh.
 Hardware verification is separate from emulator checks. Do not claim unavailable radio tests.
 The owner authorized publication of the current development source on 2026-09-08 after the
 privacy/documentation audit. Public main may include automation with explicitly pending hardware
-checks; the baseline remains tagged. Do not claim full acceptance or create a final release
-tag before the remaining journey/ignition checks pass. Never publish APKs.
+checks; the baseline remains tagged. The owner confirmed existing functionality on September 27
+and explicitly authorized stable 1.1 after verification of the third navigation destination.
+This supersedes the earlier blanket final-tag hold; publish only after that device check and
+normal build/test/privacy gates pass. Preserve historical unobserved journey/ignition checks
+as limitations, not completed tests. Never publish APKs.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
 
 Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.
@@ -67,3 +70,11 @@ exact validation/import commands and rollback order. A private mockup is not a p
 For an explicitly authorized automatic installation, proceed when verified ADB is available
 without asking about driving/parking. Check for active calls/actions before stopping the app;
 wait for cleanup instead of interrupting a call. Never substitute data clearing for recovery.
+
+For a third or later member, append to the existing slot's destinations array, retaining the
+first members, slot metadata, other slots and navigate_by modes. Do not change the 3-slot
+limit or hard-code a particular group in Java. Current capacity is 12 places per slot.
+Validate and reimport the full file; verify the count, order, third-row selection and actual
+Maps destination/guidance privately. Update the private handoff's canonical source pointer
+so a later installation cannot restore a stale shorter list. Public release notes describe
+capabilities and sanitized evidence only, never the configured places or their Maps links.

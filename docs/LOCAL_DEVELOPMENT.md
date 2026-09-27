@@ -1,6 +1,7 @@
 # Handoff - local Full Cleaning implementation
 
-Current source and radio installation: 1.0.0-rc4/code 17, configurable navigation groups. Follow NAVIGATION.md
+Current source and verified radio installation: 1.1.0/code 18, the owner-authorized stable release.
+Three-place modal, exact private import and actual third-target Maps guidance/name passed. Follow NAVIGATION.md
 for the private full-file workflow and compatible schema migration; never use actual places
 in fixtures or docs. Current validation/install evidence is in VERIFICATION.md.
 
@@ -16,7 +17,7 @@ Adds a gate-area precondition before media movement detection/reservation, with 
 release or fresh outside evidence. No fixed timer, route threshold or call-safety change.
 See AUTOMATION_SEQUENCE and VERIFICATION. This code is included in the rc4 installation; its physical gate-area behavior remains unverified.
 
-`1.0.0-rc2` / code 15 is the last verified installation on DUDU7.
+`1.0.0-rc2` / code 15 is a historical verified installation on DUDU7.
 Three Maps tiles, private import, manual-media priority and per-destination address mode are
 verified as recorded in VERIFICATION. The merged-main build matches the installed APK exactly.
 Fresh build/lint, emulator, installer, recorded-route replay and privacy checks passed.
@@ -165,7 +166,7 @@ or repeat eight drives when only a particular hardware check is missing.
 4. Record results privately, add only sanitized summaries to VERIFICATION. Fix actual failures
    with scoped changes; rerun relevant checks. Never add stop/pause/status polling as a testing convenience.
 5. Keep public documentation explicit about pending checks; create a final release tag only
-   once radio criteria pass. Do not alter the original private repository, upload an APK or
+   once the current owner-authorized 1.1 criteria in RELEASE_READINESS pass. Do not alter the original private repository, upload an APK or
    leak calibration/account data.
 
 If unavailable, distinguish completed installation/manual calls/cloud acceptance from outstanding

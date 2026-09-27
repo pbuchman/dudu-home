@@ -1,6 +1,21 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Bieżąca instalacja 1.0.0-rc4
+## Bieżąca instalacja 1.1.0
+
+27 września zainstalowano code 18 z kopią APK/danych, kontrolą podpisu i zgodności SHA-256.
+Import prywatnego pełnego pliku potwierdził układ 1/3/1. Pierwsze dwa cele grupy, inne sloty,
+tryby nawigacji, numer bramy, dzienny limit i stan sesji zachowano. Na radiu sprawdzono
+napis „3 miejsca”, trzy wiersze i wybór trzeciego: Maps uruchomiły prowadzenie i pokazały
+właściwy cel oraz adres. Dowody i konfiguracja pozostają prywatne.
+
+Aby dopisać kolejne miejsce, użyj pełnego aktualnego navigation.json poza Git i dopisz element
+w istniejącym destinations. Zachowaj kolejność i inne sloty. Zweryfikuj plik, zaimportuj go
+ponownie i sprawdź cel w Maps. Sam zapis na komputerze nie zmienia radia. Nie trzeba zmieniać
+kodu ani budować APK, jeśli działa code 17 lub nowszy. Dokładna procedura i syntetyczny przykład
+trzech miejsc są w [NAVIGATION.md](NAVIGATION.md). Uaktualnij prywatny wskaźnik pliku źródłowego,
+aby późniejsza instalacja nie przywróciła starej listy.
+
+## Historyczna instalacja 1.0.0-rc4
 
 27 września zainstalowano code 17 z prywatną kopią APK/danych i kontrolą podpisu oraz SHA-256.
 Import schema 2 i układ slotów 1/2/1 przeszły weryfikację. Ustawienia bramy, limit dzienny i

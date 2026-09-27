@@ -1,6 +1,23 @@
-# Release readiness - 2026-09-26
+# Release readiness - 2026-09-27
 
-Current candidate: **1.0.0-rc4 / versionCode 17**, adding private destination groups.
+## 1.1.0 / code 18
+
+The owner confirmed existing functionality and requested stable 1.1 after verifying the
+third configured destination on DUDU7. This explicit acceptance supersedes the historical
+blanket final-tag hold below. The third-target check and normal build, test, CI and privacy
+gates must pass before publication. Build/lint, full emulator, installer and private-data
+checks passed. Backed-up code 18 installation and APK hash match, private import, three-row
+UI, resolved Maps destination/address and active guidance passed on DUDU7. Verify final CI
+before merging PR #6 and tagging main. No APK or private assets are released.
+
+The historical physical checks below remain unobserved individually, unless newer evidence
+in VERIFICATION.md says otherwise. General owner acceptance is not proof that every wake,
+journey, audio or physical-effect test was performed. These remain documented limitations.
+
+## Historical 1.0 candidate assessment
+
+
+Historical candidate: **1.0.0-rc4 / versionCode 17**, adding private destination groups.
 Installed on DUDU7 with a verified private import and physical modal check. Real launches
 of the new destinations remain pending because existing Maps guidance was preserved.
 See VERIFICATION.md for build, emulator, installer and hardware results.

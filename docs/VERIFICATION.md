@@ -1,5 +1,35 @@
 # Verification ledger
 
+## 1.1.0: third destination and stable acceptance (September 27)
+
+The owner confirmed the existing functionality and explicitly authorized stable 1.1 after
+verification of a third navigation destination. This is owner acceptance, not a claim that
+every historical unobserved hardware scenario below has been repeated.
+
+- Code 18 / 1.1.0: debug APK, instrumentation APK and lint passed. Full emulator safety suite
+  and first-run/no-dial check passed. Group coverage includes 0/1/2/3/12, exact third-row intent,
+  list order, Polish count, duplicate taps, cancellation and existing failure protections.
+- Six Python navigation, eight private-tool, five fresh-installer and privacy-scanner tests
+  passed. The real emulator installer passed phone mismatch refusal, signature/backup/update,
+  atomic private import and quota preservation across restart; no real call or robot action.
+- Private configuration extends one existing group by appending a third destination. Other
+  slots, earlier group members and address modes are unchanged. The actual place was matched
+  in Maps and the operator's website; none of that identifying data is in the public tree.
+- DUDU7: matching signature, private APK/data backup and installed artifact SHA-256 verified.
+  Private import matched the complete 1/3/1 file. Gate settings, daily quota and journey session
+  remained identical at import; staging and maintenance were removed.
+- Physical UI: `3 miejsca`, all three ordered names/addresses and generic pins displayed.
+  Selecting the third row opened Maps driving guidance. Route overview and destination summary
+  confirmed the expected endpoint, Maps place name and street address. This confirms launch,
+  display and resolved destination, not arrival at the place or audible voice instructions.
+- Working tree/history scan with all private configuration sections passed; generic schema
+  vocabulary and ordinary-prose matches were manually reviewed. APK ZIP contents contained no
+  configured destination values. Updated public chooser image is a synthetic emulator capture,
+  visually reviewed; actual radio screenshots, Maps links and raw logs remain private.
+- Historical ignition/wake, overlap, audio and physical-effect scenarios retain their recorded
+  status below. The owner's release decision does not retroactively turn them into passed tests.
+
+
 ## 1.0.0-rc4: destination groups (September 27)
 
 Implementation adds a native destination chooser and compatible private schema 2.
