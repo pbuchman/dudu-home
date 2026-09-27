@@ -30,16 +30,27 @@ if args.private_config:
 # Navigation values never live in public fixtures. Match exact labels, address words,
 # Unicode escapes, and rounded coordinate forms without printing the matched data.
 short_private = []
+shared_vocabulary = []
 if args.private_navigation:
     navigation = json.loads(args.private_navigation.read_text())
+    places = []
     for entry in navigation.get('slots', []):
-        place = entry.get('destination')
+        if not isinstance(entry, dict): continue
+        places.append(entry)  # Group metadata is private too.
+        places.append(entry.get('destination'))
+        places.extend(entry.get('destinations', []))
+    for place in places:
         if not isinstance(place, dict): continue
         for field in ('label', 'address'):
             value = place.get(field, '')
             terms = [value] + re.findall(r"[^\W\d_]{5,}", value, re.UNICODE)
             for term in terms:
                 if not term: continue
+                # A generic label can equal a required schema icon token. Report every
+                # occurrence for review instead of ignoring that label or rejecting code.
+                if term == value and term.lower() in {"home", "squash", "pin"}:
+                    shared_vocabulary.append(term.encode().lower())
+                    continue
                 # The complete label stays forbidden; generic supported icon names are not private address words.
                 if term != value and term.lower() in {"home", "squash", "pin"}: continue
                 if len(term) < 4: short_private.append(term.encode().lower())
@@ -68,6 +79,9 @@ def inspect(name, data, current_style=False):
             or name.startswith(('private/', 'calibration/', 'output/')) or path.name in {'config.json', 'navigation.json', 'navigation.proposed.json', 'verified-places.json', '.env', 'local.properties'}):
         errors.add((name, 'private/generated file type'))
     searchable = data.lower() + b"\0" + decoded_unicode(data).lower()
+    for value in shared_vocabulary:
+        if re.search(rb'(?<![a-zA-Z0-9_])' + re.escape(value) + rb'(?![a-zA-Z0-9_])', searchable):
+            reviews.add((name, 'generic label overlaps schema vocabulary; manual review required'))
     for value in private:
         if value in searchable:
             errors.add((name, 'private value'))

@@ -1,5 +1,24 @@
 # Change history
 
+## 1.1.0 (code 18) - 2026-09-27
+
+- Promote configurable navigation groups with up to 12 ordered destinations per slot.
+  Adding a third choice requires only a private file update and reimport.
+- Cover third-row selection, exact target order and preservation of other slots/modes with
+  synthetic tests; expand README and the agent configuration and acceptance runbooks.
+- Owner accepted existing functionality. The third target, its resolved Maps name/address
+  and driving guidance passed on installed code 18; see the verification ledger for limits.
+- Source-only distribution, no actual locations, private configuration or APK assets.
+
+## 1.0.0-rc4
+
+- Support privately configured destination groups in all three navigation slots, with a native
+  chooser for multiple places and direct navigation for one. Preserve schema 1 and address mode.
+- Extend strict validation, private installation compatibility checks, agent runbook and privacy
+  scanning to group labels and all members. No real destinations are distributed.
+- Verification status and pending hardware acceptance remain in docs/VERIFICATION.md.
+
+
 ## 1.0.0-rc3 (code 16) - 2026-09-26
 
 - Check the applicable gate area before generic driving progress and media reservations,

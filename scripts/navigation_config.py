@@ -4,6 +4,7 @@ import math
 import unicodedata
 
 MAX_BYTES = 16384
+MAX_DESTINATIONS = 12
 
 
 def _pairs(pairs):
@@ -33,34 +34,52 @@ def validate_navigation(value):
                 or any(unicodedata.category(c) in ('Cc', 'Cf') for c in v)):
             raise ValueError('Invalid navigation text')
         return v
+    def icon(v):
+        if v not in ('home', 'squash', 'pin'): raise ValueError('Invalid navigation icon')
+        return v
+    def destination(d):
+        obj(d, {'label', 'icon', 'address', 'latitude', 'longitude', 'navigate_by'})
+        d = dict(d)
+        text(d.get('label'), 64)
+        icon(d.get('icon'))
+        if 'address' in d: text(d['address'], 160)
+        navigate_by = d.get('navigate_by', 'coordinates')
+        if (navigate_by not in ('coordinates', 'address')
+                or (navigate_by == 'address' and 'address' not in d)):
+            raise ValueError('Invalid navigation target mode')
+        for key, limit in [('latitude', 90), ('longitude', 180)]:
+            n = d.get(key)
+            if type(n) not in (int, float) or not math.isfinite(n) or abs(n) > limit:
+                raise ValueError('Invalid navigation coordinate')
+        return d
     obj(value, {'schema_version', 'slots'})
-    if type(value.get('schema_version')) is not int or value['schema_version'] != 1:
+    schema = value.get('schema_version')
+    if type(schema) is not int or schema not in (1, 2):
         raise ValueError('Unsupported navigation schema')
     entries = value.get('slots')
     if not isinstance(entries, list) or len(entries) > 3: raise ValueError('Invalid navigation slots')
     slots = {}
     for entry in entries:
-        obj(entry, {'slot', 'destination'})
+        obj(entry, {'slot', 'destination'} if schema == 1 else {'slot', 'label', 'icon', 'destinations'})
         slot = entry.get('slot')
-        if type(slot) is not int or slot not in (1, 2, 3) or slot in slots or 'destination' not in entry:
+        if type(slot) is not int or slot not in (1, 2, 3) or slot in slots:
             raise ValueError('Invalid navigation slot')
-        d = entry['destination']
-        if d is not None:
-            obj(d, {'label', 'icon', 'address', 'latitude', 'longitude', 'navigate_by'})
-            d = dict(d)
-            text(d.get('label'), 64)
-            if d.get('icon') not in ('home', 'squash', 'pin'): raise ValueError('Invalid navigation icon')
-            if 'address' in d: text(d['address'], 160)
-            navigate_by = d.get('navigate_by', 'coordinates')
-            if (navigate_by not in ('coordinates', 'address')
-                    or (navigate_by == 'address' and 'address' not in d)):
-                raise ValueError('Invalid navigation target mode')
-            for key, limit in [('latitude', 90), ('longitude', 180)]:
-                n = d.get(key)
-                if type(n) not in (int, float) or not math.isfinite(n) or abs(n) > limit:
-                    raise ValueError('Invalid navigation coordinate')
-        slots[slot] = d
-    result = {'schema_version': 1, 'slots': [{'slot': n, 'destination': slots.get(n)} for n in (1, 2, 3)]}
+        if schema == 1:
+            if 'destination' not in entry: raise ValueError('Missing destination')
+            d = entry['destination']
+            slots[slot] = {'slot': slot, 'destination': None if d is None else destination(d)}
+        else:
+            places = entry.get('destinations')
+            if not isinstance(places, list) or len(places) > MAX_DESTINATIONS:
+                raise ValueError('Invalid destinations')
+            if 'label' in entry: text(entry['label'], 64)
+            if 'icon' in entry: icon(entry['icon'])
+            result = {'slot': slot, 'destinations': [destination(d) for d in places]}
+            if places:
+                result.update(label=text(entry.get('label'), 64), icon=icon(entry.get('icon')))
+            slots[slot] = result
+    result = {'schema_version': schema, 'slots': [slots.get(n, {'slot': n, **(
+        {'destination': None} if schema == 1 else {'destinations': []})}) for n in (1, 2, 3)]}
     if len(json.dumps(result, ensure_ascii=False).encode('utf-8')) > MAX_BYTES:
         raise ValueError('Navigation document too large')
     return result

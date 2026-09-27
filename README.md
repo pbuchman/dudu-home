@@ -13,37 +13,18 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Current source: `1.0.0-rc3` (code 16). Last verified radio installation: `1.0.0-rc2` (code 15), September 26.**
-> The rc3 gate-area precondition is not yet verified on the radio. It changes media scheduling,
-> not the gate-call detector or its safety checks. A missing call still needs diagnostic evidence.
-> All three tiles started Google Maps guidance in rc1. In rc2, one destination explicitly
-> uses its full address to avoid an unwanted business name; its saved label passed on DUDU7.
-> The backed-up update preserved existing data. Remaining wake/journey checks still prevent
-> a final 1.0 release claim; see the [verification ledger](docs/VERIFICATION.md).
-> Includes notification-based Yanosik presence checks and earlier return progress from 0.5.2.
-> Notification access requires a one-time system grant. Detection of an already-running
-> Yanosik passed on DUDU7 without reopening it or requesting HOME.
-> **Intermittent failures also followed shorter stops.** A wake-task trimming race was captured
-> and fixed in 0.5.3; repeated manufacturer wake reliability still requires verification.
-> The backed-up DUDU7 update, private configuration import and fresh GPS delivery passed.
-> On `0.5.0`, monitoring recovered automatically after full reboot and one real ignition cycle.
-> The real movement banner and an automatic return call passed; the owner confirmed gate opening.
-> On 0.5.4, automatic launch, desktop return and real warning overlays passed on DUDU7.
-> Version 0.5.5 fixes the first-wake session baseline in code: a verified empty cold-start
-> observation establishes zero without granting an extra attempt. Unknown reads never do.
-> On 0.5.6, a backed-up update and full reboot passed: automatic monitoring, cold baseline zero,
-> movement-triggered Yanosik, then Spotify with a local session reporting PLAYING. Yanosik warnings
-> remained visible. Audible sound still needs confirmation; playback state alone is not proof.
-> **Full wake acceptance and gate/cleaning contention on 0.5.6 remain pending.**
-> Code 15 passed a fresh full-boot/monitoring check, a manual gate call and Full Cleaning cloud
-> acceptance. Physical effects and remaining combined scenarios are listed in [release readiness](docs/RELEASE_READINESS.md).
-> **Remaining departure, cleaning and repeated wake checks are still pending.**
-> The original gate-call baseline remains at `v0.1.0-baseline`. Source publication is not a
-> fully verified production release. No public APK is provided.
+> **Stable `1.1.0` (code 18), September 27.**
+> The owner confirmed the existing functionality and authorized a stable 1.1 release after
+> verification of a third destination. Three rows, selection, Maps guidance and its resolved
+> destination were verified on DUDU7 with the installed code 18 APK.
+> Historical journey/wake tests remain individually documented; general owner acceptance
+> does not imply that each previously unobserved hardware scenario was rerun.
+> See the [verification ledger](docs/VERIFICATION.md) and [release status](docs/RELEASE_READINESS.md).
+> Source only: no public APK, private configuration or signing key.
 
 ![Dudu Home with three navigation slots - synthetic emulator capture](docs/images/navigation-populated.png)
 
-[Empty navigation slots](docs/images/navigation-empty.png) · [Earlier radio menu](docs/images/menu-dudu7.png)
+[Three-place chooser](docs/images/navigation-groups.png) · [Empty navigation slots](docs/images/navigation-empty.png) · [Earlier radio menu](docs/images/menu-dudu7.png)
 
 The new screenshot uses invented labels and synthetic coordinates. Actual destination files and
 radio screenshots remain private.
@@ -80,8 +61,10 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
   action and its result screen; the daily attempt remains consumed. Manual cleaning remains independent.
-- **Three Google Maps destinations:** private JSON import, generic icons, empty-slot guidance and
-  one-tap driving navigation. [File format and behavior](docs/NAVIGATION.md).
+- **Three Google Maps navigation slots:** private JSON import, generic icons and empty-slot guidance.
+  Each slot accepts up to 12 ordered places: zero shows setup guidance, one starts navigation
+  directly, and two, three or more open a modal chooser. Add a third place by appending to the
+  private JSON and importing it again; no source edit or rebuild is needed. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
   ten seconds of qualified GPS movement. First check its foreground-service notification.
@@ -161,7 +144,7 @@ python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
 
 `PRIVATE_DIR` is an owner-only directory outside every repository. The installer checks the
 configured number against the radio, stages data via stdin, and never launches an action.
-Open the app **while parked** to consume the import. Do not update during a call or other action.
+Open Dudu Home to consume the import after the authorized update. Do not update during a call or other action.
 The fresh-install helper refuses to update an existing app; use the backed-up path above.
 It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
 with retained data, and never passes the replacement flag `-r` to installation.

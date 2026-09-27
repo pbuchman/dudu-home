@@ -106,4 +106,14 @@
     <string name="navigation_maps_missing">Google Maps nie jest zainstalowane lub jest wyłączone.</string>
     <string name="navigation_launch_failed">Nie udało się uruchomić Google Maps.</string>
     <string name="navigation_storage_failed">Nie udało się zapisać stanu nawigacji. Spróbuj ponownie.</string>
+    <plurals name="navigation_places">
+        <item quantity="one">%d miejsce · Wybierz lokalizację</item>
+        <item quantity="few">%d miejsca · Wybierz lokalizację</item>
+        <item quantity="many">%d miejsc · Wybierz lokalizację</item>
+        <item quantity="other">%d miejsc · Wybierz lokalizację</item>
+    </plurals>
+    <string name="navigation_choose">Wybierz miejsce</string>
+    <string name="navigation_close">Zamknij wybór lokalizacji</string>
+    <string name="navigation_drive">Jedź</string>
+    <string name="navigation_choice_help">Wybór miejsca uruchomi nawigację w Google Maps.</string>
 </resources>

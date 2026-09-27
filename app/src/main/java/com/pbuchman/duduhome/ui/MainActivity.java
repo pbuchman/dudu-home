@@ -298,6 +298,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (navigation != null) navigation.destroy();
         statusIcon.removeCallbacks(finishAfterSuccess);
         statusIcon.removeCallbacks(finishAfterInformation);
         if (coordinator != null) {

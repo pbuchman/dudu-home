@@ -1,5 +1,64 @@
 # Verification ledger
 
+## 1.1.0: third destination and stable acceptance (September 27)
+
+The owner confirmed the existing functionality and explicitly authorized stable 1.1 after
+verification of a third navigation destination. This is owner acceptance, not a claim that
+every historical unobserved hardware scenario below has been repeated.
+
+- Code 18 / 1.1.0: debug APK, instrumentation APK and lint passed. Full emulator safety suite
+  and first-run/no-dial check passed. Group coverage includes 0/1/2/3/12, exact third-row intent,
+  list order, Polish count, duplicate taps, cancellation and existing failure protections.
+- Six Python navigation, eight private-tool, five fresh-installer and privacy-scanner tests
+  passed. The real emulator installer passed phone mismatch refusal, signature/backup/update,
+  atomic private import and quota preservation across restart; no real call or robot action.
+- Private configuration extends one existing group by appending a third destination. Other
+  slots, earlier group members and address modes are unchanged. The actual place was matched
+  in Maps and the operator's website; none of that identifying data is in the public tree.
+- DUDU7: matching signature, private APK/data backup and installed artifact SHA-256 verified.
+  Private import matched the complete 1/3/1 file. Gate settings, daily quota and journey session
+  remained identical at import; staging and maintenance were removed.
+- Physical UI: `3 miejsca`, all three ordered names/addresses and generic pins displayed.
+  Selecting the third row opened Maps driving guidance. Route overview and destination summary
+  confirmed the expected endpoint, Maps place name and street address. This confirms launch,
+  display and resolved destination, not arrival at the place or audible voice instructions.
+- Working tree/history scan with all private configuration sections passed; generic schema
+  vocabulary and ordinary-prose matches were manually reviewed. APK ZIP contents contained no
+  configured destination values. Updated public chooser image is a synthetic emulator capture,
+  visually reviewed; actual radio screenshots, Maps links and raw logs remain private.
+- Historical ignition/wake, overlap, audio and physical-effect scenarios retain their recorded
+  status below. The owner's release decision does not retroactively turn them into passed tests.
+
+
+## 1.0.0-rc4: destination groups (September 27)
+
+Implementation adds a native destination chooser and compatible private schema 2.
+
+- `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug`: passed for code 17.
+- Full emulator suite and first-run/no-dial script: passed, including group counts 0/1/2/12,
+  malformed input, singleton direct launch, correct row intents, duplicate clicks, cancellation,
+  restored selector state, Activity launch exclusion, missing Maps and failed durable reservation.
+- Real installer CLI on the emulator: passed signature-checked backup/update, schema 2 import,
+  separate private sections, address mode and empty slots, quota preservation across restart;
+  mismatched phone rejected. No real robot or vendor call was made.
+- Python navigation (5), privacy (1), private tools (8) and fresh installer (5) tests passed.
+  Detector, movement, gate-priority, queue, progress and synthetic equivalence checks passed.
+- Local scan with private denylist inputs: no rejected values in working tree/history. Generic
+  schema vocabulary and one ordinary prose word were manually reviewed. New public screenshot
+  is an emulator capture with invented names and ocean coordinates; pixels reviewed.
+- DUDU7 update: passed with private APK/data backup, matching signing certificate, installed
+  code 17 / rc4 and SHA-256 equal to the tested APK from application commit `d5fe970`.
+  Private schema 2 import matched the expected 1/2/1 slot counts; staging/maintenance removed.
+  Gate settings, daily quota and journey-session preferences were unchanged at import.
+- Physical UI: menu, both modal names/addresses and close control passed. Polish plural
+  rules were verified on the radio after a backed-up follow-up update and emulator regression. Existing Maps guidance
+  was restored full screen without submitting a new destination. Actual launches of the new
+  destinations on the radio were deferred to preserve that active route; emulator intent tests
+  are not a substitute for this acceptance check. Raw evidence remains private.
+- Both GitHub Actions checks passed on the initial application commit `ea24772`. Later evidence-only commits
+  do not change the installed APK. Historical journey/wake and rc3 gate-area physical acceptance
+  remain unverified; this is not final 1.0 acceptance.
+
 ## Gate-area media precondition - 1.0.0-rc3, 2026-09-26
 
 Started from current merged main including the rc2 address-navigation and release-readiness

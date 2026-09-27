@@ -5,6 +5,10 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+import tempfile
+import json
+import os
 
 
 def load(name, filename):
@@ -61,6 +65,24 @@ class PrivateToolsTests(unittest.TestCase):
         for value in (None, True, 0, -1, 7, 8.5, '8'):
             with self.assertRaises(ValueError):
                 installer.validate(self.config, dict(self.robot, full_mop_routine_id=value), True)
+
+    def test_groups_require_compatible_app_before_mutation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root/'input.json'; source.write_text(json.dumps({'schema_version': 2, 'points': None}))
+            nav = root/'places.json'; nav.write_text(json.dumps({'schema_version': 2, 'slots': []}))
+            source.chmod(0o600); nav.chmod(0o600)
+            base = ['configure-device.py', 'synthetic-device', str(source), '--navigation', str(nav)]
+            def observed(args, **kwargs):
+                if args[-3:] == ['dumpsys', 'package', 'com.pbuchman.duduhome']: return b'versionCode=16'
+                if 'badging' in args: return b"package: name='com.pbuchman.duduhome' versionCode='16'"
+                raise AssertionError('Unexpected mutation before compatibility rejection')
+            for suffix in ([], ['--apk', str(root/'fixture.apk'), '--backup-dir', str(root/'backup')]):
+                previous_mask = os.umask(0o077)
+                try:
+                    with patch('sys.argv', base + suffix), patch.object(installer.subprocess, 'check_output', side_effect=observed):
+                        with self.assertRaisesRegex(ValueError, 'schema 2'): installer.main()
+                finally: os.umask(previous_mask)
 
     def test_minimal_bundle(self):
         r = SimpleNamespace(u='example-user', s='example-session', h='example-secret', k='unneeded-key',

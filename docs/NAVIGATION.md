@@ -1,62 +1,130 @@
-# Three private Google Maps destinations
+# Three private Google Maps navigation slots
 
-Version `1.0.0-rc1` adds three manual navigation tiles below the existing actions.
-Their order is always slot 1, 2, 3, regardless of JSON array order. A configured tile uses
-its private label, a generic illustration, and **Jedź z Google Maps**. An empty tile has
-an outlined pin, dashed border and **Brak konfiguracji**. Tapping it explains how to import.
-The address can be the label; the pin illustration has no personal or relationship meaning.
+Version `1.1.0` supports up to twelve destinations per navigation slot. Slot order is
+always 1, 2, 3. Zero destinations shows the existing empty tile; one opens Maps directly;
+two or more opens a modal in file order. The list length determines behavior, without a toggle.
+The modal dims and blocks the underlying app; X, Back and outside touch cancel without navigating.
+Long lists scroll with a fixed header/close control. Destination rows show a name, optional
+address and generic pin. Only choosing a row requests Maps. All three navigation slots support
+groups; gate and cleaning action tiles are unrelated.
 
-![Configured navigation - synthetic emulator capture](images/navigation-populated.png)
+![Destination selector - synthetic emulator capture](images/navigation-groups.png)
 
-[Empty slots](images/navigation-empty.png). These images contain no actual configured destinations.
+[Single destinations](images/navigation-populated.png) · [Empty slots](images/navigation-empty.png).
+All public screenshots contain invented labels and synthetic points, never configured places.
 
 ## File configuration
 
 Copy [navigation.example.json](../navigation.example.json) to an owner-only directory outside
 Git. Fill only that private copy. No source edits, APK rebuild, API key or Google account
-credentials are needed. `null` or an omitted slot means empty. Import replaces all three slots.
+credentials are needed. An omitted slot is empty; legacy `destination: null` and schema 2
+`destinations: []` also mean empty. Import replaces all three slots.
 
 This is a deliberately synthetic schema example, not a usable driving destination:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "slots": [
     {
-      "slot": 1,
-      "destination": {
-        "label": "Fixture A",
-        "icon": "pin",
-        "address": "Synthetic address",
-        "latitude": 0,
-        "longitude": 0
-      }
-    },
-    {"slot": 2, "destination": null},
-    {"slot": 3, "destination": null}
+      "slot": 2,
+      "label": "Fixture group",
+      "icon": "squash",
+      "destinations": [
+        {"label": "Fixture A", "icon": "pin", "address": "Synthetic address A", "latitude": 0.001, "longitude": 0.001},
+        {"label": "Fixture B", "icon": "pin", "address": "Synthetic address B", "latitude": 0.002, "longitude": 0.002},
+        {"label": "Fixture C", "icon": "pin", "address": "Synthetic address C", "latitude": 0.003, "longitude": 0.003}
+      ]
+    }
   ]
 }
 ```
 
+**Import replaces all three slots; it is not a patch.** The example above clears slots 1 and 3.
+Preserve their private entries when updating only another slot. Never import synthetic examples
+onto the owner's radio. A missing slot or `destinations: []` means empty.
+
 | Field | Requirement |
 |---|---|
-| `schema_version` | Integer `1` |
-| `slots` | Array of at most three distinct integer slot IDs, 1 to 3 |
-| `destination` | `null`, or an object with the fields below |
-| `label` | 1 to 64 characters; displayed on the tile, at most two lines |
-| `icon` | `home`, `squash` or `pin`; bundled generic art |
-| `address` | Optional descriptive text, 1 to 160 characters when supplied |
-| `navigate_by` | Optional `coordinates` (default) or `address`; address mode requires a full, unambiguous `address` |
-| `latitude`, `longitude` | Finite JSON numbers in WGS84 degrees, within ±90 and ±180 |
+| `schema_version` | Integer `2`; legacy `1` is also accepted |
+| `slots` | At most three distinct integer slot IDs, 1 to 3 |
+| Slot `label`, `icon` | Required for a nonempty group; title/icon of tile and modal |
+| `destinations` | Array of 0 to 12 destination objects, displayed in file order |
+| Destination `label` | 1 to 64 characters |
+| Any `icon` | `home`, `squash` or `pin`; bundled generic art |
+| Destination `address` | Optional, 1 to 160 characters when supplied |
+| Destination `navigate_by` | Optional `coordinates` (default) or `address`; address mode needs a full unambiguous `address` |
+| Destination `latitude`, `longitude` | Required finite JSON numbers in WGS84 degrees, within ±90 and ±180 |
+
+Group labels have the same 64-character bound. On an empty slot, group metadata may be omitted;
+if supplied it is validated, then omitted from canonical storage. Destination icon remains part
+of the compatible destination format; selector rows always use the generic pin.
+
+Legacy schema 1 has `destination: null` or one destination object instead of the group fields.
+It is read as zero/one target without changing its coordinates or `navigate_by` mode. Schema 1
+continues to serialize as schema 1. New groups use schema 2; mixed `destination`/`destinations`
+fields are rejected. Install code 17 or newer **before** importing schema 2; earlier builds reject it.
+The installer refuses incompatible APK/config combinations before maintenance or app replacement.
 
 The file must be valid UTF-8 and at most 16 KiB. Duplicate fields/slots, unknown fields,
-unsupported icons, string-valued coordinates, control characters and trailing content are
-rejected. Labels and addresses must not have leading or trailing whitespace. By default,
-address text is descriptive and navigation uses the explicit coordinate pair. Since
-`1.0.0-rc2`, setting `navigate_by` to `address` on one destination sends its encoded address
-instead. Other destinations retain their existing behavior. Coordinates remain required for
-file compatibility and reference, but are not sent in address mode. Older app versions reject
-the new field; update the app before importing a file that uses it.
+unsupported icons, string-valued coordinates, control/format characters and trailing content
+are rejected. Labels and addresses must not have leading or trailing whitespace. The full
+installer envelope (including the other configuration sections) also has a 16 KiB limit;
+validation rejects an oversized combined import before changing the device.
+
+Address text is descriptive by default: navigation uses coordinates. `navigate_by: address`
+sends its encoded full address instead; coordinates remain required for reference but are not
+sent in that mode. Existing address-mode targets keep their behavior. No automatic fallback.
+
+## Adding a third destination to an existing group
+
+The application is not limited to two places. Append a third destination object to the
+existing slot's `destinations` array in the **complete private configuration**. Do not add
+a fourth slot, replace the earlier entries, or change source code. The list order is the
+menu order, so appending preserves the first two choices. Keep the slot's label/icon and
+other slots unchanged, including each destination's `navigate_by` mode.
+
+After validation and reimport, the same tile displays `3 miejsca` and its modal contains
+three rows. Select the third row and verify the actual Maps endpoint and guidance screen,
+not just the menu label or a successful intent. Check that the first two entries still have
+their original targets. Changing the private JSON does not require rebuilding an APK on
+code 17 or later, but editing the computer-side file alone does not update the radio.
+
+Keep a private before/after copy and record which source file is now canonical in the private
+handoff. Never reuse an older two-entry file on a later install. Put only synthetic examples
+like Fixture A/B/C in public documentation and tests, even when a club's address is public:
+its association with the owner's configured destinations is private.
+
+## Agent configuration runbook
+
+1. Read this document and OPERATIONS.md. Resolve the owner's existing private source locally.
+   `PRIVATE_DIR` must be outside every repository with mode 0700; files use 0600. Do not put
+   private values in source, Gradle properties, environment diagnostics, test fixtures or CI.
+2. Copy the public example only to that private directory, or edit a private copy of the current
+   complete file. Preserve all existing slots and per-destination modes. Verify new places in
+   Maps; do not infer the navigation target from a tile label or a nearby business name.
+3. Validate without displaying the document. From the repository root:
+
+   ```sh
+   PYTHONPATH=scripts python3 - "$PRIVATE_DIR/navigation.json" <<'PY'
+   import sys
+   from pathlib import Path
+   from navigation_config import read_navigation
+   read_navigation(Path(sys.argv[1]))
+   print("Navigation syntax valid; no device changes.")
+   PY
+   ```
+
+4. Back up before updating. Install the compatible APK, then use the document picker or the
+   complete `configure-device.py --navigation` command in OPERATIONS.md. Import is inert;
+   opening the menu consumes staged configuration without calling or cleaning.
+5. Verify zero/one/many behavior, order and each actual Maps target privately on the device.
+   A successful intent is not proof of active route guidance. Keep screenshots and raw logs local.
+6. Before publication, scan against the complete private file (including group labels and every
+   destination), then manually review text, images and metadata. Public docs, examples, tests,
+   issue/PR text and screenshots must be synthetic. Never upload the private input to CI.
+7. Rollback needs the previous APK with the same signature **and a compatible saved configuration**.
+   Restore schema 1 before opening an older build; never clear app data to bypass rollback failure.
 
 ## Import on the radio
 
@@ -75,7 +143,7 @@ the one-time importer separates them and removes staging. Never copy the file to
 
 ## Launch and interaction with automation
 
-A configured tap sends one `ACTION_VIEW` intent, explicitly addressed to the installed Google
+A singleton tap or a selected modal row sends one `ACTION_VIEW` intent, explicitly addressed to the installed Google
 Maps package, with `google.navigation:q=LAT,LON&mode=d`, or an encoded full address when that
 destination explicitly selects address mode. This requests driving navigation from the current
 position. Google Maps resolves the address; the app does not geocode the private tile label.
@@ -90,6 +158,13 @@ the tile label. Address mode can select the building/address rather than a nearb
 associated with the coordinate. Google Maps still controls the displayed name and resolved
 endpoint; verify both on the radio. An ambiguous address may select the first match. There is
 no automatic fallback to coordinates and no guaranteed custom-name override.
+
+The open selector participates in the existing manual-UI busy guard. Automated presentation
+cannot take over it; closing notifies the scheduler. No gate/cleaning safety or quota is changed.
+Selection rechecks action readiness and rejects repeat clicks. Rotation recreates only the
+selected slot index and reloads private data; it never launches automatically. Names and
+addresses are not written into Activity saved-state bundles. Import/settings cannot open over
+the selector. Cancellation leaves media opportunities untouched.
 
 Before launching, Dudu Home durably consumes pending Yanosik/Spotify startup opportunities.
 Queued media work and a pending Spotify resume are cancelled; an already-playing session is
@@ -118,8 +193,8 @@ python3 scripts/check-public-tree.py --working-tree --all-history \
   --private-navigation "$PRIVATE_DIR/navigation.json"
 ```
 
-The scanner checks private values, address words, escaped text and rounded coordinates. Short
-labels can match ordinary prose, and compressed image bytes are not text; manually review any
+The scanner checks slot labels and every target in both schemas, private values, address words, escaped text and rounded coordinates. Short
+labels can match ordinary prose; labels equal to schema vocabulary are reported for manual review, and compressed image bytes are not text; manually review any
 ambiguous match and every image. Pattern checks do not certify pixel content. Never publish
 private fixture data merely to test the privacy scanner. All navigation tests use synthetic
 points near zero. Local build, lint, parser tests, emulator document handling and the full

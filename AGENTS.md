@@ -30,8 +30,11 @@ Verify with ./gradlew assembleDebug lintDebug and scripts/run-emulator-check.sh.
 Hardware verification is separate from emulator checks. Do not claim unavailable radio tests.
 The owner authorized publication of the current development source on 2026-09-08 after the
 privacy/documentation audit. Public main may include automation with explicitly pending hardware
-checks; the baseline remains tagged. Do not claim full acceptance or create a final release
-tag before the remaining journey/ignition checks pass. Never publish APKs.
+checks; the baseline remains tagged. The owner confirmed existing functionality on September 27
+and explicitly authorized stable 1.1 after verification of the third navigation destination.
+This supersedes the earlier blanket final-tag hold; publish only after that device check and
+normal build/test/privacy gates pass. Preserve historical unobserved journey/ignition checks
+as limitations, not completed tests. Never publish APKs.
 Preserve unrelated dirty files and the private predecessor without deleting or rewriting history.
 
 Current functional contract: docs/FUNCTIONAL.md. Architecture/auth: docs/ROBOROCK.md.
@@ -50,3 +53,28 @@ update, back up with checksums, keep maintenance until one-time import completes
 headers, account payloads, routine IDs, connection addresses or raw firmware logs.
 Do not bypass a browser security refusal to store secrets. Google Password Manager backup is
 not completed; the local owner-only credential bundle is the working source of configuration.
+
+## Configuring navigation without disclosing places
+
+Follow docs/NAVIGATION.md and docs/OPERATIONS.md. Resolve PRIVATE_DIR locally outside Git
+(0700; JSON files 0600). Configure only its full navigation.json; preserve unrelated slots.
+Schema 2 uses group label/icon and 0..12 destinations per slot. Zero is empty, one launches
+Maps directly, multiple opens a chooser. Schema 1 remains compatible; preserve navigate_by.
+Validate privately, install code 17+ before importing schema 2, then import and verify on the
+radio. Import replaces all slots and never executes an action. Back up before installation.
+Never embed actual labels, address fragments, coordinates or Maps links in public tests,
+docs, PR text, screenshots, CI inputs or APKs. All examples/test data must be invented.
+Run the scanner locally against the entire private navigation file, including all group
+members; manually review pixels and ambiguous generic-word matches. See NAVIGATION.md for
+exact validation/import commands and rollback order. A private mockup is not a public image.
+For an explicitly authorized automatic installation, proceed when verified ADB is available
+without asking about driving/parking. Check for active calls/actions before stopping the app;
+wait for cleanup instead of interrupting a call. Never substitute data clearing for recovery.
+
+For a third or later member, append to the existing slot's destinations array, retaining the
+first members, slot metadata, other slots and navigate_by modes. Do not change the 3-slot
+limit or hard-code a particular group in Java. Current capacity is 12 places per slot.
+Validate and reimport the full file; verify the count, order, third-row selection and actual
+Maps destination/guidance privately. Update the private handoff's canonical source pointer
+so a later installation cannot restore a stale shorter list. Public release notes describe
+capabilities and sanitized evidence only, never the configured places or their Maps links.

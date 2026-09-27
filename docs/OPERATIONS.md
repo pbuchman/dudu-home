@@ -1,8 +1,31 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Odbiór kandydata 1.0.0-rc2
+## Bieżąca instalacja 1.1.0
 
-Ostatnia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
+27 września zainstalowano code 18 z kopią APK/danych, kontrolą podpisu i zgodności SHA-256.
+Import prywatnego pełnego pliku potwierdził układ 1/3/1. Pierwsze dwa cele grupy, inne sloty,
+tryby nawigacji, numer bramy, dzienny limit i stan sesji zachowano. Na radiu sprawdzono
+napis „3 miejsca”, trzy wiersze i wybór trzeciego: Maps uruchomiły prowadzenie i pokazały
+właściwy cel oraz adres. Dowody i konfiguracja pozostają prywatne.
+
+Aby dopisać kolejne miejsce, użyj pełnego aktualnego navigation.json poza Git i dopisz element
+w istniejącym destinations. Zachowaj kolejność i inne sloty. Zweryfikuj plik, zaimportuj go
+ponownie i sprawdź cel w Maps. Sam zapis na komputerze nie zmienia radia. Nie trzeba zmieniać
+kodu ani budować APK, jeśli działa code 17 lub nowszy. Dokładna procedura i syntetyczny przykład
+trzech miejsc są w [NAVIGATION.md](NAVIGATION.md). Uaktualnij prywatny wskaźnik pliku źródłowego,
+aby późniejsza instalacja nie przywróciła starej listy.
+
+## Historyczna instalacja 1.0.0-rc4
+
+27 września zainstalowano code 17 z prywatną kopią APK/danych i kontrolą podpisu oraz SHA-256.
+Import schema 2 i układ slotów 1/2/1 przeszły weryfikację. Ustawienia bramy, limit dzienny i
+stan sesji zachowano. Menu, dwie pozycje modalu i zamykanie sprawdzono na fizycznym radiu.
+Bieżącą trasę Maps zachowano; test nowych celów na radiu pozostaje otwarty. Dowody są prywatne.
+Pełne wyniki i nadal otwarte próby: [VERIFICATION.md](VERIFICATION.md).
+
+## Historyczny odbiór kandydata 1.0.0-rc2
+
+Poprzednia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
 jednego celu poprawnie wyświetlił jego zapisaną etykietę w Maps; pozostałe sloty nie zmieniły się.
 Wcześniejsza aktualizacja rc1 z kopią
 zapasową, import prywatnych danych i start prowadzenia z każdego z trzech kafelków przeszły
@@ -30,7 +53,7 @@ kontrakt jest w [FUNCTIONAL.md](FUNCTIONAL.md), technika w [ROBOROCK.md](ROBOROC
 aktualne dowody w [VERIFICATION.md](VERIFICATION.md). Nigdy nie zakładaj, że historyczny numer,
 adres ADB lub pakiet poświadczeń nadal są poprawne. Nie wyświetlaj sekretów w terminalu/chacie.
 
-Aktualizacja radia wymaga: samochód bezpiecznie zaparkowany, żadnej trwającej rozmowy ani akcji,
+Aktualizacja radia wymaga: żadnej trwającej rozmowy ani akcji,
 autoryzowane ADB oraz przygotowane prywatne pliki. Nie odinstalowuj aplikacji i nie czyść danych.
 Testy fizycznych akcji wykonujemy dopiero w aplikacji zainstalowanej na radiu - nie z komputera.
 
@@ -45,7 +68,7 @@ odtwarzania czatu. Nie kopiuj zawartości do Git ani publicznych issue.
 PRIVATE_DIR/
   config.json                       # prywatny numer, GPS, źródła i instalacyjne metadane
   roborock/routine-credentials.json  # minimalny pakiet do wykonania Full Cleaning
-  navigation.json                   # trzy prywatne cele nawigacji, schemat w NAVIGATION.md
+  navigation.json                   # trzy prywatne sloty/listy, schemat w NAVIGATION.md
   radio-backups/                    # APK, dane i sumy przed kolejnymi aktualizacjami
   archive-.../                      # oryginalny projekt, APK, podpis i pełne logi kalibracji
   replay/                          # prywatne dane wejściowe detektora
@@ -94,7 +117,7 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
    To sprawdza format, zakres geometrii i dozwolony endpoint; **nie** sprawdza ważności autoryzacji,
    numeru z urządzenia, fizycznej lokalizacji ani podpisu zainstalowanego APK.
 
-4. Gdy samochód stoi i nic nie wykonuje akcji, wykonaj pełną aktualizację:
+4. Po podłączeniu zweryfikowanego radia przez ADB, gdy nie trwa rozmowa ani akcja, wykonaj pełną aktualizację:
 
    ```sh
    python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
@@ -113,7 +136,7 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
 5. Konfiguracja jest atomowo przenoszona do `no_backup/pending-config.json`; suma odczytanego
    pliku musi się zgadzać. Nadawane są fine/coarse location, background location od API 29,
    notifications od API 33 oraz overlay. Przy błędzie grant/import automat pozostaje wstrzymany.
-6. Otwórz Dudu Home **na postoju**. Import waliduje sekcje, zapisuje je prywatnie, szyfruje
+6. Otwórz Dudu Home po instalacji. Import waliduje sekcje, zapisuje je prywatnie, szyfruje
    Roborock i usuwa staging/maintenance. Nie wysyła telefonu ani HTTP. Sprawdź menu i stan
    automatyzacji. Systemowy GPS i uprawnienia muszą rzeczywiście działać; sam sukces `pm grant`
    nie potwierdza dostępu do świeżych pomiarów.
@@ -125,7 +148,7 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
 9. Wykonaj pakiet prób z następnej sekcji. Zachowuj logi wyłącznie w prywatnym katalogu.
 
 Sama wymiana konfiguracji w aktualnym APK używa tej samej komendy bez `--apk` i `--backup-dir`.
-Również zatrzymuje aplikację i czeka na ręczne otwarcie/import; wykonuj ją na postoju. Bez
+Również zatrzymuje aplikację i czeka na otwarcie/import; nie przerywaj aktywnej akcji. Bez
 `--enable-automation` staging celowo wyłącza monitoring. Nie zeruje blokady dziennej ani cooldown.
 
 Świeża instalacja dla innego użytkownika: `scripts/install-on-device.sh DEVICE_SERIAL`, potem
@@ -257,3 +280,22 @@ Po aktualizacji otwórz menu, potwierdź usunięcie staging/maintenance, wersję
 Sprawdź każdy cel przez kliknięcie w aplikacji, aktywny ekran prowadzenia Maps i powrót do menu.
 Nie umieszczaj tych zrzutów ani intentów z koordynatami w PR. Brak połączenia ADB nie jest
 udanym wdrożeniem; zapisuj status jako oczekujący aż do odczytu wersji z fizycznego urządzenia.
+
+## Grupy lokalizacji od 1.0.0-rc4/code 17
+
+Agent konfiguruje miejsca zgodnie z pełną instrukcją [NAVIGATION.md](NAVIGATION.md).
+Plik schema 2 ma listę destinations oraz etykietę/ikonę grupy na slot. Inne sloty zachowaj
+w pełnym prywatnym pliku: import zastępuje całość. Najpierw aktualizuj APK do code 17 lub
+nowszego, potem importuj schema 2. Nie importuj publicznych przykładów do radia właściciela.
+Walidacja instalatora obejmuje obie wersje; stary APK z nowym formatem jest odrzucany.
+Przy rollbacku przywróć zgodny plik schema 1 przed otwarciem starszej aplikacji.
+
+Po zatwierdzeniu automatycznej instalacji wykonaj ją po uzyskaniu zweryfikowanego ADB bez
+pytań o jazdę/postój: stan bez aktywnej rozmowy/akcji, backup i sumy, zgodny podpis, aktualizacja
+bez kasowania danych, pełny import, kontrola staging/maintenance/limitów, test kafelków i modalu,
+powrót do menu. Gdy trwa akcja, poczekaj na cleanup. Gdy brak ADB, zachowaj artefakty do wznowienia;
+nie raportuj instalacji jako wykonanej. Do testu tej funkcji nie potrzeba dzwonienia ani robota.
+
+Przed publikacją dodaj `--private-navigation "$PRIVATE_DIR/navigation.json"` do pełnego skanu.
+Skan musi objąć metadane grupy i wszystkie cele, nie tylko pierwszy. Wszystkie publiczne
+opisy, instrukcje dla agentów i testy używają syntetycznych etykiet i współrzędnych blisko zera.

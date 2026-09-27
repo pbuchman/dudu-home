@@ -1,5 +1,24 @@
 # Design decisions
 
+## Stable 1.1 and third destination - September 27
+
+- Append private configuration within the existing 12-place capacity; no new slot or UI fork.
+- Add synthetic third-row selection/order coverage and document the complete-file update.
+- Owner confirms existing functionality and authorizes stable 1.1 after the third target is
+  verified on the radio. This supersedes the earlier blanket hold on a final tag. Keep
+  historical unobserved hardware scenarios explicit; owner acceptance is not a new test log.
+- Stable publication remains source-only; no private destination or APK release assets.
+
+## Configurable destination groups - 1.0.0-rc4
+
+- Schema 2 defines tile metadata and a bounded list; support legacy singleton documents unchanged.
+- Empty/single/multiple behavior is derived from list length, shared by all navigation slots.
+- Use a native in-app Dialog with fixed header, bounded scrolling and manual-UI exclusion.
+  Cancel is inert; only a chosen target invokes the existing durable Maps launch reservation.
+- Keep group labels and all members private. Synthetic examples/tests only; scan both schemas.
+- Update the APK before importing schema 2; retain the compatible private rollback file.
+
+
 ## Gate area before generic motion - 1.0.0-rc3
 
 - Ready-action queue priority alone cannot protect a gate event that is not ready yet.
