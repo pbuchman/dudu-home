@@ -101,6 +101,9 @@ def main():
         if current is None or current.text != payload['gate_number']:
             raise ValueError('Phone differs from existing radio settings; verify before proceeding')
         payload['gate_number_verified_on_current_device'] = True
+    navigation_schema = payload.get('navigation', {}).get('schema_version', 1)
+    if navigation_schema == 2 and not a.apk and int(version.group(1)) < 17:
+        raise ValueError('Install navigation groups build before importing schema 2')
     if a.apk:
         if not a.backup_dir: raise ValueError('--backup-dir required for APK update')
         a.backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -109,6 +112,8 @@ def main():
         target = re.search(r"package: name='([^']+)' versionCode='(\d+)'", metadata)
         if not target or target.group(1) != PACKAGE or int(target.group(2)) < 3:
             raise ValueError('APK is not the expected Full Cleaning application')
+        if navigation_schema == 2 and int(target.group(2)) < 17:
+            raise ValueError('APK does not support navigation schema 2')
         if int(target.group(2)) < int(version.group(1)):
             raise ValueError('Refusing APK downgrade; use a documented recovery procedure')
         backup = Path(tempfile.mkdtemp(prefix='before-update-', dir=a.backup_dir))
@@ -120,7 +125,7 @@ def main():
             return re.findall(r'Signer #\d+ certificate SHA-256 digest: (\w+)', output)
         old, new = cert(backup/'installed.apk'), cert(a.apk)
         if not old or old != new: raise ValueError('Signature mismatch; backup preserved, no update')
-        # Preconditions: driver parked, no active call/action. Stop writes before snapshot.
+        # Preconditions: authorized device, no active call/action. Stop writes before snapshot.
         run(['shell', 'am', 'force-stop', PACKAGE])
         (backup/'app-data.tar').write_bytes(run(['exec-out', 'run-as', PACKAGE, 'tar', '-cf', '-', '.']))
         # exec-out may hide a failed remote command's exit status. Validate the archive itself.
@@ -153,7 +158,7 @@ def main():
         for perm in permissions: run(['shell', 'pm', 'grant', PACKAGE, 'android.permission.'+perm])
         run(['shell', 'appops', 'set', PACKAGE, 'SYSTEM_ALERT_WINDOW', 'allow'])
     print('Private configuration staged and checksum verified. No launch, call or cleaning.')
-    print('Open Dudu Home while parked to consume import; verify settings and permissions.')
+    print('Open Dudu Home to consume import; verify settings and permissions.')
 
 
 if __name__ == '__main__':

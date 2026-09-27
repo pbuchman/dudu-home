@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "slots": [
-    {"slot": 1, "destination": null},
-    {"slot": 2, "destination": null},
-    {"slot": 3, "destination": null}
+    {"slot": 1, "destinations": []},
+    {"slot": 2, "destinations": []},
+    {"slot": 3, "destinations": []}
   ]
 }

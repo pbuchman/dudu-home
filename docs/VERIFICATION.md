@@ -1,5 +1,24 @@
 # Verification ledger
 
+## 1.0.0-rc4: destination groups (September 27)
+
+Implementation adds a native destination chooser and compatible private schema 2.
+
+- `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug`: passed for code 17.
+- Full emulator suite and first-run/no-dial script: passed, including group counts 0/1/2/12,
+  malformed input, singleton direct launch, correct row intents, duplicate clicks, cancellation,
+  restored selector state, Activity launch exclusion, missing Maps and failed durable reservation.
+- Real installer CLI on the emulator: passed signature-checked backup/update, schema 2 import,
+  separate private sections, address mode and empty slots, quota preservation across restart;
+  mismatched phone rejected. No real robot or vendor call was made.
+- Python navigation (5), privacy (1), private tools (8) and fresh installer (5) tests passed.
+  Detector, movement, gate-priority, queue, progress and synthetic equivalence checks passed.
+- Local scan with private denylist inputs: no rejected values in working tree/history. Generic
+  schema vocabulary and one ordinary prose word were manually reviewed. New public screenshot
+  is an emulator capture with invented names and ocean coordinates; pixels reviewed.
+- Radio installation and physical Maps selection checks: pending at this source checkpoint.
+  Historical journey/wake and rc3 gate-area physical acceptance remain unverified.
+
 ## Gate-area media precondition - 1.0.0-rc3, 2026-09-26
 
 Started from current merged main including the rc2 address-navigation and release-readiness

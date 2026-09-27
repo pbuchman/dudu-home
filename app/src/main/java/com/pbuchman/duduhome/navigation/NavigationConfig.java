@@ -7,6 +7,9 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import java.io.StringReader;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 
 /** Private data only; never include values or parser exception text in diagnostics. */
 public final class NavigationConfig {
@@ -14,13 +17,23 @@ public final class NavigationConfig {
     public static final int MAX_BYTES = 16384;
     public record Destination(String label, String icon, String address, double latitude, double longitude,
                               String navigateBy) { }
-    private final Destination[] slots;
-    private NavigationConfig(Destination[] slots) { this.slots = slots.clone(); }
-    public static NavigationConfig empty() { return new NavigationConfig(new Destination[SLOT_COUNT]); }
-    public Destination destination(int index) { return slots[index]; }
+    public static final int MAX_DESTINATIONS = 12;
+    public record Slot(String label, String icon, List<Destination> destinations) {
+        public Slot { destinations = List.copyOf(destinations); }
+    }
+    private final Slot[] slots;
+    private final int schema;
+    private NavigationConfig(Slot[] slots, int schema) { this.slots = slots.clone(); this.schema = schema; }
+    public static NavigationConfig empty() { return new NavigationConfig(new Slot[SLOT_COUNT], 1); }
+    public Slot slot(int index) { return slots[index]; }
+    /** Compatibility accessor for single-destination callers. Never silently select a group. */
+    public Destination destination(int index) {
+        Slot slot = slots[index];
+        return slot != null && slot.destinations().size() == 1 ? slot.destinations().get(0) : null;
+    }
 
     public static NavigationConfig parse(String text) throws JSONException {
-        if (text == null || text.length() > MAX_BYTES) throw new JSONException("Invalid navigation document");
+        if (text == null || text.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) throw new JSONException("Invalid navigation document");
         Object value;
         try (JsonReader reader = new JsonReader(new StringReader(text))) {
             reader.setLenient(false); value = json(reader, 0);
@@ -28,33 +41,55 @@ public final class NavigationConfig {
         } catch (Exception ignored) { throw new JSONException("Invalid navigation document"); }
         if (!(value instanceof JSONObject root)) throw new JSONException("Invalid navigation document");
         keys(root, Set.of("schema_version", "slots"));
-        if (integer(root.get("schema_version")) != 1) throw new JSONException("Unsupported navigation schema");
+        int schema = integer(root.get("schema_version"));
+        if (schema != 1 && schema != 2) throw new JSONException("Unsupported navigation schema");
         JSONArray entries = root.getJSONArray("slots");
         if (entries.length() > SLOT_COUNT) throw new JSONException("Too many slots");
-        Destination[] slots = new Destination[SLOT_COUNT];
+        Slot[] slots = new Slot[SLOT_COUNT];
         boolean[] seen = new boolean[SLOT_COUNT];
         for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.getJSONObject(i);
-            keys(entry, Set.of("slot", "destination"));
+            keys(entry, schema == 1 ? Set.of("slot", "destination")
+                    : Set.of("slot", "label", "icon", "destinations"));
             int slot = integer(entry.get("slot")) - 1;
-            if (slot < 0 || slot >= SLOT_COUNT || seen[slot] || !entry.has("destination"))
-                throw new JSONException("Invalid navigation slot");
+            if (slot < 0 || slot >= SLOT_COUNT || seen[slot]) throw new JSONException("Invalid navigation slot");
             seen[slot] = true;
-            if (entry.isNull("destination")) continue;
-            JSONObject d = entry.getJSONObject("destination");
-            keys(d, Set.of("label", "icon", "address", "latitude", "longitude", "navigate_by"));
-            String label = text(d.get("label"), 64);
-            String icon = text(d.get("icon"), 12);
-            if (!Set.of("home", "squash", "pin").contains(icon)) throw new JSONException("Invalid navigation icon");
-            String address = d.has("address") ? text(d.get("address"), 160) : "";
-            String navigateBy = d.has("navigate_by") ? text(d.get("navigate_by"), 11) : "coordinates";
-            if (!Set.of("coordinates", "address").contains(navigateBy)
-                    || (navigateBy.equals("address") && address.isEmpty()))
-                throw new JSONException("Invalid navigation target mode");
-            slots[slot] = new Destination(label, icon, address,
-                    coordinate(d.get("latitude"), 90), coordinate(d.get("longitude"), 180), navigateBy);
+            if (schema == 1) {
+                if (!entry.has("destination")) throw new JSONException("Missing destination");
+                if (entry.isNull("destination")) continue;
+                Destination d = parseDestination(entry.getJSONObject("destination"));
+                slots[slot] = new Slot(d.label(), d.icon(), List.of(d));
+            } else {
+                JSONArray places = entry.getJSONArray("destinations");
+                if (places.length() > MAX_DESTINATIONS) throw new JSONException("Too many destinations");
+                // Validate even optional metadata on an empty slot; do not hide invalid fields.
+                String label = entry.has("label") ? text(entry.get("label"), 64) : "";
+                String icon = entry.has("icon") ? icon(entry.get("icon")) : "";
+                if (places.length() == 0) continue;
+                if (label.isEmpty() || icon.isEmpty()) throw new JSONException("Missing slot metadata");
+                List<Destination> destinations = new ArrayList<>();
+                for (int n = 0; n < places.length(); n++) destinations.add(parseDestination(places.getJSONObject(n)));
+                slots[slot] = new Slot(label, icon, destinations);
+            }
         }
-        return new NavigationConfig(slots);
+        return new NavigationConfig(slots, schema);
+    }
+    private static String icon(Object value) throws JSONException {
+        String icon = text(value, 12);
+        if (!Set.of("home", "squash", "pin").contains(icon)) throw new JSONException("Invalid navigation icon");
+        return icon;
+    }
+    private static Destination parseDestination(JSONObject d) throws JSONException {
+        keys(d, Set.of("label", "icon", "address", "latitude", "longitude", "navigate_by"));
+        String label = text(d.get("label"), 64);
+        String icon = icon(d.get("icon"));
+        String address = d.has("address") ? text(d.get("address"), 160) : "";
+        String navigateBy = d.has("navigate_by") ? text(d.get("navigate_by"), 11) : "coordinates";
+        if (!Set.of("coordinates", "address").contains(navigateBy)
+                || (navigateBy.equals("address") && address.isEmpty()))
+            throw new JSONException("Invalid navigation target mode");
+        return new Destination(label, icon, address,
+                coordinate(d.get("latitude"), 90), coordinate(d.get("longitude"), 180), navigateBy);
     }
     private static Object json(JsonReader reader, int depth) throws Exception {
         if (depth > 8) throw new JSONException("Navigation document too deep");
@@ -107,21 +142,32 @@ public final class NavigationConfig {
         if (!Double.isFinite(result) || Math.abs(result) > limit) throw new JSONException("Invalid coordinate");
         return result;
     }
+    private static JSONObject serializeDestination(Destination d) throws JSONException {
+        JSONObject place = new JSONObject().put("label", d.label()).put("icon", d.icon())
+                .put("latitude", d.latitude()).put("longitude", d.longitude());
+        if (!d.address().isEmpty()) place.put("address", d.address());
+        if (!d.navigateBy().equals("coordinates")) place.put("navigate_by", d.navigateBy());
+        return place;
+    }
     public String serialize() throws JSONException {
         JSONArray entries = new JSONArray();
         for (int i = 0; i < SLOT_COUNT; i++) {
-            Destination d = slots[i];
+            Slot slot = slots[i];
             JSONObject entry = new JSONObject().put("slot", i + 1);
-            if (d == null) entry.put("destination", JSONObject.NULL);
+            if (schema == 1) entry.put("destination", slot == null ? JSONObject.NULL
+                    : serializeDestination(slot.destinations().get(0)));
             else {
-                JSONObject place = new JSONObject().put("label", d.label()).put("icon", d.icon())
-                        .put("latitude", d.latitude()).put("longitude", d.longitude());
-                if (!d.address().isEmpty()) place.put("address", d.address());
-                if (!d.navigateBy().equals("coordinates")) place.put("navigate_by", d.navigateBy());
-                entry.put("destination", place);
+                JSONArray places = new JSONArray();
+                if (slot != null) {
+                    entry.put("label", slot.label()).put("icon", slot.icon());
+                    for (Destination d : slot.destinations()) places.put(serializeDestination(d));
+                }
+                entry.put("destinations", places);
             }
             entries.put(entry);
         }
-        return new JSONObject().put("schema_version", 1).put("slots", entries).toString();
+        String result = new JSONObject().put("schema_version", schema).put("slots", entries).toString();
+        if (result.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES) throw new JSONException("Navigation document too large");
+        return result;
     }
 }

@@ -22,6 +22,11 @@ class PrivacyChecks(unittest.TestCase):
             source = base/'private-input.json'
             source.write_text(json.dumps({'slots': [{'destination': {'label': 'FixtureHiddenValue',
                 'address': 'SyntheticHiddenStreet', 'latitude': 0.1234567, 'longitude': 0.7654321}}]}))
+            group = {'label': 'SyntheticHiddenGroup', 'destinations': [
+                {'label': 'SyntheticHiddenFirst'}, {'label': 'SyntheticHiddenSecond',
+                 'address': 'SyntheticSecondStreet', 'latitude': 0.2345678}]}
+            config = json.loads(source.read_text()); config['slots'].append(group)
+            source.write_text(json.dumps(config))
             fixture = root/'test-fixture.txt'
             fixture.write_text('Public fixture')
             git('add', '.'); git('commit', '-qm', 'Synthetic baseline')
@@ -30,6 +35,8 @@ class PrivacyChecks(unittest.TestCase):
                     '--private-navigation', str(source), *args], capture_output=True)
             self.assertEqual(scan('--all-history').returncode, 0)
             for value in ('FixtureHiddenValue', 'SyntheticHiddenStreet', '0.12346',
+                          'SyntheticHiddenGroup', 'SyntheticHiddenFirst', 'SyntheticHiddenSecond',
+                          'SyntheticSecondStreet', '0.23457',
                           ''.join('\\u%04x' % ord(c) for c in 'FixtureHiddenValue')):
                 fixture.write_text(value)
                 result = scan('--working-tree')

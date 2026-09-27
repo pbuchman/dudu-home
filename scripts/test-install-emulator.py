@@ -34,7 +34,9 @@ def main():
                      auth=dict(u='example-user', s='example-session', h='example-secret'))
         config = dict(schema_version=2, gate_number='0000', points=None, roborock=robot)
         source = private/'input.json'; source.write_text(json.dumps(config))
-        navigation = dict(schema_version=1, slots=[dict(slot=1, destination=dict(label='Fixture A', icon='pin', latitude=0, longitude=0))])
+        navigation = dict(schema_version=2, slots=[dict(slot=2, label='Fixture group', icon='squash', destinations=[
+            dict(label='Fixture A', icon='pin', latitude=0, longitude=0),
+            dict(label='Fixture B', icon='pin', address='Synthetic address', navigate_by='address', latitude=0.001, longitude=0.002)])])
         nav_source = private/'navigation.json'; nav_source.write_text(json.dumps(navigation))
         command = [sys.executable, str(ROOT/'scripts/configure-device.py'), a.serial, str(source),
                    '--navigation', str(nav_source), '--apk', str(ROOT/'app/build/outputs/apk/debug/app-debug.apk'), '--backup-dir', str(private/'backups')]
@@ -58,7 +60,9 @@ def main():
         if geometry.get('automation_enabled') or any(key in geometry for key in ('roborock', 'gate_number', 'navigation')):
             raise RuntimeError('Private sections were not separated')
         saved_navigation = json.loads(run('exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/navigation.json'))
-        if saved_navigation['slots'][0]['destination']['label'] != 'Fixture A' or saved_navigation['slots'][2]['destination'] is not None:
+        if (saved_navigation['slots'][1]['destinations'][0]['label'] != 'Fixture A'
+                or saved_navigation['slots'][1]['destinations'][1]['navigate_by'] != 'address'
+                or saved_navigation['slots'][2]['destinations'] != []):
             raise RuntimeError('Navigation import or empty slots failed')
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Update reset daily quota')

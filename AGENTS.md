@@ -50,3 +50,20 @@ update, back up with checksums, keep maintenance until one-time import completes
 headers, account payloads, routine IDs, connection addresses or raw firmware logs.
 Do not bypass a browser security refusal to store secrets. Google Password Manager backup is
 not completed; the local owner-only credential bundle is the working source of configuration.
+
+## Configuring navigation without disclosing places
+
+Follow docs/NAVIGATION.md and docs/OPERATIONS.md. Resolve PRIVATE_DIR locally outside Git
+(0700; JSON files 0600). Configure only its full navigation.json; preserve unrelated slots.
+Schema 2 uses group label/icon and 0..12 destinations per slot. Zero is empty, one launches
+Maps directly, multiple opens a chooser. Schema 1 remains compatible; preserve navigate_by.
+Validate privately, install code 17+ before importing schema 2, then import and verify on the
+radio. Import replaces all slots and never executes an action. Back up before installation.
+Never embed actual labels, address fragments, coordinates or Maps links in public tests,
+docs, PR text, screenshots, CI inputs or APKs. All examples/test data must be invented.
+Run the scanner locally against the entire private navigation file, including all group
+members; manually review pixels and ambiguous generic-word matches. See NAVIGATION.md for
+exact validation/import commands and rollback order. A private mockup is not a public image.
+For an explicitly authorized automatic installation, proceed when verified ADB is available
+without asking about driving/parking. Check for active calls/actions before stopping the app;
+wait for cleanup instead of interrupting a call. Never substitute data clearing for recovery.

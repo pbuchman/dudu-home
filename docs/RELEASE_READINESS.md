@@ -1,6 +1,9 @@
 # Release readiness - 2026-09-26
 
-New development candidate: **1.0.0-rc3 / versionCode 16**, with a gate-area barrier before
+Current candidate: **1.0.0-rc4 / versionCode 17**, adding private destination groups.
+See VERIFICATION.md for current build, emulator, installer and hardware results.
+
+The preceding **1.0.0-rc3 / versionCode 16** introduced a gate-area barrier before
 generic media motion. Its local tests are recorded in VERIFICATION; it is not installed on
 the radio. All physical rc2 evidence below remains historical and does not certify rc3.
 In addition to the remaining checks below, verify that manoeuvring near home does not start

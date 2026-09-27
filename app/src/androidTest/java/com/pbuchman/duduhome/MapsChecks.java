@@ -106,6 +106,7 @@ final class MapsChecks {
         i.runOnMainSync(screen::finish);
         store.save(NavigationConfig.empty());
         com.pbuchman.duduhome.ui.NavigationImportChecks.run(i);
+        com.pbuchman.duduhome.ui.NavigationGroupChecks.run(i);
     }
     private static void require(boolean value,String message){if(!value)throw new AssertionError(message);}
 }

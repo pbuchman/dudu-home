@@ -1,12 +1,17 @@
 # Handoff - local Full Cleaning implementation
 
+Current development: 1.0.0-rc4/code 17, configurable navigation groups. Follow NAVIGATION.md
+for the private full-file workflow and compatible schema migration; never use actual places
+in fixtures or docs. Current validation/install evidence is in VERIFICATION.md.
+
+
 Read this file first when resuming without the conversation. The accepted behavior is in
 [FUNCTIONAL.md](FUNCTIONAL.md), implementation details in [ROBOROCK.md](ROBOROCK.md),
 and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 
 ## Current release candidate
 
-Current development: `1.0.0-rc3` / code 16, branched from merged main including PRs #1-4.
+Previous development: `1.0.0-rc3` / code 16, merged through PR #5.
 Adds a gate-area precondition before media movement detection/reservation, with success-only
 release or fresh outside evidence. No fixed timer, route threshold or call-safety change.
 See AUTOMATION_SEQUENCE and VERIFICATION. This change is not installed or tested on the radio.

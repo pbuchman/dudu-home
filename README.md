@@ -13,7 +13,7 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Current source: `1.0.0-rc3` (code 16). Last verified radio installation: `1.0.0-rc2` (code 15), September 26.**
+> **Current source: `1.0.0-rc4` (code 17), grouped navigation. Last verified radio installation: `1.0.0-rc2` (code 15), September 26.**
 > The rc3 gate-area precondition is not yet verified on the radio. It changes media scheduling,
 > not the gate-call detector or its safety checks. A missing call still needs diagnostic evidence.
 > All three tiles started Google Maps guidance in rc1. In rc2, one destination explicitly
@@ -80,8 +80,8 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
   action and its result screen; the daily attempt remains consumed. Manual cleaning remains independent.
-- **Three Google Maps destinations:** private JSON import, generic icons, empty-slot guidance and
-  one-tap driving navigation. [File format and behavior](docs/NAVIGATION.md).
+- **Three Google Maps navigation slots:** private JSON import, generic icons and empty-slot guidance.
+  One destination starts navigation directly; multiple destinations open a modal chooser. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
   ten seconds of qualified GPS movement. First check its foreground-service notification.
@@ -161,7 +161,7 @@ python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
 
 `PRIVATE_DIR` is an owner-only directory outside every repository. The installer checks the
 configured number against the radio, stages data via stdin, and never launches an action.
-Open the app **while parked** to consume the import. Do not update during a call or other action.
+Open Dudu Home to consume the import after the authorized update. Do not update during a call or other action.
 The fresh-install helper refuses to update an existing app; use the backed-up path above.
 It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
 with retained data, and never passes the replacement flag `-r` to installation.

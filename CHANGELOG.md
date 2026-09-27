@@ -1,5 +1,14 @@
 # Change history
 
+## 1.0.0-rc4
+
+- Support privately configured destination groups in all three navigation slots, with a native
+  chooser for multiple places and direct navigation for one. Preserve schema 1 and address mode.
+- Extend strict validation, private installation compatibility checks, agent runbook and privacy
+  scanning to group labels and all members. No real destinations are distributed.
+- Verification status and pending hardware acceptance remain in docs/VERIFICATION.md.
+
+
 ## 1.0.0-rc3 (code 16) - 2026-09-26
 
 - Check the applicable gate area before generic driving progress and media reservations,

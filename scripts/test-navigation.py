@@ -38,6 +38,32 @@ class NavigationTests(unittest.TestCase):
         for address in ('', ' ', None, 'bad\nline'):
             bad=deepcopy(value);bad['slots'][0]['destination']['address']=address
             with self.assertRaises(ValueError): validate_navigation(bad)
+    def test_groups_and_legacy(self):
+        place = self.value['slots'][0]['destination']
+        group = {'slot': 2, 'label': 'Fixture group', 'icon': 'squash', 'destinations': [place, {
+            **place, 'label': 'Fixture B', 'address': 'Synthetic address B', 'navigate_by': 'address'}]}
+        value = {'schema_version': 2, 'slots': [group]}
+        result = validate_navigation(value)
+        self.assertEqual(result['slots'][1], group)
+        self.assertEqual(result['slots'][0], {'slot': 1, 'destinations': []})
+        self.assertEqual(validate_navigation(result), result)
+        for count in (0, 1, 2, 12):
+            copy = deepcopy(value); copy['slots'][0]['destinations'] = [place] * count
+            self.assertEqual(len(validate_navigation(copy)['slots'][1]['destinations']), count)
+        for patch in ({'destinations': [place] * 13}, {'destination': place}, {'destinations': None},
+                      {'destinations': [None]}, {'label': None}, {'icon': 'unknown'}, {'slot': True}):
+            copy = deepcopy(value); copy['slots'][0].update(patch)
+            with self.assertRaises(ValueError): validate_navigation(copy)
+        for key in ('label', 'icon', 'destinations'):
+            copy = deepcopy(value); del copy['slots'][0][key]
+            with self.assertRaises(ValueError): validate_navigation(copy)
+        empty = {'schema_version': 2, 'slots': [{'slot': 3, 'destinations': []}]}
+        self.assertEqual(validate_navigation(empty)['slots'][2]['destinations'], [])
+        # Bounds apply to the encoded complete document, including group labels.
+        huge = {'schema_version': 2, 'slots': [{**group, 'slot': n, 'destinations': [
+            {**place, 'label': 'Ż' * 64, 'address': 'Ż' * 160} for _ in range(12)]} for n in (1,2,3)]}
+        with self.assertRaises(ValueError): validate_navigation(huge)
+
     def test_parser_bounds_duplicates_and_trailing(self):
         with TemporaryDirectory() as directory:
             file=Path(directory)/'fixture.json'
