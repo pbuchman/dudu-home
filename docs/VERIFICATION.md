@@ -17,14 +17,15 @@ Implementation adds a native destination chooser and compatible private schema 2
   schema vocabulary and one ordinary prose word were manually reviewed. New public screenshot
   is an emulator capture with invented names and ocean coordinates; pixels reviewed.
 - DUDU7 update: passed with private APK/data backup, matching signing certificate, installed
-  code 17 / rc4 and SHA-256 equal to the tested APK from application commit `ea24772`.
+  code 17 / rc4 and SHA-256 equal to the tested APK from application commit `d5fe970`.
   Private schema 2 import matched the expected 1/2/1 slot counts; staging/maintenance removed.
   Gate settings, daily quota and journey-session preferences were unchanged at import.
-- Physical UI: menu, both modal names/addresses and close control passed. Existing Maps guidance
+- Physical UI: menu, both modal names/addresses and close control passed. Polish plural
+  rules were verified on the radio after a backed-up follow-up update and emulator regression. Existing Maps guidance
   was restored full screen without submitting a new destination. Actual launches of the new
   destinations on the radio were deferred to preserve that active route; emulator intent tests
   are not a substitute for this acceptance check. Raw evidence remains private.
-- Both GitHub Actions checks passed on application commit `ea24772`. Later evidence-only commits
+- Both GitHub Actions checks passed on the initial application commit `ea24772`. Later evidence-only commits
   do not change the installed APK. Historical journey/wake and rc3 gate-area physical acceptance
   remain unverified; this is not final 1.0 acceptance.
 
