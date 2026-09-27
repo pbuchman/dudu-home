@@ -1,6 +1,6 @@
 # Handoff - local Full Cleaning implementation
 
-Current development: 1.0.0-rc4/code 17, configurable navigation groups. Follow NAVIGATION.md
+Current source and radio installation: 1.0.0-rc4/code 17, configurable navigation groups. Follow NAVIGATION.md
 for the private full-file workflow and compatible schema migration; never use actual places
 in fixtures or docs. Current validation/install evidence is in VERIFICATION.md.
 
@@ -14,7 +14,7 @@ and exact deployment/recovery steps in [OPERATIONS.md](OPERATIONS.md).
 Previous development: `1.0.0-rc3` / code 16, merged through PR #5.
 Adds a gate-area precondition before media movement detection/reservation, with success-only
 release or fresh outside evidence. No fixed timer, route threshold or call-safety change.
-See AUTOMATION_SEQUENCE and VERIFICATION. This change is not installed or tested on the radio.
+See AUTOMATION_SEQUENCE and VERIFICATION. This code is included in the rc4 installation; its physical gate-area behavior remains unverified.
 
 `1.0.0-rc2` / code 15 is the last verified installation on DUDU7.
 Three Maps tiles, private import, manual-media priority and per-destination address mode are

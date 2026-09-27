@@ -1,11 +1,13 @@
 # Release readiness - 2026-09-26
 
 Current candidate: **1.0.0-rc4 / versionCode 17**, adding private destination groups.
-See VERIFICATION.md for current build, emulator, installer and hardware results.
+Installed on DUDU7 with a verified private import and physical modal check. Real launches
+of the new destinations remain pending because existing Maps guidance was preserved.
+See VERIFICATION.md for build, emulator, installer and hardware results.
 
 The preceding **1.0.0-rc3 / versionCode 16** introduced a gate-area barrier before
-generic media motion. Its local tests are recorded in VERIFICATION; it is not installed on
-the radio. All physical rc2 evidence below remains historical and does not certify rc3.
+generic media motion. Its code is included in rc4; physical gate-area acceptance is still
+pending. All physical rc2 evidence below remains historical and does not certify that change.
 In addition to the remaining checks below, verify that manoeuvring near home does not start
 the media countdown before a successful gate call, and that ordinary driving away from home
 still starts the media sequence. A skipped/failed call must not silently release the barrier.

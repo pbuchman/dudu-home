@@ -17,7 +17,8 @@ All public screenshots contain invented labels and synthetic points, never confi
 
 Copy [navigation.example.json](../navigation.example.json) to an owner-only directory outside
 Git. Fill only that private copy. No source edits, APK rebuild, API key or Google account
-credentials are needed. `null` or an omitted slot means empty. Import replaces all three slots.
+credentials are needed. An omitted slot is empty; legacy `destination: null` and schema 2
+`destinations: []` also mean empty. Import replaces all three slots.
 
 This is a deliberately synthetic schema example, not a usable driving destination:
 

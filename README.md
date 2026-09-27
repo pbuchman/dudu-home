@@ -13,7 +13,9 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Current source: `1.0.0-rc4` (code 17), grouped navigation. Last verified radio installation: `1.0.0-rc2` (code 15), September 26.**
+> **Current source and verified radio installation: `1.0.0-rc4` (code 17), September 27.**
+> Private destination groups, compatible import and physical menu/modal checks passed.
+> New destination launches on the radio remain pending; an existing Maps route was preserved.
 > The rc3 gate-area precondition is not yet verified on the radio. It changes media scheduling,
 > not the gate-call detector or its safety checks. A missing call still needs diagnostic evidence.
 > All three tiles started Google Maps guidance in rc1. In rc2, one destination explicitly

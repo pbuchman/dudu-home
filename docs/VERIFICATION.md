@@ -16,8 +16,17 @@ Implementation adds a native destination chooser and compatible private schema 2
 - Local scan with private denylist inputs: no rejected values in working tree/history. Generic
   schema vocabulary and one ordinary prose word were manually reviewed. New public screenshot
   is an emulator capture with invented names and ocean coordinates; pixels reviewed.
-- Radio installation and physical Maps selection checks: pending at this source checkpoint.
-  Historical journey/wake and rc3 gate-area physical acceptance remain unverified.
+- DUDU7 update: passed with private APK/data backup, matching signing certificate, installed
+  code 17 / rc4 and SHA-256 equal to the tested APK from application commit `ea24772`.
+  Private schema 2 import matched the expected 1/2/1 slot counts; staging/maintenance removed.
+  Gate settings, daily quota and journey-session preferences were unchanged at import.
+- Physical UI: menu, both modal names/addresses and close control passed. Existing Maps guidance
+  was restored full screen without submitting a new destination. Actual launches of the new
+  destinations on the radio were deferred to preserve that active route; emulator intent tests
+  are not a substitute for this acceptance check. Raw evidence remains private.
+- Both GitHub Actions checks passed on application commit `ea24772`. Later evidence-only commits
+  do not change the installed APK. Historical journey/wake and rc3 gate-area physical acceptance
+  remain unverified; this is not final 1.0 acceptance.
 
 ## Gate-area media precondition - 1.0.0-rc3, 2026-09-26
 

@@ -1,8 +1,16 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Odbiór kandydata 1.0.0-rc2
+## Bieżąca instalacja 1.0.0-rc4
 
-Ostatnia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
+27 września zainstalowano code 17 z prywatną kopią APK/danych i kontrolą podpisu oraz SHA-256.
+Import schema 2 i układ slotów 1/2/1 przeszły weryfikację. Ustawienia bramy, limit dzienny i
+stan sesji zachowano. Menu, dwie pozycje modalu i zamykanie sprawdzono na fizycznym radiu.
+Bieżącą trasę Maps zachowano; test nowych celów na radiu pozostaje otwarty. Dowody są prywatne.
+Pełne wyniki i nadal otwarte próby: [VERIFICATION.md](VERIFICATION.md).
+
+## Historyczny odbiór kandydata 1.0.0-rc2
+
+Poprzednia potwierdzona instalacja to 1.0.0-rc2/code 15 z 26 września. Opcjonalny tryb adresowy
 jednego celu poprawnie wyświetlił jego zapisaną etykietę w Maps; pozostałe sloty nie zmieniły się.
 Wcześniejsza aktualizacja rc1 z kopią
 zapasową, import prywatnych danych i start prowadzenia z każdego z trzech kafelków przeszły
