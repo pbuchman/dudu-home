@@ -23,6 +23,7 @@ final class NavigationPanel {
     private static final int PICK_DOCUMENT = 201;
     private final Activity activity;
     private final MapsLauncher maps;
+    private final android.content.res.Resources polishResources;
     private final java.util.function.BooleanSupplier allowed;
     private boolean picking, reading, launching;
     private Dialog selector;
@@ -32,6 +33,10 @@ final class NavigationPanel {
     }
     NavigationPanel(Activity activity, java.util.function.BooleanSupplier allowed, Bundle saved, MapsLauncher maps) {
         this.activity = activity; this.allowed = allowed; this.maps = maps;
+        // The current UI copy is Polish even when the head unit uses another system language.
+        android.content.res.Configuration language = new android.content.res.Configuration(activity.getResources().getConfiguration());
+        language.setLocale(java.util.Locale.forLanguageTag("pl"));
+        polishResources = activity.createConfigurationContext(language).getResources();
         picking = saved != null && saved.getBoolean("navigation_picker");
         restoreSlot = saved == null ? -1 : saved.getInt("navigation_selector", -1);
     }
@@ -85,7 +90,7 @@ final class NavigationPanel {
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); words.addView(label);
             TextView subtitle = new TextView(activity);
             String hint = empty ? activity.getString(R.string.navigation_empty)
-                    : multiple ? activity.getResources().getQuantityString(R.plurals.navigation_places,
+                    : multiple ? polishResources.getQuantityString(R.plurals.navigation_places,
                             group.destinations().size(), group.destinations().size())
                     : activity.getString(R.string.navigation_go);
             subtitle.setText(hint); subtitle.setTextSize(16);

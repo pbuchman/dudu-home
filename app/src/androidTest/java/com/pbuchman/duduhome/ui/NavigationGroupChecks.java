@@ -66,6 +66,8 @@ public final class NavigationGroupChecks {
         try {
             i.runOnMainSync(() -> {
                 panel.render();
+                require(screen.findViewById(R.id.navigation_slot_2).getContentDescription().toString().contains("2 miejsca"),
+                        "Polish plural follows UI language, not system locale");
                 screen.findViewById(R.id.navigation_slot_2).performClick();
                 require(panel.busy() && opens.isEmpty() && reservations[0] == 0, "opening is inert");
                 Dialog first = dialog(panel);
