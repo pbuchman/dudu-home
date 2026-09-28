@@ -46,6 +46,9 @@ cd "$PROJECT_DIR"
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell pm clear com.pbuchman.duduhome >/dev/null
 "$DUDU_ADB" -s "$DUDU_SERIAL" install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 "$DUDU_ADB" -s "$DUDU_SERIAL" shell appops set com.pbuchman.duduhome SYSTEM_ALERT_WINDOW allow
+if [[ "$($DUDU_ADB -s "$DUDU_SERIAL" shell getprop ro.build.version.sdk | tr -d '\r')" -ge 33 ]]; then
+    "$DUDU_ADB" -s "$DUDU_SERIAL" shell pm grant com.pbuchman.duduhome android.permission.POST_NOTIFICATIONS
+fi
 DUDU_SAFETY="$($DUDU_ADB -s "$DUDU_SERIAL" shell am instrument -w \
     com.pbuchman.duduhome.test/com.pbuchman.duduhome.SafetyChecks)"
 echo "$DUDU_SAFETY"

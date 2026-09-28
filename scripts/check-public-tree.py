@@ -75,7 +75,7 @@ def decoded_unicode(data):
 
 def inspect(name, data, current_style=False):
     path = Path(name)
-    if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf', '.enc'}
+    if (path.suffix.lower() in {'.apk', '.aab', '.jks', '.keystore', '.jsonl', '.gpx', '.kml', '.log', '.pdf', '.enc', '.sqlite', '.pbf', '.building'}
             or name.startswith(('private/', 'calibration/', 'output/')) or path.name in {'config.json', 'navigation.json', 'navigation.proposed.json', 'verified-places.json', '.env', 'local.properties'}):
         errors.add((name, 'private/generated file type'))
     searchable = data.lower() + b"\0" + decoded_unicode(data).lower()

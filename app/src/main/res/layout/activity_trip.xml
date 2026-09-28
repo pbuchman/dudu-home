@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true"
+    android:background="@drawable/background_gradient">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="32dp" android:gravity="center_horizontal">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <Button android:id="@+id/trip_back" android:layout_width="wrap_content" android:layout_height="56dp" android:text="@string/back_to_menu" />
+            <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+                android:gravity="end" android:text="@string/trip_title" android:textSize="22sp" android:textColor="@color/text_secondary" />
+        </LinearLayout>
+        <ImageView android:layout_width="96dp" android:layout_height="96dp" android:layout_marginTop="24dp"
+            android:src="@drawable/art_navigation_pin" android:importantForAccessibility="no" />
+        <TextView android:id="@+id/trip_locality" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:textSize="42sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_primary" />
+        <TextView android:id="@+id/trip_street" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:layout_marginTop="8dp" android:textSize="28sp" android:textColor="@color/text_secondary" />
+        <TextView android:id="@+id/trip_distance" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:layout_marginTop="24dp" android:textSize="36sp" android:textColor="@color/accent_blue" />
+        <TextView android:id="@+id/trip_status" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:layout_marginTop="8dp" android:textSize="16sp" android:textColor="@color/text_secondary" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:orientation="horizontal" android:gravity="center">
+            <Button android:id="@+id/trip_primary" android:layout_width="wrap_content" android:layout_height="56dp" android:minWidth="160dp" android:text="@string/trip_start" />
+            <Button android:id="@+id/trip_end" android:layout_width="wrap_content" android:layout_height="56dp" android:layout_marginStart="16dp" android:text="@string/trip_end" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

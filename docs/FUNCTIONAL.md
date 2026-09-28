@@ -1,5 +1,15 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+## Where am I (1.2 candidate)
+
+The first action row now has four tiles: gate, Full Cleaning, Full Mop and Gdzie jestem.
+The trip screen supports explicit start/pause/resume/end, current locality/street and session
+kilometres. Backgrounding keeps counting. Its two-line overlay and silent notification open
+the full view when tapped. Automation presentation and execution take priority. No trip
+operation dispatches a gate/robot command or resets an automation reservation.
+See [the complete trip contract](WHERE_AM_I.md) and [current UI gallery](UI_GALLERY.md).
+
+
 ## Pierwszeństwo obszaru bramy - 1.0.0-rc3
 
 Przed odliczaniem ruchu dla Yanosika i Spotify sprawdzamy, czy aktualna pozycja i trasa

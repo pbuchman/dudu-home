@@ -42,6 +42,12 @@ class PrivacyChecks(unittest.TestCase):
                 result = scan('--working-tree')
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn(value.encode(), result.stdout)
+            fixture.write_text('Public fixture')
+            for suffix in ('.sqlite', '.pbf', '.building'):
+                artifact = root/('synthetic-map'+suffix)
+                artifact.write_text('Generated map fixture')
+                self.assertNotEqual(scan('--working-tree').returncode, 0)
+                artifact.unlink()
             fixture.write_text('FixtureHiddenValue')
             git('add', '.'); git('commit', '-qm', 'Synthetic leak')
             fixture.write_text('Public fixture'); git('add', '.'); git('commit', '-qm', 'Remove synthetic leak')

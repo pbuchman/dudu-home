@@ -7,6 +7,9 @@
 > [Roborock architecture](ROBOROCK.md). A cleanup notification now releases the shared action
 > lease only after Binder cleanup; dial/hangup protocol and safety rules are unchanged.
 
+The independent [Where am I module](WHERE_AM_I.md) reuses the location service; it does not
+change the calling IPC, callbacks, reservation or hangup rules below.
+
 ## Pochodzenie ustaleń
 
 Kontrakt tego PoC pochodzi z przekazanych wyników statycznej analizy oficjalnego obrazu

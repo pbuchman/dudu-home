@@ -65,6 +65,12 @@
                         <ImageView style="@style/TileIllustration" android:src="@drawable/art_mop" />
                         <TextView style="@style/TileTitle" android:text="@string/mop_name" />
                     </LinearLayout>
+                    <LinearLayout android:id="@+id/where_am_i_button" style="@style/ActionTile"
+                        android:layout_marginStart="16dp" android:background="@drawable/tile_cleaning"
+                        android:contentDescription="@string/trip_title">
+                        <ImageView style="@style/TileIllustration" android:src="@drawable/art_navigation_pin" />
+                        <TextView style="@style/TileTitle" android:text="@string/trip_title" />
+                    </LinearLayout>
                 </LinearLayout>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="16dp" android:text="@string/navigation_title"

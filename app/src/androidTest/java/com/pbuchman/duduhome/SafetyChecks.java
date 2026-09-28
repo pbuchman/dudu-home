@@ -20,13 +20,22 @@ import android.widget.EditText;
 
 /** Dependency-free checks. Refuses to run on a physical radio. */
 public final class SafetyChecks extends Instrumentation {
-    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
+    private boolean gallery, national;
+    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
 
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
             require(Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish"),
                     "Emulator only: refusing to touch physical device settings");
+            if (national) {
+                result.putString("result", "PASS: " + com.pbuchman.duduhome.trip.NationalMapChecks.run(this));
+                finish(Activity.RESULT_OK, result); return;
+            }
+            if (gallery) {
+                GalleryChecks.run(this); result.putString("result", "PASS: synthetic gallery captured, no external actions");
+                finish(Activity.RESULT_OK, result); return;
+            }
             SharedPreferences prefs = getTargetContext().getSharedPreferences("gate_settings", 0);
             require(prefs.edit().clear().commit(), "clear test settings");
             GateNumberStore store = new GateNumberStore(getTargetContext());
@@ -98,6 +107,8 @@ public final class SafetyChecks extends Instrumentation {
             NotificationChecks.run(this);
             WakeChecks.run(this);
             ProgressChecks.run(this);
+            com.pbuchman.duduhome.trip.TripChecks.run(this);
+            TripUiChecks.run(this);
             store.reserveDial();
             result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/no-touch, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);
