@@ -1,5 +1,17 @@
 # Design decisions
 
+## Independent trip session and OSM data - 1.2 candidate
+
+- Fourth tile and explicit session; opening the screen is inert. Background counting continues.
+- Reuse the existing GPS foreground service, with separate counter and resolver workers.
+- Prefer downloaded OSM evidence; keyless Photon is optional best-effort assistance, not an SLA.
+  Exclude public Nominatim vehicle polling, Android Geocoder and Google location data.
+- Settlement points are nearby hints, not invented boundaries; ambiguity remains visible.
+- Minimal two-line touchable overlay; no action buttons or distance. Existing automation wins.
+- Store only totals/state, break missing segments and keep real-drive acceptance distinct from tests.
+- Publish source plus synthetic emulator captures; maps, APKs and installation evidence stay local.
+
+
 ## Stable 1.1 and third destination - September 27
 
 - Append private configuration within the existing 12-place capacity; no new slot or UI fork.

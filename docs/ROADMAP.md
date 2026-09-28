@@ -1,5 +1,13 @@
 # Kolejka rozwoju
 
+## Implemented in the 1.2 candidate
+
+Gdzie jestem: explicit trip sessions, independent background distance, local OSM place lookup,
+keyless Photon assistance and minimal interactive overlay. Complete current UI capture tooling
+and unattended update preflight accompany the feature. Physical driving and DUDU sleep/wake
+acceptance remain open until observed. Regional map updates are explicit local deployments.
+
+
 Bieżący etap: przygotowanie wydania 1.0.0-rc2, code 15, zainstalowanego na radiu.
 Nawigacja z trzech kafelków i kolejność brama → sprzątanie → Yanosik → Spotify są w main.
 Wyniki testów oraz pozostałe warunki finalnego 1.0: [RELEASE_READINESS.md](RELEASE_READINESS.md).

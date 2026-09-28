@@ -78,3 +78,14 @@ Validate and reimport the full file; verify the count, order, third-row selectio
 Maps destination/guidance privately. Update the private handoff's canonical source pointer
 so a later installation cannot restore a stale shorter list. Public release notes describe
 capabilities and sanitized evidence only, never the configured places or their Maps links.
+
+## Where am I
+
+Read docs/WHERE_AM_I.md for the independent trip contract. Preserve all action safety and
+priority. The trip screen is passive; its overlay yields while counting continues. Never add
+Google geocoding, a second GPS provider or an action lease to this feature. Actual maps and
+APK/private installation receipts remain outside Git. Build local OSM packs on the computer;
+validate before atomic installation. Review every current-gallery screenshot for private
+pixels. Capture runner/instrumentation must refuse physical devices and never dispatch actions.
+Unattended updates require verified existing ADB and completed idle preflight, not user prompts.
+Keep missing device access and unobserved driving/wake tests explicit in the verification ledger.

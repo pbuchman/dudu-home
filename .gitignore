@@ -33,3 +33,9 @@ __pycache__/
 navigation.json
 navigation.proposed.json
 *navigation-private*
+
+# Local OSM inputs and derived indexes
+*.osm.pbf
+*.sqlite
+*.sqlite.*
+*.building

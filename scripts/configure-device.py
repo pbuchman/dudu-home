@@ -104,6 +104,8 @@ def main():
     navigation_schema = payload.get('navigation', {}).get('schema_version', 1)
     if navigation_schema == 2 and not a.apk and int(version.group(1)) < 17:
         raise ValueError('Install navigation groups build before importing schema 2')
+    from radio_update import wait_idle
+    if not a.apk: wait_idle(adb)
     if a.apk:
         if not a.backup_dir: raise ValueError('--backup-dir required for APK update')
         a.backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -125,7 +127,8 @@ def main():
             return re.findall(r'Signer #\d+ certificate SHA-256 digest: (\w+)', output)
         old, new = cert(backup/'installed.apk'), cert(a.apk)
         if not old or old != new: raise ValueError('Signature mismatch; backup preserved, no update')
-        # Preconditions: authorized device, no active call/action. Stop writes before snapshot.
+        wait_idle(adb)
+        # Verified idle observations; stop writes only after cleanup, before snapshot.
         run(['shell', 'am', 'force-stop', PACKAGE])
         (backup/'app-data.tar').write_bytes(run(['exec-out', 'run-as', PACKAGE, 'tar', '-cf', '-', '.']))
         # exec-out may hide a failed remote command's exit status. Validate the archive itself.

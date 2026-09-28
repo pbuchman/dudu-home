@@ -1,4 +1,9 @@
-# Release readiness - 2026-09-27
+# Release readiness - 2026-09-28
+
+## 1.2.0-rc1 / code 19
+
+Source candidate for review, without automatic merge, stable tag or APK publication. Build/lint, local emulator and update/import checks passed; see [verification](VERIFICATION.md) for measured offline-index results and exact limitations. The full Poland pack is prepared outside the repository. CI and bounded physical-radio discovery must be recorded for the submitted revision. A successful emulator run does not establish radio installation, driving accuracy or sleep/wake acceptance.
+
 
 ## 1.1.0 / code 18
 
@@ -7,8 +12,7 @@ third configured destination on DUDU7. This explicit acceptance supersedes the h
 blanket final-tag hold below. The third-target check and normal build, test, CI and privacy
 gates must pass before publication. Build/lint, full emulator, installer and private-data
 checks passed. Backed-up code 18 installation and APK hash match, private import, three-row
-UI, resolved Maps destination/address and active guidance passed on DUDU7. Verify final CI
-before merging PR #6 and tagging main. No APK or private assets are released.
+UI, resolved Maps destination/address and active guidance passed on DUDU7. PR #6 was merged and stable v1.1.0 was published after CI passed. No APK or private assets are released.
 
 The historical physical checks below remain unobserved individually, unless newer evidence
 in VERIFICATION.md says otherwise. General owner acceptance is not proof that every wake,

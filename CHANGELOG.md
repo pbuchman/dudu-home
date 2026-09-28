@@ -1,5 +1,15 @@
 # Change history
 
+## 1.2.0-rc1 (code 19)
+
+- Add Gdzie jestem as the fourth action, with explicit trip sessions and background distance.
+- Show locality/street through a minimal two-line overlay and silent tappable notification.
+- Add read-only local OSM indexes and bounded keyless Photon assistance; no Google location data.
+- Preserve gate/cleaning/media priority and all existing action reservations.
+- Add map preparation, automatic radio discovery/update checks, trip tests and full-app UI captures.
+- Hardware driving/wake acceptance is tracked separately; source-only candidate, no public APK.
+
+
 ## 1.1.0 (code 18) - 2026-09-27
 
 - Promote configurable navigation groups with up to 12 ordered destinations per slot.

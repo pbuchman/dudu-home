@@ -1,5 +1,16 @@
 # Handoff - local Full Cleaning implementation
 
+## 1.2 trip development
+
+Build/lint both APKs, run check-trip.sh and test-radio-update.py in addition to every existing
+check, then execute instrumentation on an emulator. `osmium==4.3.1` is a computer-only optional
+builder dependency; install it to exercise the synthetic OSM parser. Prepare real regional
+map files outside Git and keep their manifest. `capture-readme.py` creates the current full-app
+gallery; review images before copying them into documentation. The installer automatically
+opens and verifies the updated menu. A radio connection failure is a deployment blocker,
+not an invitation to clear data or ask for unplanned device reconfiguration.
+
+
 Current source and verified radio installation: 1.1.0/code 18, the owner-authorized stable release.
 Three-place modal, exact private import and actual third-target Maps guidance/name passed. Follow NAVIGATION.md
 for the private full-file workflow and compatible schema migration; never use actual places

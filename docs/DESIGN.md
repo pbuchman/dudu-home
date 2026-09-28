@@ -1,5 +1,22 @@
 # Dudu Home - wygląd i materiały
 
+## Current four-tile layout and trip presentation
+
+The 1.2 candidate adds a fourth tile using the existing pin illustration and mint tile styling.
+All four actions share equal width in the landscape row; narrow screens retain the existing
+vertical layout. The trip view uses the existing dark gradient, 42 sp locality, 28 sp street,
+36 sp distance and 56 dp buttons in a scrollable layout. Long names wrap in the full view.
+The location overlay is 300 x 64 dp, two single-line ellipsized labels (22/16 sp), without
+buttons or kilometres. It yields to the existing automation banner.
+
+Capture current screens with `python3 scripts/capture-readme.py emulator-5554` after building
+both APKs. The runner refuses physical devices, resets only emulator app data and uses
+2000 x 1200 landscape, density 240 and font scale 1.0. Fixtures contain invented places and
+no executors. Review every pixel before copying files from build/ui-checks/gallery into
+`docs/images/current`. The manifest records source/artifact provenance; mockups are not captures.
+See [gallery](UI_GALLERY.md). Earlier three-tile imagery below is historical.
+
+
 ## Kierunek
 
 To panel trzech konkretnych akcji i trzech celów nawigacji w samochodzie, nie dashboard smart home. Duże cele dotykowe,

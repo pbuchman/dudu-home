@@ -1,5 +1,14 @@
 # Functional packages and installation identity
 
+## Trip module
+
+`trip` owns the immutable fix/result types, pure distance accumulator, atomic session storage,
+read-only OSM index and bounded Photon client. A process controller separates ordered distance
+work from latest-position resolution. `ui.TripActivity` and `ui.TripPresentation` render its
+snapshot; the existing HomeMonitorService owns GPS and background presentation. Computer-only
+OSM preparation and unattended deployment live in scripts. No Android runtime dependency was added.
+
+
 Navigation uses `navigation.NavigationConfig` (strict schema), `NavigationStore` (private atomic
 file), `MapsLauncher` (explicit intent) and `ui.NavigationPanel` (three tiles/document picker).
 It shares only manual media priority with `JourneySession` and `AutomationRuntime`.

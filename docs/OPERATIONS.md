@@ -1,5 +1,38 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
+## Unattended 1.2 radio update
+
+Use the current private handoff to resolve the canonical navigation file, including every group
+member; never substitute an older shorter navigation file. Build the APK and dated map pack first.
+The wrapper discovers an already-authorized physical SYU radio through supplied ADB servers,
+cached private endpoint and mDNS; no pairing or broad LAN scan is attempted. Same Wi-Fi alone
+is not ADB authorization. Missing/ambiguous devices stop with a sanitized BLOCKED result.
+
+```sh
+python3 scripts/install-radio.py --config "$PRIVATE_DIR/config.json" \
+  --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
+  --navigation "$DUDU_CURRENT_NAVIGATION" --map "$DUDU_MAP" \
+  --apk app/build/outputs/apk/debug/app-debug.apk \
+  --backup-dir "$PRIVATE_DIR/radio-backups" --adb "$DUDU_ADB"
+```
+
+Supply `--adb` again for a second existing server wrapper. Inputs must be owner-only and outside
+Git. The wrapper preserves the actual automation-enabled state and compares installed geometry
+and complete navigation before updating. It checks available space, map integrity, signature
+through configure-device.py, and repeated idle evidence before force-stop. Audio mode, visible
+UI and service state are conservative observations, not a claim of fresh vendor HFP idle.
+Unknown/busy state blocks rather than interrupting a call.
+
+A separate install-verification marker prevents monitor startup while the app consumes its
+one-time import. The wrapper verifies full navigation, geometry, safety preferences, effective
+permissions and installed APK checksum before releasing it and automatically starting the menu.
+Backups and receipts are private. Pre-start failures restore the previous signed APK/data;
+after monitoring resumes, old safety state must not be restored because it could rearm actions.
+Never uninstall or clear radio data to overcome a failed update. A rejected downgrade remains
+a recovery blocker. Run the radio UI smoke only when connected; a successful update is not
+proof of driving accuracy or vendor wake behavior. See WHERE_AM_I and VERIFICATION.
+
+
 ## Bieżąca instalacja 1.1.0
 
 27 września zainstalowano code 18 z kopią APK/danych, kontrolą podpisu i zgodności SHA-256.
