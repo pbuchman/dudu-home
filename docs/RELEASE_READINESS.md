@@ -2,7 +2,7 @@
 
 ## 1.2.0-rc1 / code 19
 
-Source candidate for review, without automatic merge, stable tag or APK publication. Build/lint, local emulator and update/import checks passed; see [verification](VERIFICATION.md) for measured offline-index results and exact limitations. The full Poland pack is prepared outside the repository. CI and bounded physical-radio discovery must be recorded for the submitted revision. A successful emulator run does not establish radio installation, driving accuracy or sleep/wake acceptance.
+Source candidate for review, without automatic merge, stable tag or APK publication. Build/lint, local emulator and update/import checks passed; see [verification](VERIFICATION.md) for measured offline-index results and exact limitations. The full Poland pack is prepared outside the repository. Both CI checks passed for application commit `8d226ed`. The bounded unattended installer then stopped during discovery because no reachable authorized radio was found. No radio update or configuration change was attempted. The prepared APK hash and application/evidence commit distinction are recorded in VERIFICATION.md. A successful emulator run does not establish radio installation, driving accuracy or sleep/wake acceptance.
 
 
 ## 1.1.0 / code 18
