@@ -1,6 +1,19 @@
 # Change history
 
+## 1.3.0-rc1 (code 21)
+
+- Consolidate Android, Routebook backend, private map UI, deployment tooling and contract fixtures.
+- Add automatic GPS outbox and newest-first HTTPS delivery, independent of manual trip sessions.
+- Include all 1.2 location/overlay and earlier navigation/automation changes.
+- Require private operator inputs for deployment; keep source builds reproducible.
+- Hardware acceptance pending; Wispr Flow is separate and no APK is published.
+
+
 ## 1.2.0-rc1 (code 19)
+
+Merged into main through PR #7 on 2026-10-06. The cumulative local rebuild retains
+this version and the original application source; radio acceptance is still pending.
+See [release handoff](docs/RELEASE_MAIN_20261006.md).
 
 - Add Gdzie jestem as the fourth action, with explicit trip sessions and background distance.
 - Show locality/street through a minimal two-line overlay and silent tappable notification.

@@ -1,5 +1,56 @@
 # Verification ledger
 
+## Combined 1.3.0-rc1 / code 21, 2026-10-06
+
+- Consolidated Android and Routebook source after main PR #7. Existing application safety
+  behavior is retained; version code advances beyond the detached code 20 experiment.
+- Debug APK, instrumentation build and lint passed. Existing detector, trip, progress,
+  private-tool, navigation, radio-updater and installer unit checks passed. The optional
+  pyosmium parser case remains skipped in the local Python environment; CI installs it.
+- Full Android emulator safety/UI and first-run no-dial checks passed on isolated userdata.
+- Routebook Android storage/upload checks: 44 assertions; seed/restart: 5; actual monitor
+  callback integration: 10, including manual trip OFF/PAUSED and busy automation.
+- Routebook pure Java checks: 84 assertions. Backend: 37 tests passed with actual synthetic
+  PostGIS, including compiled process/database restart. UI: 13 unit and 13 browser tests.
+  All nine shared contract cases passed. Browser tests now pin their historical fixture
+  date and explicitly enable synthetic development mode, independent of the real date.
+- Actual Android HTTPS -> Fastify -> PostGIS -> production UI/SSE acceptance: 32 checks.
+  Verified lost ACK/restart, stable retry IDs, latest before 200-point backfill, partial
+  rejection, invalid ACK recovery, 244 unique committed points and private/public separation.
+  TLS uses an ephemeral test CA trusted only by instrumentation; APK hash stayed unchanged.
+  MapTiler style/logo are substituted in these tests, so they do not prove provider access.
+- Disposable Docker PostGIS/Fastify/Nginx isolation probes passed. Five deployment-template
+  and 12 Cloudflare-plan tests passed. Actual deployment hosts are explicit private inputs.
+- Privacy checks distinguish npm semantic versions from four-octet private addresses and
+  exact browser dependency tokens from short labels; regression checks preserve rejection
+  of real address/standalone-label leaks. Private values and APKs are not publication inputs.
+- No physical radio installation, real GNSS, wake, final TLS ingest or steering-wheel
+  dictation was accepted by these local checks. Follow INTEGRATED_RELEASE.md.
+
+
+## Main release rebuild, 2026-10-06
+
+- Verified fetched main merge `39874ef` contains PR #7; application tree is identical to
+  `04ef6e3`. No Routebook code is present in this main release.
+- Fresh isolated worktree: assembleDebug, assembleDebugAndroidTest and lintDebug passed.
+- Trip/distance, map format validation, radio updater, detector/motion/priority, synthetic
+  equivalence, progress, private tools, navigation, privacy tests and fresh installer passed.
+  The optional pyosmium parser test was skipped because the current Python lacks osmium;
+  existing full-index SHA-256 was independently verified against its manifest.
+- Emulator safety/UI and first-run no-dial checks passed using isolated userdata. An initial
+  run correctly rejected code 19 over an existing emulator code 20; original test data was
+  retained. Physical radio tests were not run.
+- Real emulator update/import CLI passed: mismatched phone refused, signature-checked
+  backup/update, encrypted import, complete navigation and daily quota preserved on restart.
+- Private rebuilt APK SHA-256:
+  `ee7800dbac9327b4f85eeaf67fd20b0640e4909cd3ca71bc922f78edd2c3792a`.
+  Version remains 1.2.0-rc1/code 19. Local debug signing verified; compare with the radio
+  before update. This rebuild hash replaces neither older artifact evidence nor installed hashes.
+- README, release readiness and local handoff corrected to reflect merged source versus
+  previous radio-verified 1.1.0. No remote documentation update or stable release claim.
+- See RELEASE_MAIN_20261006.md for the cumulative feature boundary and radio sequence.
+
+
 ## 1.2.0-rc1 / code 19: location and trip candidate (September 28)
 
 - Debug app, instrumentation APK and lint passed. Full emulator SafetyChecks, trip lifecycle, delayed notification navigation, background overlay and first-run/no-dial checks passed. The real installer CLI test passed signature-checked update, encrypted import, complete navigation and durable quota preservation.

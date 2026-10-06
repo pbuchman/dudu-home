@@ -1,8 +1,21 @@
-# Release readiness - 2026-09-28
+# Release readiness - 2026-10-06
+
+## 1.3.0-rc1 / code 21, combined test baseline
+
+Includes all merged Android features and the former local Routebook collector, backend,
+map UI and deployment tooling. Wispr Flow remains a separate installation/integration task.
+See INTEGRATED_RELEASE.md for source inventory, validation and sequential radio acceptance.
+This is a test candidate, with GPS/wake and real authenticated delivery still pending.
+
 
 ## 1.2.0-rc1 / code 19
 
-Source candidate for review, without automatic merge, stable tag or APK publication. Build/lint, local emulator and update/import checks passed; see [verification](VERIFICATION.md) for measured offline-index results and exact limitations. The full Poland pack is prepared outside the repository. Both CI checks passed for application commit `8d226ed`. The bounded unattended installer then stopped during discovery because no reachable authorized radio was found. No radio update or configuration change was attempted. The prepared APK hash and application/evidence commit distinction are recorded in VERIFICATION.md. A successful emulator run does not establish radio installation, driving accuracy or sleep/wake acceptance.
+PR #7 is merged into main at `39874ef`. That historical package retained
+`1.2.0-rc1` / code 19; it is superseded by code 21 above.
+Routebook and Wispr Flow were not included in that revision.
+See [the cumulative release handoff](RELEASE_MAIN_20261006.md).
+
+Historical pre-merge verification: Build/lint, local emulator and update/import checks passed; see [verification](VERIFICATION.md) for measured offline-index results and exact limitations. The full Poland pack is prepared outside the repository. Both CI checks passed for application commit `8d226ed`. The bounded unattended installer then stopped during discovery because no reachable authorized radio was found. No radio update or configuration change was attempted. The prepared APK hash and application/evidence commit distinction are recorded in VERIFICATION.md. A successful emulator run does not establish radio installation, driving accuracy or sleep/wake acceptance.
 
 
 ## 1.1.0 / code 18

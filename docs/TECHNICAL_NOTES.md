@@ -422,3 +422,9 @@ sukcesu. Przy problemie nie należy dodawać automatycznego drugiego dial.
 
 Źródła społecznościowe potwierdzają ogólny sposób komunikacji Binder na platformie FYT.
 Nie zastępują testu poleceń telefonicznych na konkretnym firmware DUDU7.
+
+## Routebook integration
+
+Routebook receives copied fixes after automation and manual trip processing, including early
+returns, without another GPS subscription or action lease. Its durable queue and HTTPS worker
+are independent of SYU IPC; see ROUTEBOOK.md. No calling safety rule changes.

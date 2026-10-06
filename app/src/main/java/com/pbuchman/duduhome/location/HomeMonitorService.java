@@ -40,6 +40,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private static final String CHANNEL = "home_monitor";
     private com.pbuchman.duduhome.trip.TripController trip;
     private com.pbuchman.duduhome.ui.TripPresentation tripPresentation;
+    private com.pbuchman.duduhome.routebook.Routebook routebook;
     private LocationManager locations;
     private HomeConfiguration config;
     private HomeDetector detector;
@@ -126,6 +127,7 @@ public final class HomeMonitorService extends Service implements LocationListene
             Diagnostics.record(this, "MONITOR_STOP_NOT_READY");
             stopSelf(); return START_NOT_STICKY;
         }
+        if (routebook == null) routebook = new com.pbuchman.duduhome.routebook.Routebook(this);
         if (next == null || !next.enabled) {
             if (detector != null) {
                 automation.reset(Reason.CONFIGURATION);
@@ -171,6 +173,7 @@ public final class HomeMonitorService extends Service implements LocationListene
             if (automation != null) automation.reset(Reason.WAKE);
             progressEpoch = ProgressBus.reset(this, Reason.WAKE);
             if (trip != null) trip.breakSegment();
+            if (routebook != null) routebook.breakSegment();
             // Never carry pre-sleep movement evidence into a new cycle.
             motion.clear(); motionOrigin = null;
             if (detector != null) detector.clearEvidence();
@@ -239,7 +242,10 @@ public final class HomeMonitorService extends Service implements LocationListene
                                    != com.pbuchman.duduhome.automation.YanosikPresence.State.WORK_DETECTED))
                                 ? observed : java.util.List.of()));
         if (!motion.fresh(lastFix)) motionOrigin = null;
-        } finally { if (trip != null) trip.offer(location); }
+        } finally {
+            try { if (trip != null) trip.offer(location); }
+            finally { if (routebook != null) routebook.offer(location); }
+        }
     }
 
     private boolean acceptHome(Location location, long fixTime) {
@@ -268,6 +274,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         else automation.gateArea(detector.gateArea(), validUntil);
     }
     @Override public void onProviderDisabled(String provider) {
+        if (routebook != null) routebook.breakSegment();
         if (trip != null) trip.breakSegment();
         Diagnostics.record(this, "GPS_PROVIDER_DISABLED");
         progressEpoch = ProgressBus.reset(this, Reason.GPS_UNRELIABLE);
@@ -276,8 +283,12 @@ public final class HomeMonitorService extends Service implements LocationListene
         motion.clear(); motionOrigin = null;
     }
     @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }
-    @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+    @Override public void onStatusChanged(String provider, int status, Bundle extras) {
+        if (routebook != null && LocationManager.GPS_PROVIDER.equals(provider)
+                && status != android.location.LocationProvider.AVAILABLE) routebook.breakSegment();
+    }
     @Override public void onDestroy() {
+        if (routebook != null) routebook.close();
         if (tripPresentation != null) tripPresentation.close();
         if (trip != null) trip.breakSegment();
         if (automation != null) automation.close();
@@ -294,6 +305,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         writer.println("monitor_running=" + !destroyed + " registered=" + registered);
         writer.println("action_busy=" + HomeActions.busy());
         if (trip != null) writer.println(trip.diagnostic());
+        if (routebook != null) writer.println(routebook.diagnostic());
     }
     @Override public IBinder onBind(Intent intent) { return null; }
 }

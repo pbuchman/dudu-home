@@ -1,0 +1,1014 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "note": "Fictitious equatorial points, not user tracks. Each case starts with an empty registered device/revision0. Expected queries are projections, not complete HTTP responses. Run fixture clock at each delivery.received_at; compare meter values with tolerance0.01.",
+  "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+  "timezone": "Europe/Warsaw",
+  "meter_tolerance": 0.01,
+  "derivation": {
+    "gap_seconds": 30,
+    "max_edge_speed_mps": 80,
+    "stationary_speed_mps": 0.7,
+    "min_edge_m": 5,
+    "stop_radius_m": 25,
+    "stop_seconds": 180,
+    "earth_radius_m": 6371000
+  },
+  "cases": [
+    {
+      "name": "gps_gap_same_source_segment",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "903c0852-1281-5331-ab01-354e9af3e0fc",
+                "segment_id": "f880da1d-4f2f-5987-91e9-ab03a244f315",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "2073edaf-533c-5630-a4a1-b75c879a1bb2",
+                "segment_id": "f880da1d-4f2f-5987-91e9-ab03a244f315",
+                "measured_at": "2026-10-05T08:00:10.000Z",
+                "lat": 0,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "055cc6a5-6152-5413-bf1f-9a651667e688",
+                "segment_id": "f880da1d-4f2f-5987-91e9-ab03a244f315",
+                "measured_at": "2026-10-05T08:01:00.000Z",
+                "lat": 0,
+                "lon": 0.01,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "903c0852-1281-5331-ab01-354e9af3e0fc",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "2073edaf-533c-5630-a4a1-b75c879a1bb2",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 2,
+                "event_id": "055cc6a5-6152-5413-bf1f-9a651667e688",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 3,
+            "latest_event_id": "055cc6a5-6152-5413-bf1f-9a651667e688"
+          }
+        }
+      ],
+      "expected_queries": {
+        "day": {
+          "date": "2026-10-05",
+          "point_count": 3,
+          "meters": 111.19492664455875,
+          "run_point_ids": [
+            [
+              "903c0852-1281-5331-ab01-354e9af3e0fc",
+              "2073edaf-533c-5630-a4a1-b75c879a1bb2"
+            ],
+            [
+              "055cc6a5-6152-5413-bf1f-9a651667e688"
+            ]
+          ],
+          "stops": []
+        }
+      },
+      "expected_observation_gaps": [
+        {
+          "start_at": "2026-10-05T08:00:10.000Z",
+          "end_at": "2026-10-05T08:01:00.000Z",
+          "seconds": 50,
+          "is_stop": false
+        }
+      ]
+    },
+    {
+      "name": "stop_exactly_180_seconds",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "ae43e956-e73d-5bf4-ad41-10f5fa579c97",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "cc85df09-3a29-53f3-a3ca-3683d8816ac5",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:00:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "29ec6cf2-8ccf-542b-b1d9-456cf92c3dbe",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:01:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "cb40cf30-be44-5aab-86ca-66bb8b432ff9",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:01:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "62584419-b550-53a0-af27-0c5653ce61d3",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:02:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "7e6dc89c-554b-5e42-91b7-0bc11d00244f",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:02:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "671e2ffd-689e-51c7-ba8b-095b757e216f",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:03:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "c47d02c9-0f01-5490-b569-7de7da48c4fe",
+                "segment_id": "7ac369f5-f332-5e1e-b3e7-8d48582cce0c",
+                "measured_at": "2026-10-05T08:03:30.000Z",
+                "lat": 0,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "ae43e956-e73d-5bf4-ad41-10f5fa579c97",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "cc85df09-3a29-53f3-a3ca-3683d8816ac5",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 2,
+                "event_id": "29ec6cf2-8ccf-542b-b1d9-456cf92c3dbe",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 3,
+                "event_id": "cb40cf30-be44-5aab-86ca-66bb8b432ff9",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 4,
+                "event_id": "62584419-b550-53a0-af27-0c5653ce61d3",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 5,
+                "event_id": "7e6dc89c-554b-5e42-91b7-0bc11d00244f",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 6,
+                "event_id": "671e2ffd-689e-51c7-ba8b-095b757e216f",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 7,
+                "event_id": "c47d02c9-0f01-5490-b569-7de7da48c4fe",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 8,
+            "latest_event_id": "c47d02c9-0f01-5490-b569-7de7da48c4fe"
+          }
+        }
+      ],
+      "expected_queries": {
+        "day": {
+          "date": "2026-10-05",
+          "point_count": 8,
+          "meters": 111.19492664455875,
+          "stop_projection": [
+            {
+              "stop_id": "ae43e956-e73d-5bf4-ad41-10f5fa579c97",
+              "start_at": "2026-10-05T08:00:00.000Z",
+              "end_at": "2026-10-05T08:03:00.000Z",
+              "duration_seconds": 180,
+              "overlap_seconds": 180
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "latest_before_backfill_and_late_curve",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "latest",
+            "points": [
+              {
+                "event_id": "04bcde7a-6202-52df-963d-83faf3a891c2",
+                "segment_id": "6a2d4d5f-69b7-5570-be9e-4cda3998a9e8",
+                "measured_at": "2026-10-05T08:00:20.000Z",
+                "lat": 0,
+                "lon": 0.002,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "04bcde7a-6202-52df-963d-83faf3a891c2",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 1,
+            "latest_event_id": "04bcde7a-6202-52df-963d-83faf3a891c2"
+          }
+        },
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "b8c74d91-dec0-5b93-b319-2bac03f86394",
+                "segment_id": "6a2d4d5f-69b7-5570-be9e-4cda3998a9e8",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 2,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "b8c74d91-dec0-5b93-b319-2bac03f86394",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 2,
+            "latest_event_id": "04bcde7a-6202-52df-963d-83faf3a891c2"
+          }
+        },
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "53e8c58f-0498-5fda-a81c-972f38f5d353",
+                "segment_id": "6a2d4d5f-69b7-5570-be9e-4cda3998a9e8",
+                "measured_at": "2026-10-05T08:00:10.000Z",
+                "lat": 0.001,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 3,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "53e8c58f-0498-5fda-a81c-972f38f5d353",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 3,
+            "latest_event_id": "04bcde7a-6202-52df-963d-83faf3a891c2"
+          }
+        }
+      ],
+      "expected_after_deliveries": [
+        {
+          "meters": 0
+        },
+        {
+          "meters": 222.3898532891175
+        },
+        {
+          "meters": 314.50674664764915
+        }
+      ],
+      "expected_queries": {
+        "day": {
+          "date": "2026-10-05",
+          "point_count": 3,
+          "meters": 314.50674664764915,
+          "run_point_ids": [
+            [
+              "b8c74d91-dec0-5b93-b319-2bac03f86394",
+              "53e8c58f-0498-5fda-a81c-972f38f5d353",
+              "04bcde7a-6202-52df-963d-83faf3a891c2"
+            ]
+          ],
+          "stops": []
+        }
+      }
+    },
+    {
+      "name": "commit_then_lost_ack_retry_and_conflict",
+      "simulate_lost_ack_for_delivery_index": 0,
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "segment_id": "5dc27b4e-2919-5d6b-9357-bf952b5701e1",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa",
+                "segment_id": "5dc27b4e-2919-5d6b-9357-bf952b5701e1",
+                "measured_at": "2026-10-05T08:00:10.000Z",
+                "lat": 0,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 2,
+            "latest_event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa"
+          }
+        },
+        {
+          "received_at": "2026-10-05T08:11:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "segment_id": "5dc27b4e-2919-5d6b-9357-bf952b5701e1",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa",
+                "segment_id": "5dc27b4e-2919-5d6b-9357-bf952b5701e1",
+                "measured_at": "2026-10-05T08:00:10.000Z",
+                "lat": 0,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "status": "duplicate",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa",
+                "status": "duplicate",
+                "code": null
+              }
+            ],
+            "stored_point_count": 2,
+            "latest_event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa"
+          }
+        },
+        {
+          "received_at": "2026-10-05T08:12:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "segment_id": "5dc27b4e-2919-5d6b-9357-bf952b5701e1",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0.001,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc",
+                "status": "rejected",
+                "code": "event_conflict"
+              }
+            ],
+            "stored_point_count": 2,
+            "latest_event_id": "3f0ef9bb-3338-5612-a315-aa335b39d6aa"
+          }
+        }
+      ],
+      "expected_queries": {
+        "day": {
+          "date": "2026-10-05",
+          "point_count": 2,
+          "meters": 111.19492664455875
+        },
+        "stored_received_at": {
+          "7e997e5b-049a-5d5f-a1a7-c7701ab5a6cc": "2026-10-05T08:10:00.000Z",
+          "3f0ef9bb-3338-5612-a315-aa335b39d6aa": "2026-10-05T08:10:00.000Z"
+        }
+      },
+      "expected_android": {
+        "after_lost_ack_pending": 2,
+        "after_retry_pending": 0,
+        "conflict_terminal_rejected": 1
+      }
+    },
+    {
+      "name": "valid_and_invalid_mixed_batch",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "59491651-77b7-51a0-8e79-4038a7c86739",
+                "segment_id": "23173232-e44f-5a16-b3df-6995e1e50379",
+                "measured_at": "2026-10-05T08:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "ede943eb-e1ae-5ccb-916f-7812d5256b9c",
+                "segment_id": "23173232-e44f-5a16-b3df-6995e1e50379",
+                "measured_at": "2026-10-05T08:00:10.000Z",
+                "lat": 91,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "d7f61241-caa9-5ea2-84c8-ac0ea45a4d2d",
+                "segment_id": "23173232-e44f-5a16-b3df-6995e1e50379",
+                "measured_at": "2026-10-05T08:00:20.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 51,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "59491651-77b7-51a0-8e79-4038a7c86739",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "ede943eb-e1ae-5ccb-916f-7812d5256b9c",
+                "status": "rejected",
+                "code": "invalid_point"
+              },
+              {
+                "index": 2,
+                "event_id": "d7f61241-caa9-5ea2-84c8-ac0ea45a4d2d",
+                "status": "rejected",
+                "code": "invalid_point"
+              }
+            ],
+            "stored_point_count": 1,
+            "latest_event_id": "59491651-77b7-51a0-8e79-4038a7c86739"
+          }
+        }
+      ],
+      "expected_android": {
+        "pending": 0,
+        "terminal_rejected": 2
+      },
+      "expected_queries": {
+        "day": {
+          "date": "2026-10-05",
+          "point_count": 1,
+          "meters": 0,
+          "stops": []
+        }
+      }
+    },
+    {
+      "name": "warsaw_midnight_edge",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "dae1c8a1-00f0-5550-8dff-f4d9fb329eba",
+                "segment_id": "f43d73b8-f9f0-5f15-b3a8-3ff31a8780de",
+                "measured_at": "2026-10-04T21:59:50.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              },
+              {
+                "event_id": "aacf0517-161e-59b4-a993-18579689834c",
+                "segment_id": "f43d73b8-f9f0-5f15-b3a8-3ff31a8780de",
+                "measured_at": "2026-10-04T22:00:00.000Z",
+                "lat": 0,
+                "lon": 0.001,
+                "accuracy_m": 5,
+                "speed_mps": 5
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "dae1c8a1-00f0-5550-8dff-f4d9fb329eba",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "aacf0517-161e-59b4-a993-18579689834c",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 2,
+            "latest_event_id": "aacf0517-161e-59b4-a993-18579689834c"
+          }
+        }
+      ],
+      "expected_queries": {
+        "days": [
+          {
+            "date": "2026-10-04",
+            "point_count": 1,
+            "meters": 0,
+            "edge_from_ids": [
+              null
+            ]
+          },
+          {
+            "date": "2026-10-05",
+            "point_count": 1,
+            "meters": 111.19492664455875,
+            "edge_from_ids": [
+              "dae1c8a1-00f0-5550-8dff-f4d9fb329eba"
+            ]
+          }
+        ],
+        "range": {
+          "from": "2026-10-04",
+          "to": "2026-10-05",
+          "meters": 111.19492664455875,
+          "months": [
+            {
+              "month": "2026-10",
+              "meters": 111.19492664455875
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "warsaw_midnight_stop",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "d7d939b5-c080-55a8-8aa0-0b9c47a172ff",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T21:58:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "35a4b7c9-b9ac-5926-ad7e-f0e13c4c3b8c",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T21:59:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "8893bbcb-deec-5a07-9ac5-8617098a7c24",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T21:59:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "11cadb4d-9c20-5c71-930c-4cfdf5b209d9",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T22:00:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "c93ff002-0550-5904-b309-37159072edd1",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T22:00:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "0daf93fe-8dc9-5265-ad10-107da0529bd6",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T22:01:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "7ca3646e-78ca-55cb-89d3-3051cf6ca893",
+                "segment_id": "986ef653-ce7d-5eee-848a-89607b50f860",
+                "measured_at": "2026-10-04T22:01:30.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "d7d939b5-c080-55a8-8aa0-0b9c47a172ff",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "35a4b7c9-b9ac-5926-ad7e-f0e13c4c3b8c",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 2,
+                "event_id": "8893bbcb-deec-5a07-9ac5-8617098a7c24",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 3,
+                "event_id": "11cadb4d-9c20-5c71-930c-4cfdf5b209d9",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 4,
+                "event_id": "c93ff002-0550-5904-b309-37159072edd1",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 5,
+                "event_id": "0daf93fe-8dc9-5265-ad10-107da0529bd6",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 6,
+                "event_id": "7ca3646e-78ca-55cb-89d3-3051cf6ca893",
+                "status": "accepted",
+                "code": null
+              }
+            ],
+            "stored_point_count": 7,
+            "latest_event_id": "7ca3646e-78ca-55cb-89d3-3051cf6ca893"
+          }
+        }
+      ],
+      "expected_queries": {
+        "days": [
+          {
+            "date": "2026-10-04",
+            "meters": 0,
+            "point_count": 3,
+            "stop_projection": [
+              {
+                "stop_id": "d7d939b5-c080-55a8-8aa0-0b9c47a172ff",
+                "start_at": "2026-10-04T21:58:30.000Z",
+                "end_at": "2026-10-04T22:01:30.000Z",
+                "duration_seconds": 180,
+                "overlap_seconds": 90
+              }
+            ]
+          },
+          {
+            "date": "2026-10-05",
+            "meters": 0,
+            "point_count": 4,
+            "stop_projection": [
+              {
+                "stop_id": "d7d939b5-c080-55a8-8aa0-0b9c47a172ff",
+                "start_at": "2026-10-04T21:58:30.000Z",
+                "end_at": "2026-10-04T22:01:30.000Z",
+                "duration_seconds": 180,
+                "overlap_seconds": 90
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "warsaw_dst_day_bounds",
+      "deliveries": [],
+      "expected_day_bounds": [
+        {
+          "date": "2026-03-29",
+          "start_at": "2026-03-28T23:00:00.000Z",
+          "end_at": "2026-03-29T22:00:00.000Z",
+          "seconds": 82800
+        },
+        {
+          "date": "2026-10-25",
+          "start_at": "2026-10-24T22:00:00.000Z",
+          "end_at": "2026-10-25T23:00:00.000Z",
+          "seconds": 90000
+        }
+      ]
+    },
+    {
+      "name": "future_clock_not_live",
+      "deliveries": [
+        {
+          "received_at": "2026-10-05T08:10:00.000Z",
+          "request": {
+            "version": 1,
+            "device_id": "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea",
+            "lane": "backfill",
+            "points": [
+              {
+                "event_id": "fed9d4ce-434c-583d-8b4f-da3593ac5a65",
+                "segment_id": "dd72c412-512b-5a95-bf1a-7b3568b8b2fb",
+                "measured_at": "2026-10-05T08:14:00.000Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              },
+              {
+                "event_id": "614499c6-0ceb-5890-b7ff-1e6a5bd58016",
+                "segment_id": "dd72c412-512b-5a95-bf1a-7b3568b8b2fb",
+                "measured_at": "2026-10-05T08:15:00.001Z",
+                "lat": 0,
+                "lon": 0,
+                "accuracy_m": 5,
+                "speed_mps": 0
+              }
+            ]
+          },
+          "expected": {
+            "http_status": 200,
+            "revision": 1,
+            "results": [
+              {
+                "index": 0,
+                "event_id": "fed9d4ce-434c-583d-8b4f-da3593ac5a65",
+                "status": "accepted",
+                "code": null
+              },
+              {
+                "index": 1,
+                "event_id": "614499c6-0ceb-5890-b7ff-1e6a5bd58016",
+                "status": "rejected",
+                "code": "invalid_point"
+              }
+            ],
+            "stored_point_count": 1,
+            "latest_event_id": "fed9d4ce-434c-583d-8b4f-da3593ac5a65"
+          }
+        }
+      ],
+      "expected_latest_at": [
+        {
+          "server_time": "2026-10-05T08:10:00.000Z",
+          "fresh": false,
+          "clock_state": "future_clock"
+        },
+        {
+          "server_time": "2026-10-05T08:14:00.000Z",
+          "fresh": true,
+          "clock_state": "fresh"
+        },
+        {
+          "server_time": "2026-10-05T08:14:31.000Z",
+          "fresh": false,
+          "clock_state": "stale"
+        }
+      ]
+    }
+  ],
+  "negative_http_cases": [
+    {
+      "name": "unauthenticated",
+      "status": 401,
+      "writes": 0
+    },
+    {
+      "name": "wrong_device_binding",
+      "status": 403,
+      "writes": 0
+    },
+    {
+      "name": "invalid_envelope",
+      "status": 422,
+      "writes": 0
+    },
+    {
+      "name": "duplicate_json_keys",
+      "status": 422,
+      "writes": 0
+    },
+    {
+      "name": "body_over_256_KiB",
+      "status": 413,
+      "writes": 0
+    },
+    {
+      "name": "db_commit_failure",
+      "status": 503,
+      "writes": 0,
+      "ack_results": null
+    },
+    {
+      "name": "public_day_with_valid_ingest_token",
+      "status": 404
+    },
+    {
+      "name": "public_health",
+      "status": 404
+    }
+  ],
+  "ui_range_acceptance": {
+    "from": "2026-10-04",
+    "to": "2026-10-05",
+    "day_request_count": 2,
+    "max_concurrent_day_requests": 2,
+    "progress_total_days": 2,
+    "cancel_selection_discards_old_results": true,
+    "gps_gap_is_observation_gap_not_stop": true
+  }
+}
