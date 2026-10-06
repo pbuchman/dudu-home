@@ -13,40 +13,28 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Stable `1.1.0` (code 18), September 27.**
-> The owner confirmed the existing functionality and authorized a stable 1.1 release after
-> verification of a third destination. Three rows, selection, Maps guidance and its resolved
-> destination were verified on DUDU7 with the installed code 18 APK.
-> Historical journey/wake tests remain individually documented; general owner acceptance
-> does not imply that each previously unobserved hardware scenario was rerun.
-> See the [verification ledger](docs/VERIFICATION.md) and [release status](docs/RELEASE_READINESS.md).
-> Source only: no public APK, private configuration or signing key.
+> **Development candidate `1.2.0-rc1` (code 19).**
+> Adds an independent trip session with current locality/street, background kilometres,
+> a minimal overlay and local OpenStreetMap data with optional Photon assistance.
+> Stable `1.1.0` remains the previous radio-verified release. Candidate hardware results
+> are recorded separately in the [verification ledger](docs/VERIFICATION.md).
+> Source only: no public APK, map database, private configuration or signing key.
 
-![Dudu Home with three navigation slots - synthetic emulator capture](docs/images/navigation-populated.png)
+![Current four-action menu and navigation groups - synthetic emulator capture](docs/images/current/home-complete.png)
 
-[Three-place chooser](docs/images/navigation-groups.png) · [Empty navigation slots](docs/images/navigation-empty.png) · [Earlier radio menu](docs/images/menu-dudu7.png)
+These are captures of the running Android UI with invented fixture data, not mockups or
+physical gate/robot/drive acceptance. The [complete gallery](docs/UI_GALLERY.md) covers
+navigation, action results, settings, automation, media and every trip state.
 
-The new screenshot uses invented labels and synthetic coordinates. Actual destination files and
-radio screenshots remain private.
-
-### See what the automation is detecting
-
-A small, silent banner shows real GPS evidence before an automatic action. It sits above the
-current app or inside the open Dudu Home menu, never both. It cannot receive touches, steal
-focus, advance on its own or trigger an action. Cancelled detection shows a short reason.
-Gate and cleaning use the existing execution screen; Yanosik only reports the launch request.
-
-![Automation progress above another app - synthetic emulator capture, not radio acceptance](docs/images/progress-overlay.png)
-
-[Inside the menu](docs/images/progress-menu.png) · [Cancelled detection](docs/images/progress-cancelled.png) ·
-[Existing action view, synthetic preview without a call](docs/images/progress-action.png)
-
-[Return before the turn](docs/images/progress-return-early.png) ·
-[Return approaching the gate](docs/images/progress-return-inbound.png)
-
-Local checks include all eight recorded routes against the pre-UI detector. The earlier 0.5.0
-movement overlay and automatic return call passed on the radio; the new return stages await testing.
-See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and limits.
+| Navigation groups | Gate execution |
+| --- | --- |
+| ![Three-place chooser](docs/images/current/navigation-chooser.png) | ![Gate execution renderer](docs/images/current/gate-executing.png) |
+| **Cleaning and manual mop** | **Settings and private setup** |
+| ![Manual mop accepted renderer](docs/images/current/mop-accepted.png) | ![Settings](docs/images/current/settings-menu.png) |
+| **Current place and trip distance** | **Minimal background overlay** |
+| ![Active trip with synthetic locality](docs/images/current/trip-active.png) | ![Two-line location overlay](docs/images/current/trip-overlay.png) |
+| **Automation progress** | **Media playback feedback** |
+| ![Departure detection renderer](docs/images/current/detection-departure.png) | ![Spotify PLAYING renderer](docs/images/current/spotify-playing.png) |
 
 ## What it does
 
@@ -56,6 +44,11 @@ See the [UI/background contract](docs/PROGRESS_UI.md) for exact meanings and lim
   the routine's rooms and settings remain managed in the Roborock phone app.
 - **Mopowanie (Full Mop):** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
   Missing Mop configuration never starts Full Cleaning instead.
+- **Gdzie jestem:** explicitly start, pause, resume or end a trip. Show locality, street and
+  session kilometres. Count qualified GPS movement in the background; show a silent two-line
+  overlay and notification that open the full screen when tapped. Local OSM data works offline;
+  keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
+  [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
@@ -109,6 +102,8 @@ There are no external Android runtime libraries.
 
 ```sh
 ./gradlew assembleDebug assembleDebugAndroidTest lintDebug
+bash scripts/check-trip.sh
+python3 scripts/test-radio-update.py
 bash scripts/check-detector.sh
 python3 scripts/check-progress.py
 python3 scripts/test-private-tools.py
@@ -144,7 +139,9 @@ python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
 
 `PRIVATE_DIR` is an owner-only directory outside every repository. The installer checks the
 configured number against the radio, stages data via stdin, and never launches an action.
-Open Dudu Home to consume the import after the authorized update. Do not update during a call or other action.
+For an unattended update, use `scripts/install-radio.py` from the operations runbook: it discovers
+the authorized radio, performs idle preflight, installs the local map pack and opens/verifies the
+menu automatically. Busy or inconclusive call/action state blocks the update.
 The fresh-install helper refuses to update an existing app; use the backed-up path above.
 It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
 with retained data, and never passes the replacement flag `-r` to installation.
@@ -180,6 +177,8 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 
 ## Documentation for the next developer
 
+- [Where am I](docs/WHERE_AM_I.md): trip sessions, OSM/Photon, distance and background priority.
+- [Current full-app gallery](docs/UI_GALLERY.md): synthetic emulator captures and reproduction.
 - [Private navigation destinations](docs/NAVIGATION.md): JSON schema, import and Maps launch.
 - [Functional contract](docs/FUNCTIONAL.md): buttons, triggers, once-a-day behavior and failure cases.
 - [Architecture and Roborock protocol](docs/ROBOROCK.md): native HTTPS, credentials and boundaries.
@@ -197,4 +196,6 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 The independent [FytBt project](https://github.com/PimpinPumpkin/FytBt) corroborates the Binder
 approach on related FYT hardware. Roborock request signing was ported from the
 [python-roborock implementation](https://github.com/Python-roborock/python-roborock).
+Map data is © OpenStreetMap contributors under [ODbL 1.0](https://www.openstreetmap.org/copyright),
+independently of the application license. Local map packs are not public repository assets.
 Dudu Home is not an official DUDU or Roborock product.

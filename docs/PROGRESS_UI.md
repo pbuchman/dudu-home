@@ -1,5 +1,14 @@
 # Automation progress: UI and background contract
 
+## Location overlay coexistence
+
+The Gdzie jestem overlay belongs to the existing monitor but has a separate presentation
+controller. Any visible automation progress, protected MainActivity screen, pending home action
+or execution hides it. The measurement session continues. Its two-line bounded window receives
+taps and is non-focusable; the automation banner remains non-touchable. Tapping the location
+notification during a protected action defers opening until the menu is safe. See [trip UI](WHERE_AM_I.md).
+
+
 Source version `0.5.6-local`, versionCode 13, progress based on `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.

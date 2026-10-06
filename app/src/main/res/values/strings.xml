@@ -116,4 +116,8 @@
     <string name="navigation_close">Zamknij wybór lokalizacji</string>
     <string name="navigation_drive">Jedź</string>
     <string name="navigation_choice_help">Wybór miejsca uruchomi nawigację w Google Maps.</string>
+    <string name="trip_title">Gdzie jestem</string>
+    <string name="trip_start">Rozpocznij</string>
+    <string name="trip_end">Zakończ</string>
+    <string name="trip_permissions">Brak uprawnień lokalizacji, powiadomień lub nakładki. Sprawdź instalację.</string>
 </resources>

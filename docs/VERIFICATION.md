@@ -1,5 +1,19 @@
 # Verification ledger
 
+## 1.2.0-rc1 / code 19: location and trip candidate (September 28)
+
+- Debug app, instrumentation APK and lint passed. Full emulator SafetyChecks, trip lifecycle, delayed notification navigation, background overlay and first-run/no-dial checks passed. The real installer CLI test passed signature-checked update, encrypted import, complete navigation and durable quota preservation.
+- Pure distance checks cover a known 1 km route, turns, stationary drift, jumps, inaccurate/stale/out-of-order fixes, pauses and gaps. SQLite fixtures cover road geometry, settlement uncertainty and missing coverage. Photon fake transport covers parsing, timeout, persisted quota/backoff and HTTP 429; it performs no live service calls. A separate single HTTPS probe at public central-Warsaw coordinates returned a structured Photon street/city response; no private position was sent.
+- Existing detector/progress, private-tool, navigation, public-tree and fresh-installer checks passed. Eight private route replays retained identical events, timing and flags (22,644 home and 20,000 motion samples). Replay equivalence and isolated passive-trip UI checks do not substitute for an observed drive with the feature active.
+- Built the complete Poland index from the OSM snapshot dated 2026-09-27T20:23:36Z: 3,277,447,168 bytes, 30,345,794 road segments, 109,263 settlement points, 8,622,804 addresses and 219 settlement areas. Input, database and manifest remain outside Git and APK.
+- Android emulator opened the complete index offline, without prewarmed visited-location cache: 64/64 sampled roads covered, 59 correct street names, five conservative unresolved matches and zero wrong street names. Resolver latency p95 77 ms, maximum 168 ms on this emulator. These samples are a regression benchmark, not a nationwide accuracy guarantee or DUDU7 performance measurement.
+- At 800 × 600 physical pixels and font scale 1.6, the trip screen remains scrollable and its start control accessible; the normal capture configuration was restored afterward.
+- [32 emulator captures](UI_GALLERY.md) use synthetic data and were visually reviewed. Their manifest records capture provenance separately from the final application artifact. UI fixtures demonstrate rendered states, not actual gate/robot actions.
+- Application commit `8d226ed8a66876609dbb85fbc12108a45866fcad` passed both GitHub Actions checks: [PR and push checks](https://github.com/pbuchman/dudu-home/pull/7/checks). CI builds the instrumentation APK; actual instrumentation execution was local on the emulator.
+- The unattended installer ran after CI with both existing ADB servers, cached private connection settings and mDNS, using its 90-second discovery budget. It returned `BLOCKED: Radio unavailable or ADB unauthorized on the local network`. No physical-radio update, map transfer or configuration mutation started. Shared Wi-Fi and authorized ADB connectivity could not be confirmed.
+- Prepared private APK: **1.2.0-rc1 / code 19**, application commit above, SHA-256 `84503588c112cd0163b57e00aed2a2c3cd1a85d143f02e56654db12bc180b407`. This is the prepared artifact hash, not an installed-radio hash. The later evidence-only documentation commit does not change the APK.
+- Radio configuration preservation and post-install smoke are unverified for this candidate because installation never started. The existing emulator update/import result remains separate evidence. Driving, physical overlay interaction, radio GPS quality and actual sleep/wake remain unverified.
+
 ## 1.1.0: third destination and stable acceptance (September 27)
 
 The owner confirmed the existing functionality and explicitly authorized stable 1.1 after

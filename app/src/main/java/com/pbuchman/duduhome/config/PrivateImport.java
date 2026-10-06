@@ -19,7 +19,8 @@ import org.json.JSONObject;
 public final class PrivateImport {
     public static boolean pending(Context c) {
         return new File(c.getNoBackupFilesDir(), "pending-config.json").exists()
-                || new File(c.getNoBackupFilesDir(), "maintenance").exists();
+                || new File(c.getNoBackupFilesDir(), "maintenance").exists()
+                || new File(c.getNoBackupFilesDir(), "install-verification").exists();
     }
     public static boolean apply(Context c) {
         File source = new File(c.getNoBackupFilesDir(), "pending-config.json");

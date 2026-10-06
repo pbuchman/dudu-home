@@ -1,5 +1,14 @@
 # Ordered automation and local Spotify playback
 
+## Passive trip screen
+
+Gdzie jestem does not register as protected manual MainActivity UI and never acquires the
+shared action lease. Home-action processing still precedes trip delivery on each GPS fix.
+The media gate's early return cannot drop a trip sample. Gate preconditions, cleaning quota,
+media reservations, manual Maps suppression and protected configuration/error screens remain
+unchanged. The trip overlay disappears for automation; the counter does not stop.
+
+
 ## Gate-area precondition (1.0.0-rc3)
 
 Before the generic driving countdown, evaluate the current GPS fix with the existing home

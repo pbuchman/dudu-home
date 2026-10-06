@@ -23,6 +23,8 @@ def main():
     def run(*args): return subprocess.check_output(adb + list(args), stderr=subprocess.PIPE)
     if not a.serial.startswith('emulator-') or run('shell', 'getprop', 'ro.hardware').strip() not in (b'ranchu', b'goldfish'):
         raise RuntimeError('Emulator only')
+    if int(run('shell','getprop','ro.build.version.sdk')) >= 33:
+        run('shell','pm','grant',PACKAGE,'android.permission.POST_NOTIFICATIONS')
     result = run('shell', 'am', 'instrument', '-w', PACKAGE+'.test/'+PACKAGE+'.SafetyChecks')
     if b'PASS:' not in result or b'FAIL:' in result: raise RuntimeError('Synthetic prerequisites failed')
     before = run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml')

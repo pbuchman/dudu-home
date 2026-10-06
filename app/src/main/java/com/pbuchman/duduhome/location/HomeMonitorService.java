@@ -38,6 +38,8 @@ import com.pbuchman.duduhome.ui.ProgressOverlay;
 
 public final class HomeMonitorService extends Service implements LocationListener {
     private static final String CHANNEL = "home_monitor";
+    private com.pbuchman.duduhome.trip.TripController trip;
+    private com.pbuchman.duduhome.ui.TripPresentation tripPresentation;
     private LocationManager locations;
     private HomeConfiguration config;
     private HomeDetector detector;
@@ -108,6 +110,8 @@ public final class HomeMonitorService extends Service implements LocationListene
             if (Build.VERSION.SDK_INT >= 29) startForeground(17, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
             else startForeground(17, notification);
         } catch (RuntimeException denied) { Diagnostics.record(this, "MONITOR_FOREGROUND_DENIED"); stopSelf(); return; }
+        trip = com.pbuchman.duduhome.trip.TripController.get(this);
+        tripPresentation = new com.pbuchman.duduhome.ui.TripPresentation(this);
         state = getSharedPreferences("home_detector", 0);
         locations = getSystemService(LocationManager.class);
         automation = new AutomationRuntime(this);
@@ -166,6 +170,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (result == JourneySession.ObservationResult.REARMED) {
             if (automation != null) automation.reset(Reason.WAKE);
             progressEpoch = ProgressBus.reset(this, Reason.WAKE);
+            if (trip != null) trip.breakSegment();
             // Never carry pre-sleep movement evidence into a new cycle.
             motion.clear(); motionOrigin = null;
             if (detector != null) detector.clearEvidence();
@@ -217,6 +222,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         MotionDetector.Fix motionFix = new MotionDetector.Fix(fixTime, distance[0] * Math.sin(bearing),
                 distance[0] * Math.cos(bearing), location.hasAccuracy() ? location.getAccuracy() : Double.POSITIVE_INFINITY,
                 location.getSpeed(), location.hasSpeed(), lastFix - fixTime, location.isFromMockProvider());
+        try {
         // Home actions get first opportunity on the same fix; Yanosik never masks their result.
         if (detector != null && !acceptHome(location, fixTime)) return;
         updateGateArea(fixTime + 3000);
@@ -233,6 +239,7 @@ public final class HomeMonitorService extends Service implements LocationListene
                                    != com.pbuchman.duduhome.automation.YanosikPresence.State.WORK_DETECTED))
                                 ? observed : java.util.List.of()));
         if (!motion.fresh(lastFix)) motionOrigin = null;
+        } finally { if (trip != null) trip.offer(location); }
     }
 
     private boolean acceptHome(Location location, long fixTime) {
@@ -261,6 +268,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         else automation.gateArea(detector.gateArea(), validUntil);
     }
     @Override public void onProviderDisabled(String provider) {
+        if (trip != null) trip.breakSegment();
         Diagnostics.record(this, "GPS_PROVIDER_DISABLED");
         progressEpoch = ProgressBus.reset(this, Reason.GPS_UNRELIABLE);
         if (detector != null) detector.clearEvidence();
@@ -270,6 +278,8 @@ public final class HomeMonitorService extends Service implements LocationListene
     @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }
     @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
     @Override public void onDestroy() {
+        if (tripPresentation != null) tripPresentation.close();
+        if (trip != null) trip.breakSegment();
         if (automation != null) automation.close();
         destroyed = true;
         progressEpoch = ProgressBus.reset(this, Reason.SERVICE_STOPPED);
@@ -279,6 +289,11 @@ public final class HomeMonitorService extends Service implements LocationListene
         handler.removeCallbacksAndMessages(null);
         if (registered && locations != null) locations.removeUpdates(this);
         super.onDestroy();
+    }
+    @Override protected void dump(java.io.FileDescriptor fd, java.io.PrintWriter writer, String[] args) {
+        writer.println("monitor_running=" + !destroyed + " registered=" + registered);
+        writer.println("action_busy=" + HomeActions.busy());
+        if (trip != null) writer.println(trip.diagnostic());
     }
     @Override public IBinder onBind(Intent intent) { return null; }
 }

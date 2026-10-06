@@ -35,6 +35,16 @@ public final class MainActivity extends Activity {
     public static final long SUCCESS_DISPLAY_MS = 5000L;
     private static final long INFORMATION_DISPLAY_MS = 2500L;
 
+    private boolean openTripPending;
+    private final android.os.Handler tripHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable openTripWhenReady = new Runnable() { public void run() {
+        if (!openTripPending || isFinishing() || isDestroyed()) return;
+        if (resumed && configurationSaved && !PrivateImport.pending(MainActivity.this)
+                && HomeActions.allowsExternalLaunch() && menuContent.getVisibility() == View.VISIBLE) {
+            openTripPending = false;
+            startActivity(new Intent(MainActivity.this, TripActivity.class));
+        } else tripHandler.postDelayed(this, 250);
+    }};
     private NavigationPanel navigation;
     private ProgressBar progress;
     private ImageView statusIcon;
@@ -109,12 +119,15 @@ public final class MainActivity extends Activity {
         findViewById(R.id.full_mop_button).setOnClickListener(view -> {
             manualAction(HomeAction.MOP);
         });
+        findViewById(R.id.where_am_i_button).setOnClickListener(view -> requestTrip());
         findViewById(R.id.settings_button).setOnClickListener(view -> {
             if (busyNotice()) return;
             new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
                     .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja",
-                            getString(R.string.yanosik_notification_access), getString(R.string.navigation_import)}, (dialog, which) -> {
-                        if (which == 0) { returnToMenu = true; showNumberSetup(); }
+                            getString(R.string.yanosik_notification_access), getString(R.string.navigation_import), "Dane map OSM"}, (dialog, which) -> {
+                        if (which == 5) new android.app.AlertDialog.Builder(this).setTitle("Dane map")
+                                .setMessage("© OpenStreetMap contributors · ODbL 1.0\nopenstreetmap.org/copyright\nPakiet: Geofabrik. Online: Photon, bez gwarancji dostępności.").setPositiveButton("OK", null).show();
+                        else if (which == 0) { returnToMenu = true; showNumberSetup(); }
                         else if (which == 1) showRoborockSetup(false);
                         else if (which == 4) navigation.pick();
                         else if (which == 3) showYanosikAccess();
@@ -155,7 +168,10 @@ public final class MainActivity extends Activity {
         if (!configurationSaved && requested != null)
             ProgressBus.update(this, requested.attempt(), Phase.SKIPPED, Reason.BUSY_OR_MAINTENANCE);
         HomeMonitorService.ensureStarted(this);
+        if (TripPresentation.OPEN.equals(getIntent().getAction())) requestTrip();
     }
+
+    private void requestTrip() { openTripPending = true; tripHandler.removeCallbacks(openTripWhenReady); tripHandler.post(openTripWhenReady); }
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -163,10 +179,12 @@ public final class MainActivity extends Activity {
         setIntent(intent);
         HomeActions.Request requested = HomeActions.consumeRequest(this, intent);
         if (requested != null) automaticAction(requested.action(), requested.attempt());
+        else if (TripPresentation.OPEN.equals(intent.getAction())) requestTrip();
         else if (Intent.ACTION_MAIN.equals(intent.getAction())) {
             returnToMenu = true;
             if (!HomeActions.busy()) showMenu();
         }
+        HomeMonitorService.ensureStarted(this);
     }
 
     @Override protected void onResume() {
@@ -283,7 +301,7 @@ public final class MainActivity extends Activity {
         statusIcon.removeCallbacks(finishAfterInformation);
         if (coordinator != null) { coordinator.close(); coordinator = null; }
         actionRunning = false;
-        if (returnToMenu) showMenu();
+        if (returnToMenu || openTripPending) showMenu();
         else finishAndRemoveTask();
     }
 
@@ -298,6 +316,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        tripHandler.removeCallbacksAndMessages(null);
         if (navigation != null) navigation.destroy();
         statusIcon.removeCallbacks(finishAfterSuccess);
         statusIcon.removeCallbacks(finishAfterInformation);
