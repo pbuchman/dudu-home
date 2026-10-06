@@ -13,11 +13,11 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Development candidate `1.2.0-rc1` (code 19).**
-> Adds an independent trip session with current locality/street, background kilometres,
-> a minimal overlay and local OpenStreetMap data with optional Photon assistance.
-> Stable `1.1.0` remains the previous radio-verified release. Candidate hardware results
-> are recorded separately in the [verification ledger](docs/VERIFICATION.md).
+> **Combined test candidate `1.3.0-rc1` (code 21).**
+> Includes Where am I and automatic Routebook collection with durable offline delivery.
+> Android, backend, private map UI and deployment tooling now share one source revision.
+> Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
+> last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
 > Source only: no public APK, map database, private configuration or signing key.
 
 ![Current four-action menu and navigation groups - synthetic emulator capture](docs/images/current/home-complete.png)
@@ -36,6 +36,19 @@ navigation, action results, settings, automation, media and every trip state.
 | **Automation progress** | **Media playback feedback** |
 | ![Departure detection renderer](docs/images/current/detection-departure.png) | ![Spotify PLAYING renderer](docs/images/current/spotify-playing.png) |
 
+## Routebook build
+
+```sh
+bash scripts/check-routebook.sh
+cd routebook
+npm ci
+npm run build
+npm test
+```
+
+[Routebook setup and integration tests](routebook/README.md) use checked-in synthetic fixtures.
+Server runtime secrets and actual recorded locations remain outside the repository.
+
 ## What it does
 
 - **Otwórz bramę:** use the paired phone's SIM, observe outgoing, wait five seconds, hang up
@@ -49,6 +62,10 @@ navigation, action results, settings, automation, media and every trip state.
   overlay and notification that open the full screen when tapped. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
+- **Routebook:** automatically collect GPS independently of the manual trip counter, retain
+  unacknowledged points in SQLite and send the newest fix before historical backlog. The
+  private web map shows live/day/range history, observed stops and distance summaries.
+  Upload needs separate private provisioning; [architecture and pairing](docs/ROUTEBOOK.md).
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
@@ -169,7 +186,9 @@ An authorized ADB/debug session is privileged access: keep it restricted and dis
 
 Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
 Version 0.4.1 keeps a bounded private diagnostic journal across process restarts, recording
-monitor startup, GPS delivery counts, events, blocked actions and results. Nothing is uploaded.
+monitor startup, GPS delivery counts, events, blocked actions and results. This diagnostic journal is not uploaded.
+Routebook separately sends configured GPS records
+to its privately provisioned endpoint; without provisioning points remain on the radio.
 Version 0.5 adds correlated detection/action transitions to that same journal, not per-frame
 fill updates. UI reads process-local snapshots, never logs; restarting does not replay actions.
 Check private archives and diagnostics before sharing: firmware-generated logs may contain data

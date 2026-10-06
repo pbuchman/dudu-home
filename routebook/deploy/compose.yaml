@@ -1,0 +1,50 @@
+name: routebook
+services:
+  db:
+    image: postgis/postgis:17-3.5@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: routebook
+      POSTGRES_USER: routebook
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    ports: ["127.0.0.1:8793:5432"]
+    volumes:
+      - ${ROUTEBOOK_DATA_DIR:?required}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U routebook -d routebook"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: {driver: local, options: {max-size: 10m, max-file: "2"}}
+  backend:
+    image: routebook-backend:local
+    restart: unless-stopped
+    network_mode: host
+    user: "${ROUTEBOOK_UID:?required}:${ROUTEBOOK_GID:?required}"
+    environment:
+      ROUTEBOOK_CONFIG: /run/routebook/backend.json
+    volumes:
+      - ${ROUTEBOOK_CONFIG_DIR:?required}/backend.json:/run/routebook/backend.json:ro
+    depends_on:
+      db: {condition: service_healthy}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: "2"}}
+  web:
+    image: routebook-web:local
+    restart: unless-stopped
+    network_mode: host
+    user: "${ROUTEBOOK_UID:?required}:${ROUTEBOOK_GID:?required}"
+    volumes:
+      - ${ROUTEBOOK_CONFIG_DIR:?required}/routebook-config.json:/run/routebook/routebook-config.json:ro
+    depends_on: [backend]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: "2"}}
+secrets:
+  db_password:
+    file: ${ROUTEBOOK_CONFIG_DIR:?required}/db-password

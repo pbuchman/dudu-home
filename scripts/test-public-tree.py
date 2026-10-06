@@ -34,6 +34,11 @@ class PrivacyChecks(unittest.TestCase):
                 return subprocess.run(['python3', str(root/'scripts/check-public-tree.py'),
                     '--private-navigation', str(source), *args], capture_output=True)
             self.assertEqual(scan('--all-history').returncode, 0)
+            fixture.write_text('dependency ^10.4.0')
+            self.assertEqual(scan('--working-tree').returncode, 0)
+            for address in ('10' + '.23.45.67', '192' + '.168.45.67'):
+                fixture.write_text(address)
+                self.assertNotEqual(scan('--working-tree').returncode, 0)
             for value in ('FixtureHiddenValue', 'SyntheticHiddenStreet', '0.12346',
                           'SyntheticHiddenGroup', 'SyntheticHiddenFirst', 'SyntheticHiddenSecond',
                           'SyntheticSecondStreet', '0.23457',
@@ -42,7 +47,15 @@ class PrivacyChecks(unittest.TestCase):
                 result = scan('--working-tree')
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn(value.encode(), result.stdout)
+            browser = root/'browser.json'
+            browser.write_text(json.dumps({'lib': ['D' + 'OM', 'D' + 'OM.Iterable'], 'module': 'react-' + 'd' + 'om/client'}))
+            nav = json.loads(source.read_text()); nav['slots'].append({'label': 'D' + 'om'})
+            source.write_text(json.dumps(nav))
             fixture.write_text('Public fixture')
+            self.assertEqual(scan('--working-tree').returncode, 0)
+            browser.write_text(json.dumps({'label': 'D' + 'om'}))
+            self.assertNotEqual(scan('--working-tree').returncode, 0)
+            browser.unlink()
             for suffix in ('.sqlite', '.pbf', '.building'):
                 artifact = root/('synthetic-map'+suffix)
                 artifact.write_text('Generated map fixture')

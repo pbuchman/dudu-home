@@ -1,0 +1,23 @@
+{
+  "name": "routebook",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "ui"
+  ],
+  "scripts": {
+    "build:backend": "npm run build --workspace backend",
+    "test:backend": "npm test --workspace backend",
+    "start:backend": "npm start --workspace backend",
+    "dev:ui": "npm run dev --workspace ui",
+    "build:ui": "npm run build --workspace ui",
+    "build": "npm run build:backend && npm run build:ui",
+    "test": "npm run test:backend && npm run test:ui",
+    "test:ui": "npm test --workspace ui",
+    "check:contract": "node scripts/check-contract.mjs",
+    "test:integration": "python3 tests/integration/run.py --android .."
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

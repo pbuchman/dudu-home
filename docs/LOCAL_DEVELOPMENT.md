@@ -1,5 +1,13 @@
 # Handoff - local Full Cleaning implementation
 
+## Current integration baseline
+
+Use main and the combined 1.3.0-rc1/code 21 source after the integration PR is merged.
+Do not build older feature worktrees for radio updates. Android, Routebook backend/UI and
+fixtures are together; follow INTEGRATED_RELEASE.md and ROUTEBOOK.md. The records below
+are historical. Existing private radio configuration remains authoritative.
+
+
 ## 1.2 trip development
 
 Build/lint both APKs, run check-trip.sh and test-radio-update.py in addition to every existing
@@ -11,7 +19,8 @@ opens and verifies the updated menu. A radio connection failure is a deployment 
 not an invitation to clear data or ask for unplanned device reconfiguration.
 
 
-Current source and verified radio installation: 1.1.0/code 18, the owner-authorized stable release.
+Historical main before the combined release: 1.2.0-rc1/code 19 (PR #7).
+Last verified radio installation: 1.1.0/code 18, the owner-authorized stable release.
 Three-place modal, exact private import and actual third-target Maps guidance/name passed. Follow NAVIGATION.md
 for the private full-file workflow and compatible schema migration; never use actual places
 in fixtures or docs. Current validation/install evidence is in VERIFICATION.md.

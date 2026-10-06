@@ -1,5 +1,13 @@
 # Design decisions
 
+## Combined test baseline, October 6
+
+Android, Routebook server/UI, deployment tooling and synthetic contract fixtures share one
+repository. Version 1.3.0-rc1/code 21 supersedes separate local candidates without claiming
+hardware acceptance. Operator-specific origins and evidence remain private; deployment
+requires explicit runtime input. Wispr Flow is separate software, not implemented in this APK.
+
+
 ## Independent trip session and OSM data - 1.2 candidate
 
 - Fourth tile and explicit session; opening the screen is inert. Background counting continues.

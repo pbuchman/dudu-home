@@ -1,0 +1,12 @@
+{
+  "ingress_addition": {
+    "key": "routebook_ingest",
+    "hostname": "routebook-ingest.example.com",
+    "service": "http://127.0.0.1:8791"
+  },
+  "dns_addition": {
+    "key": "routebook_ingest",
+    "hostname": "routebook-ingest.example.com",
+    "zone_id": "REPLACE_WITH_VERIFIED_OWNER_ZONE_ID"
+  }
+}

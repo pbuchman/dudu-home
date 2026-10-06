@@ -13,7 +13,8 @@ Preserve Java 17, platform Android Views/XML and local signing key. The owner ap
 the new application ID com.pbuchman.duduhome with explicit migration from the old package.
 The owner authorized radio installation and source publication on 2026-09-09 after verification.
 Do not publish private configuration or APKs; outstanding wake checks must stay explicit.
-No AndroidX, dependency injection framework, analytics, intermediary cloud server, or fake DUDU backend.
+No AndroidX, dependency injection framework, analytics or fake DUDU backend. Routebook is the explicitly authorized GPS archive
+backend in routebook/; it never intermediates gate or Roborock actions.
 The owner explicitly authorized direct native HTTPS to Roborock for Full Cleaning and manual-only
 Full Mop. No location hook may dispatch Mop. Missing Mop configuration must never fall back to
 Full Cleaning. Success screens now last five seconds; errors remain user-dismissed.
@@ -89,3 +90,12 @@ validate before atomic installation. Review every current-gallery screenshot for
 pixels. Capture runner/instrumentation must refuse physical devices and never dispatch actions.
 Unattended updates require verified existing ADB and completed idle preflight, not user prompts.
 Keep missing device access and unobserved driving/wake tests explicit in the verification ledger.
+
+## Combined Routebook source
+
+The owner authorized consolidating Android, Routebook backend/UI and deployment source on
+GitHub and main on 2026-10-06. No private state, deployment identifiers, APKs or GPS archives
+are publication inputs. Keep contract/fixtures reproducible in routebook/contract and keep
+all runtime credentials outside Git. One main commit identifies the combined test build.
+Run scripts/check-routebook.sh plus routebook npm build/test and existing Android checks.
+Do not replace the deployed server or pair a radio merely by publishing code.
