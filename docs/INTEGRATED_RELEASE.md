@@ -1,6 +1,20 @@
-# Combined main release: 1.3.0-rc1 / code 21
+# Combined main candidate: 1.3.0-rc2 / code 22
 
-## One source and one installation candidate
+## Current change over the combined baseline
+
+1.3.0-rc2/code 22 adds wrapping long street names, explicit overflow expansion, full-address
+notification presentation and current-attempt cancellation to combined 1.3.0-rc1/code 21.
+The cancellation control covers detection, waiting and execution, with grouped Yanosik/Spotify
+and a notification fallback. Pending user-cancelled work has no durable quota/history; sent
+operations retain safety reservations and actual cleanup. Repeated triggers require qualified
+fresh baseline evidence. See [release notes](RELEASE_1_3_0_RC2.md).
+
+The owner authorized source-only PR/checks/merge/prerelease. Final exact-revision build and CI
+results belong in VERIFICATION.md; the preparation notes do not claim those future results.
+No radio install, server deployment, pairing or private configuration change is implied by
+source publication. The sequence below remains the separately authorized hardware workflow.
+
+## Historical consolidation and current installation candidate
 
 The integration branch consolidates current main (including PR #7), the local Android
 Routebook collector and the standalone Routebook backend, UI and deployment tools.
@@ -12,7 +26,8 @@ outside this repository. Third-party apps remain separately installed packages.
 Main is the testing baseline after the integration PR merges. Build the APK from that exact
 main commit and record source SHA, version, signing-certificate fingerprint and APK SHA-256
 in the private release manifest. Source-only GitHub prereleases contain no APK or credentials.
-Do not use the earlier code 19 or detached code 20 artifacts as the combined baseline.
+Use the versioned code 22 artifact for this change. Code 21 is the preceding combined baseline;
+do not use the earlier code 19 or detached code 20 artifacts as its replacement.
 
 Included Android features: gate/Roborock actions and safeguards, gate-before-media priority,
 Yanosik/Spotify, three navigation groups, trip distance, locality/street resolution and overlay,
@@ -31,7 +46,10 @@ operator tooling. The backend is a separately deployed service, not embedded in 
 3. Install the exact main APK. Transfer the separately stored Poland index atomically after
    validating its manifest and sufficient temporary/final disk space. Verify installed APK and
    index hashes, import completion, config equality, permissions and monitor recovery.
-4. Test the menu and trip lifecycle, background overlay and notification. During a passenger
+4. Test the menu and trip lifecycle, wrapped street card/full-name expansion and notification.
+   Check explicit cancellation before sending and after own execution admission, notification
+   fallback, retained cleanup locks and fresh rearming evidence. Sent robot commands are not
+   undone; use normal phone-app control if needed. During a passenger
    ride compare locality/street names, movement distance and GPS quality against the route.
    Do not trigger gate calls or robot routines as incidental smoke tests.
 5. Read Routebook's installation UUID privately. Check the existing server and private map

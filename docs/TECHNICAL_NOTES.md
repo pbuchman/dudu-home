@@ -10,6 +10,17 @@
 The independent [Where am I module](WHERE_AM_I.md) reuses the location service; it does not
 change the calling IPC, callbacks, reservation or hangup rules below.
 
+## Explicit user cancellation
+
+The action screen and progress surfaces now expose current-attempt cancellation. The same
+process-bound token is captured in UI and immutable notification service PendingIntent;
+stale tokens cannot affect a later attempt. Before sending, cancellation drops RAM work and
+has no durable history/quota record. After sending, retain all call reservations and permit
+only best-effort cleanup of this attempt's own call. The shared lease lasts through actual
+cleanup; cancellation cannot interrupt a synchronous vendor Binder transact. No dial/hangup
+protocol or 60-second cooldown rule below changes. Hardware acceptance of cancellation is
+separate from emulator/static checks. See PROGRESS_UI.md and AUTOMATION_SEQUENCE.md.
+
 ## Pochodzenie ustaleń
 
 Kontrakt tego PoC pochodzi z przekazanych wyników statycznej analizy oficjalnego obrazu

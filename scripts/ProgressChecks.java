@@ -32,7 +32,7 @@ public final class ProgressChecks {
         check(m.visible(8000).kind()==Kind.RETURN,"equal priority stable");
         long attempt=m.request(Kind.RETURN,8000);
         offer(m,epoch,Kind.RETURN,4,Phase.CONFIRMED,1,8001);
-        check(m.snapshot().stream().noneMatch(s->s.kind()==Kind.RETURN&&s.evidenceId()>=0),"consumed evidence stays consumed");
+        check(m.snapshot().stream().filter(s->s.kind()==Kind.RETURN&&s.evidenceId()>=0).count()==1 && m.attempt(attempt).evidenceId()==4,"consumed evidence stays consumed");
         m.update(attempt,Phase.ACCEPTED,Reason.NONE,8001);
         m.update(attempt,Phase.STARTED,Reason.NONE,8002);
         var started=m.attempt(attempt);
@@ -49,7 +49,7 @@ public final class ProgressChecks {
         check(nav.visible(2000)!=null&&nav.visible(2001)==null,"two-second result");
         long mop=nav.request(Kind.MOP,2002);
         nav.update(mop,Phase.SKIPPED,Reason.NO_CONFIG,2002);
-        check(nav.visible(2002)==null,"no automatic mop banner");
+        check(nav.visible(2002)!=null && nav.visible(2002).kind()==Kind.MOP,"manual mop result remains available to notification presentation");
         for(int i=0;i<100;i++){long a=nav.request(Kind.YANOSIK,3000+i);nav.update(a,Phase.SUCCEEDED,Reason.NONE,3000+i);}
         check(nav.snapshot().size()<=16,"bounded attempt history");
         Tracker tracker=new Tracker();

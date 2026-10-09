@@ -1,6 +1,27 @@
-# Release readiness - 2026-10-06
+# Release readiness - 2026-10-09
 
-## 1.3.0-rc1 / code 21, combined test baseline
+## Current: 1.3.0-rc2 / code 22
+
+Adds readable street wrapping/full-name expansion and cancellation for detecting, queued and
+running attempts. Unsent user cancellation has no durable quota/history; sent commands keep
+reservations and cleanup. Yanosik/Spotify cancellation is grouped; fresh baseline evidence
+is required to arm a new occurrence. Legacy non-user failures/expiry remain consumed.
+See [release notes](RELEASE_1_3_0_RC2.md) and [current verification](VERIFICATION.md).
+
+The owner authorized a source-only prerelease after PR checks pass and the change is merged.
+Versioned app/instrumentation build, lint and full emulator safety/UI checks passed. Detector,
+progress, trip, Routebook pure checks and installer/privacy tooling also passed. The staged
+tree/history passed the private configuration denylist scan. PR and merged-main Actions
+remain publication gates, with final run links recorded on the GitHub release page. No APK, map data or private assets belong
+to the release. The previous stable radio-verified version remains 1.1.0/code 18.
+
+Physical DUDU readability/touch and fallback notifications, cancellation before/after own dial,
+HTTP cancellation during cleanup, actual Yanosik/Spotify startup and qualified rearming on a
+real journey still require observations. Existing GPS, Routebook delivery and sleep/wake
+acceptance remain incomplete. Cancellation cannot undo a sent robot command or terminate a
+pre-existing call. A green emulator or CI run does not establish these hardware outcomes.
+
+## Historical 1.3.0-rc1 / code 21, combined test baseline
 
 Includes all merged Android features and the former local Routebook collector, backend,
 map UI and deployment tooling. Wispr Flow remains a separate installation/integration task.

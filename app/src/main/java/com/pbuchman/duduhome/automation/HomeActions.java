@@ -73,13 +73,17 @@ public final class HomeActions {
         if (!callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT) return;
         long attempt = ProgressBus.request(context, ProgressBus.kind(event));
         if (event == HomeEvent.OUTBOUND_CHECKPOINT) {
-            if (!DailyCleaning.reserve(context)) { skip(context, attempt, Reason.DAILY_LIMIT_OR_STORAGE, "SKIP_CLEANING_DAILY_LIMIT_OR_STORAGE"); return; }
+            ProgressBus.reserveWith(attempt, () -> DailyCleaning.reserve(context));
+            if (!DailyCleaning.available(context, java.time.LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")).toEpochDay())) {
+                skip(context, attempt, Reason.DAILY_LIMIT_OR_STORAGE, "SKIP_CLEANING_DAILY_LIMIT_OR_STORAGE"); return;
+            }
         }
         dispatchReserved(context, event, attempt);
     }
 
-    /** Daily quota was reserved at enqueue; this path never reserves again. */
+    /** Pending work is in RAM; the executor commits immediately before its command. */
     public static void dispatchReserved(Context context, HomeEvent event, long attempt) {
+        if (ProgressBus.cancelled(attempt)) return;
         HomeAction action = callsGate(event) ? HomeAction.GATE : HomeAction.CLEANING;
         if (busy() || PrivateImport.pending(context)) { skip(context, attempt, Reason.BUSY_OR_MAINTENANCE, "SKIP_" + action + "_BUSY_OR_MAINTENANCE"); return; }
         if (action == HomeAction.GATE) {
@@ -87,7 +91,7 @@ public final class HomeActions {
             if (store.read() == null) { skip(context, attempt, Reason.NO_NUMBER, "SKIP_GATE_NO_NUMBER"); return; }
             if (store.cooldownRemainingMillis() > 0) { skip(context, attempt, Reason.COOLDOWN, "SKIP_GATE_COOLDOWN"); return; }
         } else if (new RoborockStore(context).read() == null) { skip(context, attempt, Reason.NO_CONFIG, "SKIP_CLEANING_NO_CONFIG"); return; }
-        Diagnostics.record(context, "DISPATCH_" + action);
+        Diagnostics.recordAttempt(context, attempt, "DISPATCH_" + action);
         MainActivity activity = visible.get();
         if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
             ProgressBus.update(context, attempt, Phase.ACCEPTED, Reason.NONE);
@@ -111,7 +115,7 @@ public final class HomeActions {
     }
 
     private static void skip(Context context, long id, Reason reason, String category) {
-        Diagnostics.record(context, category); ProgressBus.update(context, id, Phase.SKIPPED, reason);
+        Diagnostics.recordAttempt(context, id, category); ProgressBus.update(context, id, Phase.SKIPPED, reason);
     }
     private static void expirePending(Context context) {
         if (pendingToken != null && SystemClock.elapsedRealtime() - pendingSince >= 5000) {
@@ -123,7 +127,7 @@ public final class HomeActions {
     public static boolean consume(Intent intent) {
         boolean valid = ACTION.equals(intent.getAction()) && pendingToken != null
                 && pendingToken.equals(intent.getStringExtra("request_token"))
-                && SystemClock.elapsedRealtime() - pendingSince < 5000;
+                && SystemClock.elapsedRealtime() - pendingSince < 5000 && !ProgressBus.cancelled(pendingAttempt);
         if (valid) pendingToken = null;
         return valid;
     }

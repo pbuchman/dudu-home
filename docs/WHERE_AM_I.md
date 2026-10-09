@@ -10,9 +10,13 @@ remains independent.
 Start creates a new trip at zero. Pause preserves the total and stops counting; Resume begins
 a new GPS segment. End retains the last total; the next Start resets it. Backgrounding the
 app does not pause. The full screen shows locality, street and kilometres (one decimal).
-The two-line top-right overlay shows only locality and street. It has no buttons or distance;
-tapping its bounded rectangle opens the full screen. The silent ongoing notification has
-the same two pieces of information and one content intent, without action buttons.
+The top-right card shows locality at 24 sp above the primary street at 32 sp. Street names
+wrap naturally on word boundaries, using up to three lines and the required card height;
+text does not shrink or scroll automatically. If the measured layout overflows, an ellipsis
+and visible **Pełna nazwa** button open the passive full screen. Tapping the card does the
+same. The accessibility label retains the entire address. The full screen keeps unlimited
+street lines in a ScrollView. The silent ongoing notification includes the complete address
+in its expanded BigText presentation and one content intent.
 
 Without a fresh fix, show **Brak sygnału GPS** instead of claiming the last name is current.
 Without a matching map/online result, show an unknown locality/street while continuing to
@@ -32,9 +36,10 @@ location overlay is hidden while automation presentation, protected UI or execut
 the screen. A notification tap routes through MainActivity and waits for a safe menu state
 before opening the trip. Merely changing a name never launches an Activity.
 
-The overlay is approximately 300 x 64 dp, top/end with 16 dp margins. It is non-focusable,
+The overlay is at most 390 dp wide, bounded by the available window width minus 32 dp,
+top/end with 16 dp margins. Its height wraps its content. It is non-focusable,
 receives touches within its own window, and has no full-screen transparent input surface.
-The normal automation banner remains non-touchable. System apps may suppress overlays;
+The automation banner receives cancellation touches within its own bounded window. System apps may suppress overlays;
 this feature does not bypass such restrictions.
 
 ## Distance and persistence

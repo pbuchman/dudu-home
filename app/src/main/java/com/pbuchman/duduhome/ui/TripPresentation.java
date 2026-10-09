@@ -6,7 +6,6 @@ import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
 import android.os.*;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.view.*;
 import android.widget.*;
 import com.pbuchman.duduhome.R;
@@ -51,6 +50,7 @@ public final class TripPresentation implements AutoCloseable {
             PendingIntent intent=PendingIntent.getActivity(context,18,open(context),PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             notifications.notify(18,new Notification.Builder(context,CHANNEL).setSmallIcon(R.drawable.ic_launcher)
                     .setContentTitle(state.title()).setContentText(state.subtitle()).setContentIntent(intent)
+                    .setStyle(new Notification.BigTextStyle().bigText(text))
                     .setOnlyAlertOnce(true).setOngoing(true).setShowWhen(false).setVisibility(Notification.VISIBILITY_PRIVATE).build());
             notified=text;
         }
@@ -59,24 +59,18 @@ public final class TripPresentation implements AutoCloseable {
         if(SystemClock.elapsedRealtime()<retryAfter)return;
         try {
             if(overlay==null) {
-                LinearLayout box=new LinearLayout(context); box.setOrientation(LinearLayout.VERTICAL);
-                box.setPadding(dp(16),dp(6),dp(16),dp(6)); box.setGravity(Gravity.CENTER_VERTICAL); box.setMinimumHeight(dp(64));
-                box.setBackgroundResource(R.drawable.progress_panel);
-                TextView city=line(22), road=line(16); city.setId(R.id.trip_locality); road.setId(R.id.trip_street); box.addView(city);box.addView(road);
-                box.setOnClickListener(v -> context.startActivity(open(context)));
-                box.setFocusable(true); box.setContentDescription(text);
-                int width=Math.min(dp(300),context.getResources().getDisplayMetrics().widthPixels-dp(32));
+                TripLocationCard box=new TripLocationCard(context, v -> context.startActivity(open(context)));
+                int available=Build.VERSION.SDK_INT>=30 ? windows.getCurrentWindowMetrics().getBounds().width()
+                        : context.getResources().getDisplayMetrics().widthPixels;
+                int width=Math.min(dp(390),Math.max(1,available-dp(32)));
                 WindowManager.LayoutParams p=new WindowManager.LayoutParams(width,ViewGroup.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,PixelFormat.TRANSLUCENT);
                 p.gravity=Gravity.TOP|Gravity.END;p.x=dp(16);p.y=dp(16);p.setTitle("Dudu Home location");
                 overlay=box; windows.addView(box,p);
             }
-            LinearLayout box=(LinearLayout)overlay;
-            ((TextView)box.getChildAt(0)).setText(state.title());((TextView)box.getChildAt(1)).setText(state.subtitle());
-            box.setContentDescription(text);
+            ((TripLocationCard)overlay).render(state.title(),state.subtitle());
         } catch(RuntimeException unavailable) { remove(); retryAfter=SystemClock.elapsedRealtime()+5000; }
     }
-    private TextView line(int size) { TextView v=new TextView(context);v.setTextSize(size);v.setTextColor(context.getColor(R.color.text_primary));v.setSingleLine(true);v.setEllipsize(TextUtils.TruncateAt.END);return v; }
     private int dp(int value) { return Math.round(value*context.getResources().getDisplayMetrics().density); }
     private void remove() { if(overlay!=null) { try { windows.removeViewImmediate(overlay); } catch(RuntimeException ignored) { } overlay=null; } }
     public void close() { closed=true;handler.removeCallbacksAndMessages(null);remove();notifications.cancel(18); }

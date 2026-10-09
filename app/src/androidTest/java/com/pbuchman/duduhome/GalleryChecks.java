@@ -134,8 +134,23 @@ final class GalleryChecks {
             WindowManager.LayoutParams params=(WindowManager.LayoutParams)overlay.getLayoutParams();
             ProgressChecks.check((params.flags&WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)!=0,"location cannot steal focus");
             ProgressChecks.check((params.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)==0,"location receives taps within rectangle");
-            ProgressChecks.check(((LinearLayout)overlay).getChildCount()==2,"exactly two lines without buttons");
+            ProgressChecks.check(overlay.findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"short location hides expansion button");
         });i.waitForIdleSync();SystemClock.sleep(1500);shot(i,"trip-overlay");
+        i.runOnMainSync(()->panel[0].render(snapshot("ACTIVE",new PlaceResult("Miejscowość Testowa","Aleja Błękitnych Chmur Testowych","offline",true,true),SystemClock.elapsedRealtime())));
+        i.waitForIdleSync();shot(i,"trip-overlay-long-name");
+        i.runOnMainSync(()->panel[0].render(snapshot("ACTIVE",new PlaceResult("Miejscowość Testowa","Przykładowa Aleja Bardzo Długich Błękitnych Obłoków Testowych przy Bajkowych Wzgórzach i Srebrzystych Ogrodach","offline",true,true),SystemClock.elapsedRealtime())));
+        i.waitForIdleSync();SystemClock.sleep(500);
+        i.runOnMainSync(()->{
+            View overlay=(View)ProgressChecks.field(panel[0],"overlay");
+            View button=overlay.findViewById(R.id.trip_full_name);
+            View city=overlay.findViewById(R.id.trip_locality);
+            int minimum=Math.round(76*c.getResources().getDisplayMetrics().density);
+            ProgressChecks.check(button.getVisibility()==View.VISIBLE && button.getHeight()>=minimum,"overflow action has full touch height in attached window");
+            ProgressChecks.check(city.getTop()>=overlay.getPaddingTop(),"locality remains inside attached card");
+            ProgressChecks.check(button.getBottom()+overlay.getPaddingBottom()<=overlay.getHeight(),"entire overflow button fits attached card");
+            android.graphics.Rect visible=new android.graphics.Rect();
+            ProgressChecks.check(button.getGlobalVisibleRect(visible)&&visible.height()==button.getHeight(),"overflow action entirely visible on screen");
+        });shot(i,"trip-overlay-overflow");
         shell(i,"cmd statusbar expand-notifications");SystemClock.sleep(1500);shot(i,"trip-notification");
         shell(i,"cmd statusbar collapse");SystemClock.sleep(1500);
         i.runOnMainSync(()->{

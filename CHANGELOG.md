@@ -1,5 +1,20 @@
 # Change history
 
+## 1.3.0-rc2 (code 22) - 2026-10-09
+
+- Wrap long street names at a fixed readable size, with an explicit full-name action for
+  overflow, an unlimited passive screen and expanded full-address notification.
+- Add current-attempt cancellation during detection, queue waiting and execution; group
+  Yanosik and Spotify and provide a bounded touchable banner and notification fallback.
+- Discard unsent user-cancelled work and buffered diagnostics without consuming quotas.
+  Preserve sent-command reservations, gate cooldown and shared leases through actual cleanup.
+- Require fresh qualified standstill/route evidence before recognizing a new cancelled occurrence.
+- Keep legacy non-user failure/expiry limits, passive trip priority and private configuration.
+- Extend synthetic detector, cancellation, notification and street-layout checks.
+- Source-only prerelease; physical cancellation, GPS and sleep/wake acceptance remain pending.
+  See [release notes](docs/RELEASE_1_3_0_RC2.md) and [verification](docs/VERIFICATION.md).
+
+
 ## 1.3.0-rc1 (code 21)
 
 - Consolidate Android, Routebook backend, private map UI, deployment tooling and contract fixtures.

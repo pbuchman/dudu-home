@@ -20,8 +20,12 @@ public final class AutomationRuntime {
     private final YanosikLauncher yanosik;
     private SpotifyController spotify;
     private long spotifyAttempt;
+    private final java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome;
+    private final java.util.Set<Long> mediaGroup = new java.util.LinkedHashSet<>();
+    private boolean cancellingMedia;
+
     private long dispatchedHomeAttempt = -1;
-    private boolean closed;
+    private volatile boolean closed;
     private final GatePrecondition gate = new GatePrecondition();
     private GateArea lastGateArea;
     private boolean homeConfigured = true;
@@ -40,7 +44,9 @@ public final class AutomationRuntime {
     private final Runnable drain = this::drain;
     private final Runnable listener = this::changed;
     private final Runnable configurationListener = () -> reset(Reason.CONFIGURATION);
-    public AutomationRuntime(Context context) {
+    public AutomationRuntime(Context context) { this(context, event -> () -> true); }
+    public AutomationRuntime(Context context, java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome) {
+        this.reserveHome = reserveHome;
         this.context = context.getApplicationContext(); yanosik = new YanosikLauncher(this.context);
         HomeActions.setSchedulingListener(listener);
         HomeActions.setConfigurationListener(configurationListener);
@@ -71,8 +77,13 @@ public final class AutomationRuntime {
     }
     public void home(HomeEvent event) {
         if (closed || (!HomeActions.callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT)) return;
+        if (event == HomeEvent.OUTBOUND_CHECKPOINT && queue.contains(Type.CLEANING)) return;
         long id = ProgressBus.request(context, ProgressBus.kind(event));
-        if (event == HomeEvent.OUTBOUND_CHECKPOINT && !DailyCleaning.reserve(context)) {
+        long day = day();
+        java.util.function.BooleanSupplier homeReservation = reserveHome.apply(event);
+        ProgressBus.reserveWith(id, () -> (event != HomeEvent.OUTBOUND_CHECKPOINT || DailyCleaning.reserve(context, day))
+                && homeReservation.getAsBoolean());
+        if (event == HomeEvent.OUTBOUND_CHECKPOINT && (!DailyCleaning.available(context, day) || queue.contains(Type.CLEANING))) {
             ProgressBus.update(context, id, Phase.SKIPPED, Reason.DAILY_LIMIT_OR_STORAGE); return;
         }
         enqueue(id, HomeActions.callsGate(event) ? Type.GATE : Type.CLEANING, event);
@@ -80,14 +91,39 @@ public final class AutomationRuntime {
     public void motion() {
         if (!allowsMotionDetection() || PrivateImport.pending(context)) return;
         JourneySession session = new JourneySession(context);
-        if (session.reserve(JourneySession.Target.YANOSIK))
-            enqueue(ProgressBus.request(context, Kind.YANOSIK), Type.YANOSIK, null);
-        if (session.reserve(JourneySession.Target.SPOTIFY))
-            enqueue(ProgressBus.request(context, Kind.SPOTIFY), Type.SPOTIFY, null);
+        if (!mediaGroup.isEmpty()) return;
+        if (session.available(JourneySession.Target.YANOSIK)) addMedia(Type.YANOSIK, Kind.YANOSIK, JourneySession.Target.YANOSIK);
+        if (session.available(JourneySession.Target.SPOTIFY)) addMedia(Type.SPOTIFY, Kind.SPOTIFY, JourneySession.Target.SPOTIFY);
+    }
+    private void addMedia(Type type, Kind kind, JourneySession.Target target) {
+        long id = ProgressBus.request(context, kind);
+        mediaGroup.add(id);
+        ProgressBus.reserveWith(id, new JourneySession(context).reservation(target));
+        enqueue(id, type, null);
+    }
+    private void cancelMedia() {
+        if (cancellingMedia) return;
+        cancellingMedia = true;
+        boolean hadSent = mediaGroup.stream().anyMatch(ProgressBus::sent);
+        for (long id : java.util.List.copyOf(mediaGroup)) {
+            if (hadSent) ProgressBus.markGroupSent(id);
+            ProgressBus.cancelAttempt(ProgressBus.token(id));
+        }
+        if (spotify != null) { SpotifyController active = spotify; spotify = null; spotifyAttempt = 0; active.cancel(); }
+        mediaGroup.clear(); cancellingMedia = false;
     }
     private void enqueue(long id, Type type, HomeEvent event) {
         queue.enqueue(id, type, event, SystemClock.elapsedRealtime(), day());
-        Diagnostics.record(context, "QUEUE_" + type + "_WAITING ID=" + id);
+        long generation = queue.generation();
+        ProgressBus.allowSendWith(id, () -> !closed && queue.generation() == generation);
+        ProgressBus.onCancel(id, () -> {
+            queue.cancel(id);
+            HomeActions.cancelPending(context, Reason.USER_CANCELLED, id);
+            if (type == Type.YANOSIK || type == Type.SPOTIFY) cancelMedia();
+            changed();
+            return false;
+        });
+        Diagnostics.recordAttempt(context, id, "QUEUE_" + type + "_WAITING ID=" + id);
         ProgressBus.update(context, id, Phase.WAITING, Reason.PRIORITY);
         changed();
     }
@@ -109,20 +145,20 @@ public final class AutomationRuntime {
         }
         long now = SystemClock.elapsedRealtime();
         for (Job j : queue.expire(now, day())) {
-            Diagnostics.record(context, "QUEUE_" + j.type() + "_EXPIRED ID=" + j.id());
+            Diagnostics.recordAttempt(context, j.id(), "QUEUE_" + j.type() + "_EXPIRED ID=" + j.id());
             ProgressBus.update(context, j.id(), Phase.SKIPPED, Reason.EXPIRED);
         }
         if (spotify != null) spotify.priorityChanged();
         Job job = queue.next(now, HomeActions.allowsExternalLaunch(), spotify == null && mediaReady());
         if (job != null) {
-            Diagnostics.record(context, "QUEUE_" + job.type() + "_STARTED ID=" + job.id());
+            Diagnostics.recordAttempt(context, job.id(), "QUEUE_" + job.type() + "_STARTED ID=" + job.id());
             if (job.type() == Type.GATE || job.type() == Type.CLEANING) {
                 dispatchedHomeAttempt = job.id();
                 HomeActions.dispatchReserved(context, job.event(), job.id());
             } else if (job.type() == Type.YANOSIK) {
                 ProgressBus.update(context, job.id(), Phase.STARTED, Reason.NONE);
-                YanosikLauncher.Result result = yanosik.launchReserved();
-                Diagnostics.record(context, "YANOSIK_" + (result == YanosikLauncher.Result.REQUESTED ? "LAUNCH_REQUESTED" : result) + " ID=" + job.id());
+                YanosikLauncher.Result result = yanosik.launchReserved(() -> ProgressBus.claimSend(context, job.id()));
+                Diagnostics.recordAttempt(context, job.id(), "YANOSIK_" + (result == YanosikLauncher.Result.REQUESTED ? "LAUNCH_REQUESTED" : result) + " ID=" + job.id());
                 if (result == YanosikLauncher.Result.REQUESTED) queue.yanosikLaunched(now);
                 Reason reason = switch (result) {
                     case REQUESTED -> Reason.NONE;
@@ -133,20 +169,25 @@ public final class AutomationRuntime {
                 };
                 ProgressBus.update(context, job.id(), result == YanosikLauncher.Result.REQUESTED ? Phase.SUCCEEDED : Phase.SKIPPED, reason);
             } else startSpotify(job);
+            if (mediaGroup.stream().noneMatch(id -> queueContainsOrRunning(id))) mediaGroup.clear();
             changed();
         } else {
             long next = queue.nextWake(now);
             if (next != Long.MAX_VALUE) handler.postDelayed(drain, Math.max(1, next - now));
         }
     }
+    private boolean queueContainsOrRunning(long id) {
+        return (spotify != null && spotifyAttempt == id) || ProgressBus.active(id);
+    }
     private void startSpotify(Job job) {
         spotifyAttempt = job.id();
         ProgressBus.update(context, job.id(), Phase.STARTED, Reason.NONE);
-        spotify = new SpotifyController(context, () -> !closed && queue.current(job) && mediaReady(),
+        spotify = new SpotifyController(context, () -> !closed && queue.current(job) && !ProgressBus.cancelled(job.id()) && mediaReady(),
+                () -> ProgressBus.claimSend(context, job.id()),
                 () -> ProgressBus.update(context, job.id(), Phase.STARTED, Reason.RESUMING), result -> {
-                    if (!queue.current(job) || closed) return;
+                    if (!queue.current(job) || closed || ProgressBus.cancelled(job.id())) return;
                     spotify = null; spotifyAttempt = 0;
-                    Diagnostics.record(context, "SPOTIFY_" + result + " ID=" + job.id());
+                    Diagnostics.recordAttempt(context, job.id(), "SPOTIFY_" + result + " ID=" + job.id());
                     Reason reason = switch (result) {
                         case PLAYING -> Reason.NONE;
                         case NO_ACCESS -> Reason.MEDIA_NO_ACCESS;
@@ -157,6 +198,8 @@ public final class AutomationRuntime {
                         default -> Reason.TARGET_STATUS_UNKNOWN;
                     };
                     ProgressBus.update(context, job.id(), result == SpotifyController.Result.PLAYING ? Phase.SUCCEEDED : Phase.SKIPPED, reason);
+                    mediaGroup.remove(job.id());
+                    if (mediaGroup.stream().noneMatch(ProgressBus::active)) mediaGroup.clear();
                     changed();
                 });
         spotify.start();
@@ -171,6 +214,7 @@ public final class AutomationRuntime {
         }
         HomeActions.cancelPending(context, reason, dispatchedHomeAttempt);
         dispatchedHomeAttempt = -1;
+        mediaGroup.clear();
     }
     public void close() {
         reset(Reason.SERVICE_STOPPED); closed = true;

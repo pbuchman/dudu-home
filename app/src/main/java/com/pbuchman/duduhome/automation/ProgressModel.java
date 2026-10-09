@@ -45,12 +45,15 @@ public final class ProgressModel {
                     p.validUntil(), p.phase() == Phase.CANCELLED ? now + 2000 : Long.MAX_VALUE, p.id(), p.stage()));
         }
     }
-    public long request(Kind kind, long now) {
-        State candidate = candidates.remove(kind);
+    public long request(Kind kind, long now) { return request(kind, now, true); }
+    public long requestManual(Kind kind, long now) { return request(kind, now, false); }
+    private long request(Kind kind, long now, boolean useEvidence) {
+        State candidate = useEvidence ? candidates.remove(kind) : null;
+        if (candidate != null && terminal(candidate.phase)) candidate = null;
         if (candidate != null) consumed.put(kind, candidate.evidenceId);
-        long id = ++sequence;
+        long id = candidate == null ? ++sequence : candidate.id;
         attempts.put(id, new State(id, generation, kind, Phase.REQUESTED, 1, Reason.NONE,
-                now + 5000, Long.MAX_VALUE, -1));
+                now + 5000, Long.MAX_VALUE, candidate == null ? -1 : candidate.evidenceId));
         trim();
         return id;
     }
@@ -58,9 +61,28 @@ public final class ProgressModel {
         State s = attempts.get(id);
         if (s == null || terminal(s.phase)) return;
         if (s.phase == phase && s.reason == reason) return;
-        if (!terminal(phase) && phase.ordinal() < s.phase.ordinal()) return;
+        if (!terminal(phase) && !canAdvance(s.phase, phase)) return;
         attempts.put(id, new State(id, s.generation, s.kind, phase, 1, reason,
-                s.validUntil, terminal(phase) ? now + 2000 : Long.MAX_VALUE, -1, s.stage));
+                s.validUntil, terminal(phase) ? now + 2000 : Long.MAX_VALUE, s.evidenceId, s.stage));
+    }
+    private static boolean canAdvance(Phase before, Phase after) {
+        if (after == Phase.CANCELLING) return true;
+        if (before == Phase.CANCELLING) return false;
+        return switch (after) {
+            case WAITING -> before == Phase.REQUESTED;
+            case ACCEPTED -> before == Phase.REQUESTED || before == Phase.WAITING;
+            case STARTED -> before == Phase.REQUESTED || before == Phase.WAITING || before == Phase.ACCEPTED || before == Phase.STARTED;
+            default -> before == after;
+        };
+    }
+    public State state(long id) { return snapshot().stream().filter(s -> s.id == id).findFirst().orElse(null); }
+    public void cancelByUser(long id, Reason reason, boolean pending, long now) {
+        State s = state(id);
+        if (s == null || terminal(s.phase)) return;
+        State updated = new State(s.id, s.generation, s.kind, pending ? Phase.CANCELLING : Phase.CANCELLED,
+                s.value, reason, s.validUntil, pending ? Long.MAX_VALUE : now + 2000, s.evidenceId, s.stage);
+        if (attempts.containsKey(id)) attempts.put(id, updated);
+        else { candidates.put(s.kind, updated); consumed.put(s.kind, s.evidenceId); }
     }
     public State attempt(long id) { return attempts.get(id); }
     public List<State> snapshot() {
@@ -77,9 +99,7 @@ public final class ProgressModel {
             }
         }
         for (State s : snapshot()) {
-            if (s.expiresAt <= now || s.kind == Kind.MOP) continue;
-            if (s.evidenceId == -1 && s.kind != Kind.YANOSIK && s.kind != Kind.SPOTIFY
-                    && s.phase != Phase.SKIPPED && s.phase != Phase.WAITING) continue;
+            if (s.expiresAt <= now) continue;
             if (best == null || priority(s.kind) < priority(best.kind)
                     || (priority(s.kind) == priority(best.kind) && terminal(best.phase) && !terminal(s.phase))
                     || (priority(s.kind) == priority(best.kind) && terminal(s.phase) == terminal(best.phase)

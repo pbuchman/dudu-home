@@ -5,13 +5,16 @@ import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.automation.ProgressModel;
+import com.pbuchman.duduhome.automation.ProgressBus;
+import com.pbuchman.duduhome.automation.AttemptToken;
 import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 
-/** One native layout for the menu and the non-interactive overlay. */
+/** One native layout for the menu and the bounded, touchable overlay. */
 public final class AutomationBanner {
     private AutomationBanner() { }
     public static View create(Context c) { return LayoutInflater.from(c).inflate(R.layout.automation_progress, null); }
@@ -20,8 +23,8 @@ public final class AutomationBanner {
         view.setTag(state);
         int title = switch (state.kind()) { case DEPARTURE -> R.string.progress_departure;
             case RETURN -> R.string.progress_return; case CLEANING -> R.string.full_cleaning;
-            case YANOSIK -> state.evidenceId() >= 0 ? R.string.progress_driving : R.string.progress_yanosik;
-            case SPOTIFY -> R.string.progress_spotify; case MOP -> R.string.full_mop; };
+            case YANOSIK -> state.phase() == Phase.CANDIDATE ? R.string.progress_driving : R.string.progress_media_group;
+            case SPOTIFY -> R.string.progress_media_group; case MOP -> R.string.full_mop; };
         int accent = switch (state.kind()) { case DEPARTURE, RETURN -> R.color.gate_sand;
             case CLEANING -> R.color.cleaning_mint; default -> R.color.mop_sky; };
         ((TextView) view.findViewById(R.id.banner_title)).setText(title);
@@ -34,10 +37,24 @@ public final class AutomationBanner {
         bar.setProgressTintList(ColorStateList.valueOf(view.getContext().getColor(accent)));
         bar.setProgress((int) Math.round(state.value() * 1000));
         bar.setVisibility(ProgressModel.terminal(state.phase()) || state.phase() == Phase.WAITING ? View.GONE : View.VISIBLE);
+        Button cancel = view.findViewById(R.id.banner_cancel_attempt);
+        boolean cancellable = ProgressBus.cancellable(state);
+        cancel.setVisibility(cancellable || state.phase() == Phase.CANCELLING ? View.VISIBLE : View.GONE);
+        cancel.setEnabled(cancellable);
+        cancel.setText(state.phase() == Phase.CANCELLING ? R.string.cancelling_attempt : R.string.cancel_attempt);
+        AttemptToken token = ProgressBus.token(state);
+        cancel.setOnClickListener(v -> {
+            cancel.setEnabled(false);
+            cancel.setText(R.string.cancelling_attempt);
+            ProgressBus.cancelAttempt(token);
+        });
         view.setContentDescription(view.getContext().getString(title) + ". " + view.getContext().getString(detail(state)));
     }
-    private static int detail(ProgressModel.State s) {
+    public static int detail(ProgressModel.State s) {
+        if (s.phase() == Phase.CANCELLING) return R.string.cancelling_attempt;
         if (s.reason() != Reason.NONE) return switch (s.reason()) {
+            case USER_CANCELLED -> R.string.attempt_cancelled;
+            case COMMAND_SENT -> R.string.attempt_command_sent;
             case STOPPED -> R.string.progress_stopped;
             case GPS_UNRELIABLE -> R.string.progress_bad_gps;
             case STALE -> R.string.progress_stale;

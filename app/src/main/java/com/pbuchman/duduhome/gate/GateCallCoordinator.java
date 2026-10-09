@@ -49,6 +49,8 @@ public final class GateCallCoordinator {
     private final Handler worker;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Listener listener;
+    public interface DialAdmission { boolean admit(java.util.function.BooleanSupplier reservation); }
+    private final DialAdmission dialAdmission;
     private final String gateNumber;
     private final GateNumberStore gateNumberStore;
     private final long attemptId = NEXT_ATTEMPT_ID.incrementAndGet();
@@ -83,6 +85,11 @@ public final class GateCallCoordinator {
             String gateNumber,
             GateNumberStore gateNumberStore,
             Listener listener) {
+        this(context, gateNumber, gateNumberStore, listener, java.util.function.BooleanSupplier::getAsBoolean);
+    }
+    public GateCallCoordinator(Context context, String gateNumber, GateNumberStore gateNumberStore,
+                               Listener listener, DialAdmission dialAdmission) {
+        this.dialAdmission = dialAdmission;
         String normalizedGateNumber = GateNumberStore.normalize(gateNumber);
         if (normalizedGateNumber == null || !normalizedGateNumber.equals(gateNumber)) {
             throw new IllegalArgumentException("Gate number must be normalized");
@@ -464,7 +471,15 @@ public final class GateCallCoordinator {
             return;
         }
 
-        GateNumberStore.DialReservation reservation = gateNumberStore.reserveDial();
+        java.util.concurrent.atomic.AtomicReference<GateNumberStore.DialReservation> reserved = new java.util.concurrent.atomic.AtomicReference<>();
+        boolean admitted = dialAdmission.admit(() -> {
+            reserved.set(gateNumberStore.reserveDial());
+            return reserved.get() == GateNumberStore.DialReservation.RESERVED;
+        });
+        GateNumberStore.DialReservation reservation = reserved.get();
+        if (!admitted && reservation == null) {
+            finishError(GateError.IPC_ERROR, "Próba została anulowana albo zapis blokady działania nie powiódł się."); return;
+        }
         if (reservation == GateNumberStore.DialReservation.COOLDOWN) {
             finishError(GateError.RETRY_TOO_SOON,
                     "Trwa blokada czasowa po poprzednim poleceniu dial.");

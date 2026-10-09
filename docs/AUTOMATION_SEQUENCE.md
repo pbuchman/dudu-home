@@ -65,8 +65,10 @@ and return to it. Media waits until the manual menu is left. Neither a banner no
 startup owns the gate/cleaning executor lock. Higher-priority work can run during the
 ten-second Yanosik grace, with no repeated Yanosik launch afterward.
 
-Daily cleaning is reserved at enqueue, including while a gate action is busy. A later failure,
-missing configuration, expiry or process death does not restore it. Crossing the calendar-day
+Pending cleaning is reserved in RAM while queued, including behind a busy gate. Durable
+reservation is committed immediately before external sending. Explicit user cancellation
+before sending drops that RAM reservation; non-user failure, missing configuration and expiry
+retain the conservative consumed-limit behavior. Already sent/uncertain commands stay consumed. Crossing the calendar-day
 boundary expires pending cleaning. Manual cleaning is independent and Mop remains manual only.
 No route thresholds, Bluetooth safety checks, cooldown or Roborock protocol are changed.
 
@@ -74,14 +76,36 @@ No route thresholds, Bluetooth safety checks, cooldown or Roborock protocol are 
 
 Qualified motion remains ten seconds and at least fifteen metres, with the existing GPS
 quality checks. `JourneySession.consumed` still means Yanosik; `spotify_consumed` independently
-guards Spotify. Reserve before enqueue, and atomically rearm both on a new boot or verified
+guards Spotify. Pending media lives in RAM; commit each durable reservation immediately
+before its external operation, and atomically rearm both on a new boot or verified
 increasing wake counter. Baseline-zero, conservative legacy migration and failed-write locking
 are preserved. Missing Spotify state on update permits one attempt only after fresh motion.
-Notification grants, process restarts and manual music pauses never create another attempt.
+Notification grants, process restarts and manual music pauses never create another sent attempt.
+Restart requires fresh standstill before recognizing unsent driving work.
 
 Yanosik uses its existing notification-presence guard. Working, missing or unknown Yanosik
 does not block Spotify. A sent launch request starts a ten-second allowance, not a readiness
 claim. `YanosikLauncher` no longer schedules HOME; Spotify becomes the foreground application.
+
+## User cancellation
+
+Capture `AttemptToken(session, id)` at presentation time and use idempotent
+`ProgressBus.cancelAttempt(token)`. Stale/terminal tokens return false. One cancellation removes
+only that occurrence's timers, pending queue tasks and unsent callbacks. Yanosik and Spotify
+share a group, so cancelling after Yanosik launch also removes pending Spotify. Already opened
+apps remain open. No global reset or gate-area bypass is performed.
+
+Pre-send cancellation is kept in RAM and discards buffered diagnostics, consuming no durable
+reservation. Sending and cancellation have a serialized admission boundary; if cancellation
+wins, no external command is allowed. Once sending starts, retain durable protection even for
+an uncertain result. Binder/HTTP cleanup holds the shared lease; no stop/pause/dock is sent.
+
+Driving rearm requires a ten-second fresh, accurate standstill below 0.5 m/s, then a new complete
+motion test. Departure/cleaning requires five seconds stationary within 45 m of parking;
+return requires five seconds outside the 300-metre junction approach, then a new return.
+Accuracy <=15 m and fix age <=3 s qualify the driving standstill; invalid GPS breaks dwell.
+Restart never replays queue entries or restores cancellation history. Existing sent markers
+and conservative update compatibility remain. See [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Spotify transport
 
@@ -125,5 +149,6 @@ Spotify launch, qualified motion, then verify session availability and local sou
 stop at that documented limitation rather than adding an unapproved SDK or UI workaround.
 
 Then test working-Yanosik skip, gate/cleaning contention, manual-menu protection, real sleep/wake
-and a short stop without rearming. Use existing backup/signature/import procedures, never clear
+and short stops without repeating sent operations; after explicit cancellation verify the new
+qualified standstill-and-motion sequence. Use existing backup/signature/import procedures, never clear
 radio data. Confirm audible radio output and Yanosik warnings, not just process presence.

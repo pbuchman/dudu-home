@@ -4,7 +4,7 @@
 
 The first action row now has four tiles: gate, Full Cleaning, Full Mop and Gdzie jestem.
 The trip screen supports explicit start/pause/resume/end, current locality/street and session
-kilometres. Backgrounding keeps counting. Its two-line overlay and silent notification open
+kilometres. Backgrounding keeps counting. Its wrapping location card and full-address expanded notification open
 the full view when tapped. Automation presentation and execution take priority. No trip
 operation dispatches a gate/robot command or resets an automation reservation.
 See [the complete trip contract](WHERE_AM_I.md) and [current UI gallery](UI_GALLERY.md).
@@ -55,7 +55,7 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Sytuacja | Zachowanie |
 |---|---|
 | Otwarcie aplikacji | Menu „Otwórz bramę”, „Pełne sprzątanie”, „Mopowanie”; brak numeru przypomina formularzem, który można opuścić do menu |
-| Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu, bez przejmowania dotyku i bez akcji od odczytu stanu |
+| Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu; „Anuluj tę próbę” odbiera dotyk tylko w granicach paska, odczyt stanu nie uruchamia akcji |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
 | Yanosik bez sygnału pracy | Potwierdzony ruch, start, po 10 s dopuszczenie Spotify; bez żądania pulpitu |
@@ -74,6 +74,24 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 Wyjście z ekranu sprzątania nie wysyła żadnego polecenia zatrzymania robota. Żądanie HTTP
 może nadal się kończyć. Kolejna akcja jest wtedy blokowana do zakończenia transportu.
 Niepewny wynik wymaga sprawdzenia aplikacji Roborock przed ręcznym ponowieniem.
+
+## Anulowanie bieżącej próby
+
+„Anuluj tę próbę” jest dostępne podczas wykrywania, oczekiwania i wykonania: w pasku,
+ekranie akcji oraz powiadomieniu, gdy nakładka jest niedostępna. Jedno dotknięcie blokuje
+przycisk i przerywa dalsze kroki tej próby; Yanosik i Spotify są wspólną grupą.
+Anulowanie przed wysłaniem nie zapisuje trwałej historii ani nie zużywa limitu. Późniejsze
+błędy i wygaśnięcia bez anulowania przez użytkownika zachowują dotychczasowe zużycie limitu.
+Po wysłaniu pozostaje rezerwacja i komunikat „Polecenie już wysłane. Zatrzymano dalsze kroki”.
+Nie oznacza to zatrzymania robota ani zamknięcia wcześniej otwartej aplikacji.
+
+Ta sama próbka GPS nie wznawia akcji. Jazda wymaga ponownego wiarygodnego postoju przez
+10 s poniżej 0,5 m/s (dokładność do 15 m, wiek do 3 s), a następnie świeżego ruchu przez
+10 s i 15 m. Wyjazd/sprzątanie wymaga powrotu do obszaru parkowania 45 m i postoju 5 s.
+Powrót wymaga opuszczenia obszaru skrzyżowania ponad 300 m przez 5 s i nowej sekwencji.
+Brak dobrego GPS przerywa odliczanie. Restart nie odtwarza kolejki i wymaga świeżej bazy.
+Anulowanie bramy nie omija blokady mediów w jej obszarze ani trwałej blokady dial 60 s.
+Rozłączanie dotyczy wyłącznie własnego połączenia; wspólna blokada trwa do cleanup.
 
 ## Konfiguracja
 
@@ -117,7 +135,7 @@ rozpoznania zamiaru kierowcy w każdym nieznanym manewrze - to ograniczenie GPS 
 ## Dokładnie co oznacza „raz dziennie”
 
 1. Dzień to data kalendarzowa w `Europe/Warsaw`, niezależnie od strefy ustawionej w radiu.
-2. Pierwszy `OUTBOUND_CHECKPOINT` rezerwuje dzień **przed** próbą uruchomienia UI lub HTTP.
+2. Pierwszy `OUTBOUND_CHECKPOINT` tworzy oczekującą próbę w RAM; trwała rezerwacja powstaje bezpośrednio przed wysłaniem HTTP. Anulowanie przez użytkownika przed wysłaniem nie zużywa dnia.
 3. Błąd sieci, odrzucona autoryzacja, brak danych, zajęta akcja albo zablokowane UI nie pozwalają
    spróbować automatycznie drugi raz tego dnia. To świadomie przyjęty wariant konserwatywny.
 4. Rezerwacja pozostaje po restarcie aplikacji/radia, aktualizacji APK i zmianie danych dostępowych.

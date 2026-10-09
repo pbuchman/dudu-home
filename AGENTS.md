@@ -44,10 +44,16 @@ Migration and feature boundaries: docs/MIGRATION.md and docs/PACKAGES.md.
 Do not wire an unverified screen/GPS-gap signal to ignition rearming or claim wake support.
 Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
-Automatic cleaning reserves one attempt per Europe/Warsaw day BEFORE execution; failure, missing
-configuration or an expired queued action consume that opportunity. Since 0.5.6 a busy gate
+Automatic cleaning has one consumed attempt per Europe/Warsaw day. Pending reservations live
+in RAM; durable protection is committed immediately before external sending. Explicit user
+cancellation before sending discards that occurrence and its buffered diagnostics, without
+consuming quota or durable cancellation history. Non-user failure, missing configuration and
+expired queued work still consume the opportunity. Sent or uncertain external commands retain
+reservations. Gate cleanup may only affect its own call and always preserves the 60-second block.
+Cancellation groups Yanosik and Spotify and never bypasses gate-area priority. Rearm cancelled
+work only after the qualified fresh baseline documented in docs/PROGRESS_UI.md. A busy gate
 defers cleaning in a bounded in-memory queue; no persisted queue or automatic retry. Manual
-cleaning remains independent. Saving any configuration must never execute an action or reset quota.
+cleaning remains independent. Saving configuration never executes an action or resets quota.
 Preserve shared action exclusion until actual Binder/HTTP cleanup, not just until the UI closes.
 Stage complete private configuration outside Git; compare radio phone and APK signature before
 update, back up with checksums, keep maintenance until one-time import completes. Do not print

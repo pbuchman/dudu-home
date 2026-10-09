@@ -119,5 +119,11 @@
     <string name="trip_title">Gdzie jestem</string>
     <string name="trip_start">Rozpocznij</string>
     <string name="trip_end">Zakończ</string>
-    <string name="trip_permissions">Brak uprawnień lokalizacji, powiadomień lub nakładki. Sprawdź instalację.</string>
+    <string name="trip_permissions">Brak uprawnień lokalizacji lub powiadomień. Sprawdź instalację.</string>
+    <string name="trip_full_name">Pełna nazwa</string>
+    <string name="cancel_attempt">Anuluj tę próbę</string>
+    <string name="cancelling_attempt">Przerywam…</string>
+    <string name="attempt_cancelled">Anulowano tę próbę</string>
+    <string name="attempt_command_sent">Polecenie już wysłane. Zatrzymano dalsze kroki</string>
+    <string name="progress_media_group">Yanosik i Spotify</string>
 </resources>

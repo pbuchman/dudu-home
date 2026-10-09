@@ -16,6 +16,7 @@ public final class JourneySession {
     }
     private static final Set<SharedPreferences> FAILED = Collections.newSetFromMap(new IdentityHashMap<>());
     private static final Set<SharedPreferences> REPORTED = Collections.newSetFromMap(new IdentityHashMap<>());
+    private static final java.util.Map<SharedPreferences, Long> CYCLES = new IdentityHashMap<>();
     private final SharedPreferences state;
     private final int boot;
     public JourneySession(Context context) {
@@ -40,6 +41,20 @@ public final class JourneySession {
             String key = target == Target.YANOSIK ? "consumed" : "spotify_consumed";
             return ensureBoot() && !state.getBoolean(key, false)
                     && commitOrBlock(state.edit().putBoolean(key, true));
+        }
+    }
+    /** Bind pending work to the observed boot/wake; old queues never consume a later cycle. */
+    public java.util.function.BooleanSupplier reservation(Target target) {
+        synchronized (JourneySession.class) {
+            int ownerBoot = state.getInt("boot", -1);
+            long ownerCycle = CYCLES.getOrDefault(state, 0L);
+            return () -> {
+                synchronized (JourneySession.class) {
+                    return ownerBoot == state.getInt("boot", -1)
+                            && ownerCycle == CYCLES.getOrDefault(state, 0L)
+                            && reserve(target);
+                }
+            };
         }
     }
     /** Manual Maps wins, including after a process restart. Rebaseline the next vendor read
@@ -78,9 +93,11 @@ public final class JourneySession {
             }
             if (observation.kind() == DuduCycle.Kind.ABSENT_COLD_BASELINE
                     || observation.counter() <= state.getLong("wake_id", -1)) return ObservationResult.UNCHANGED;
-            return commitOrBlock(state.edit().putLong("wake_id", observation.counter()).putBoolean("consumed", false)
-                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false))
-                    ? ObservationResult.REARMED : ObservationResult.STATE_WRITE_FAILED;
+            if (!commitOrBlock(state.edit().putLong("wake_id", observation.counter()).putBoolean("consumed", false)
+                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false)))
+                return ObservationResult.STATE_WRITE_FAILED;
+            CYCLES.put(state, CYCLES.getOrDefault(state, 0L) + 1);
+            return ObservationResult.REARMED;
         }
     }
     /** Once per failed store/process, even when a different instance made the failed write. */

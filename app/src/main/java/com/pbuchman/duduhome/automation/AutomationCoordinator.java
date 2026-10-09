@@ -15,11 +15,15 @@ public final class AutomationCoordinator {
     }
     public record Job(long id, Type type, HomeEvent event, long generation, long expiresAt, long day) { }
     private final LinkedHashMap<Long, Job> queued = new LinkedHashMap<>();
-    private long generation, mediaNotBefore;
+    private volatile long generation;
+    private long mediaNotBefore;
+    public long generation() { return generation; }
 
     public void enqueue(long id, Type type, HomeEvent event, long now, long day) {
         queued.putIfAbsent(id, new Job(id, type, event, generation, now + type.lifetime, day));
     }
+    public Job cancel(long id) { return queued.remove(id); }
+    public boolean contains(Type type) { return queued.values().stream().anyMatch(j -> j.type == type); }
     public List<Job> expire(long now, long day) {
         List<Job> expired = new ArrayList<>();
         queued.values().removeIf(j -> {

@@ -29,6 +29,7 @@ public final class SpotifyController {
     private final BooleanSupplier allowed;
     private final Consumer<Result> complete;
     private final Runnable playSent;
+    private java.util.function.BooleanSupplier admission = () -> true;
     private Object sessionKey;
     private boolean finished, sent, started;
     private final Runnable timeout = () -> finish(sessionKey == null ? Result.NO_SESSION : Result.TIMEOUT);
@@ -40,6 +41,9 @@ public final class SpotifyController {
             public void cancel() { handler.removeCallbacksAndMessages(null); }
         }, allowed, playSent, complete);
     }
+    public SpotifyController(Context context, BooleanSupplier allowed, BooleanSupplier admission, Runnable playSent, Consumer<Result> complete) {
+        this(context, allowed, playSent, complete); this.admission = admission;
+    }
     public SpotifyController(Access access, Timer timer, BooleanSupplier allowed, Runnable playSent, Consumer<Result> complete) {
         this.access = access; this.timer = timer; this.allowed = allowed;
         this.playSent = playSent; this.complete = complete;
@@ -50,6 +54,7 @@ public final class SpotifyController {
         try {
             if (!access.permitted()) { finish(Result.NO_ACCESS); return; }
             if (!allowed.getAsBoolean()) { finish(Result.CANCELLED); return; }
+            if (!admission.getAsBoolean()) { finish(Result.CANCELLED); return; }
             if (!access.open()) { finish(Result.MISSING); return; }
             access.observe(this::inspect);
             timer.replace(timeout, 15000);

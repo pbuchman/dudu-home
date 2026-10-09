@@ -1,5 +1,44 @@
 # Verification ledger
 
+## Versioned 1.3.0-rc2 / code 22, 2026-10-09
+
+- The versioned debug app and instrumentation APK built successfully; lint passed.
+- Full emulator safety/UI/cancellation and first-run no-dial checks passed again after the
+  version bump. The unchanged implementation's detector/progress/trip evidence follows below.
+- Routebook pure policy/protocol checks passed with 84 assertions. Private-tool, navigation,
+  public-tree, fresh-installer and radio-updater tests also passed.
+- Staged tree and complete history passed the private configuration/Roborock/navigation
+  denylist scan. Schema icon vocabulary and ordinary prose matches were manually reviewed;
+  three new synthetic screenshots were visually checked before publication.
+- Local versioned APK SHA-256:
+  `5ce3ebe37a45ddc2be80cd9cd0072a1ddac870e19ee9fad4d0c90951a268e0a8`.
+  It remains private. Published street screenshots retain their earlier code 21 provenance.
+- PR and merged-main Actions are publication gates; the release page records their results.
+  No physical radio installation, actual journey or backend deployment was performed.
+
+## Local cancellation and street layout, 2026-10-09
+
+- Isolated checkout based on `c04a686`; no publication, release or physical radio update.
+- `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` passed.
+- Detector and progress checks passed, including independent cancellation/rearming,
+  stop/restart baselines, preserved gate priority and equivalence of 20,000 home plus
+  20,000 motion samples outside the new cancellation path. No private replay files were used.
+- Full emulator safety/UI and first-run no-dial suite passed on a 2000 x 1200 landscape
+  display. Cancellation checks cover process/session tokens, repeated and stale clicks,
+  discarded pre-send diagnostics including late callbacks, deferred reservations,
+  partial media completion, wake-cycle ownership, cleanup and notification actions.
+- Street layout checks exercise 390/260 dp cards and font scales 1.0/1.4. Synthetic gallery
+  checks verify the entire overflow button fits its attached window, including its 76 dp
+  touch height. The measured-height regression was found during screenshot review and fixed.
+- Trip checks passed; the optional pyosmium parser case was skipped because the local
+  dependency is unavailable. Routebook backend and physical GPS were not retested by this change.
+- Build logs and synthetic screenshots are local artifacts under `build/cancel-*` and
+  `build/ui-checks`. APK SHA-256:
+  `ba3328b41115f203b341ff6f32f78e97453ad5bd3c6496a7704ae91f44ee2cf8`.
+- Real DUDU overlay/touch behavior, own-call cancellation, robot transport cancellation,
+  Yanosik/Spotify and qualified rearming during an actual journey remain hardware checks.
+  Emulator success does not establish physical gate opening, robot movement or playback.
+
 ## Combined 1.3.0-rc1 / code 21, 2026-10-06
 
 - Consolidated Android and Routebook source after main PR #7. Existing application safety

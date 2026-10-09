@@ -12,6 +12,22 @@ import java.nio.charset.StandardCharsets;
 public final class Diagnostics {
     private static final long LIMIT = 128 * 1024;
     private Diagnostics() { }
+    private static final java.util.Map<Long, java.util.List<String>> pending = new java.util.HashMap<>();
+    private static final java.util.LinkedHashSet<Long> committed = new java.util.LinkedHashSet<>();
+    public static synchronized void beginAttempt(long id) { pending.putIfAbsent(id, new java.util.ArrayList<>()); }
+    public static synchronized void recordAttempt(Context context, long id, String category) {
+        java.util.List<String> buffer = pending.get(id);
+        if (buffer == null) { if (committed.contains(id)) record(context, category); return; }
+        if (buffer.size() < 48) buffer.add(category);
+    }
+    public static synchronized void commitAttempt(Context context, long id) {
+        java.util.List<String> buffer = pending.remove(id);
+        committed.add(id);
+        if (committed.size() > 256) committed.remove(committed.iterator().next());
+        if (buffer != null) for (String category : buffer) record(context, category);
+    }
+    public static synchronized void discardAttempt(long id) { pending.remove(id); committed.remove(id); }
+
 
     public static synchronized void record(Context context, String category) {
         // Call sites supply constant categories, enum names and numeric counters, not user input.

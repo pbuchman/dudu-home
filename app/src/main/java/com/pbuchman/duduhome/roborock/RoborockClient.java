@@ -42,7 +42,8 @@ public final class RoborockClient {
             return Boolean.TRUE.equals(json.opt("success")) ? Result.ACCEPTED : Result.SERVER_ERROR;
         } catch (Exception ignored) { return status == 401 ? Result.AUTH_REJECTED : Result.PROTOCOL_ERROR; }
     }
-    public Result execute(RoborockCredentials c) {
+    public Result execute(RoborockCredentials c) { return execute(c, () -> true); }
+    public Result execute(RoborockCredentials c, java.util.function.BooleanSupplier admission) {
         try {
             String path = "/user/scene/" + c.routine + "/execute";
             byte[] random = new byte[6]; new SecureRandom().nextBytes(random);
@@ -55,6 +56,7 @@ public final class RoborockClient {
             http.setDoOutput(true); http.setFixedLengthStreamingMode(0);
             http.setRequestProperty("Authorization", hawk(c, path, System.currentTimeMillis() / 1000, nonce));
             http.setRequestProperty("Accept", "application/json");
+            if (cancelled || !admission.getAsBoolean()) return Result.NETWORK_UNKNOWN;
             http.getOutputStream().close();
             int status = http.getResponseCode();
             java.io.InputStream input = status >= 400 ? http.getErrorStream() : http.getInputStream();
