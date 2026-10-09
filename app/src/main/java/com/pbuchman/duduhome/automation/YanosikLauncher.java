@@ -20,13 +20,15 @@ public final class YanosikLauncher {
     public YanosikLauncher(Launch launch, Supplier<YanosikPresence.State> presence) {
         this.launch = launch; this.presence = presence;
     }
-    public Result launchReserved() {
+    public Result launchReserved() { return launchReserved(() -> true); }
+    public Result launchReserved(java.util.function.BooleanSupplier admission) {
         try {
             YanosikPresence.State state = presence.get();
             if (state == YanosikPresence.State.WORK_DETECTED) return Result.ALREADY_RUNNING;
             if (state != YanosikPresence.State.NO_WORK_SIGNAL) return Result.UNKNOWN;
             Intent intent = launch.resolve();
             if (intent == null) return Result.MISSING;
+            if (!admission.getAsBoolean()) return Result.FAILED;
             launch.open(intent);
             return Result.REQUESTED;
         } catch (RuntimeException denied) { return Result.FAILED; }

@@ -107,10 +107,12 @@ public final class SafetyChecks extends Instrumentation {
             NotificationChecks.run(this);
             WakeChecks.run(this);
             ProgressChecks.run(this);
+            CancellationChecks.run(this);
+            CancellationUiChecks.run(this);
             com.pbuchman.duduhome.trip.TripChecks.run(this);
             TripUiChecks.run(this);
             store.reserveDial();
-            result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/no-touch, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");
+            result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/bounded-touch, wrapped street names, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());

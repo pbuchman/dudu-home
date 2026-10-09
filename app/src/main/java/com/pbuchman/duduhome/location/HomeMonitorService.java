@@ -37,6 +37,18 @@ import com.pbuchman.duduhome.automation.DetectionProgress.Reason;
 import com.pbuchman.duduhome.ui.ProgressOverlay;
 
 public final class HomeMonitorService extends Service implements LocationListener {
+    public static final String CANCEL_ACTION = "com.pbuchman.duduhome.CANCEL_ATTEMPT";
+    public static final String CANCEL_SESSION_EXTRA = "cancel_session";
+    public static final String CANCEL_ID_EXTRA = "cancel_id";
+    private final java.util.function.Consumer<com.pbuchman.duduhome.automation.ProgressModel.State> cancellation = observed -> {
+        if (observed.evidenceId() < 0 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.YANOSIK
+                && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.SPOTIFY) return;
+        switch (observed.kind()) {
+            case YANOSIK, SPOTIFY -> { this.motion.cancel(); this.motionOrigin = null; }
+            case DEPARTURE, RETURN, CLEANING -> { if (this.detector != null) this.detector.cancel(observed.kind()); }
+            default -> { }
+        }
+    };
     private static final String CHANNEL = "home_monitor";
     private com.pbuchman.duduhome.trip.TripController trip;
     private com.pbuchman.duduhome.ui.TripPresentation tripPresentation;
@@ -50,7 +62,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private long lastFix;
     private long lastSummary;
     private int fixes, poorFixes;
-    private boolean destroyed, cycleReady, cyclePending;
+    private boolean destroyed, cycleReady, cyclePending, monitoringStarted;
     private String lastCycleDiagnostic;
     private final java.util.concurrent.ExecutorService cycleReader = java.util.concurrent.Executors.newSingleThreadExecutor();
     private AutomationRuntime automation;
@@ -83,7 +95,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     public static boolean ready(Context context) {
         return context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 && (Build.VERSION.SDK_INT < 29 || context.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) && Settings.canDrawOverlays(context)
+                == PackageManager.PERMISSION_GRANTED)
                 && (Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED);
     }
@@ -115,13 +127,22 @@ public final class HomeMonitorService extends Service implements LocationListene
         tripPresentation = new com.pbuchman.duduhome.ui.TripPresentation(this);
         state = getSharedPreferences("home_detector", 0);
         locations = getSystemService(LocationManager.class);
-        automation = new AutomationRuntime(this);
+        automation = new AutomationRuntime(this, this::homeReservation);
+        motion.requireStationaryBaseline();
+        ProgressBus.setCancellationListener(cancellation);
         new JourneySession(this).ensureBoot();
         try { progressOverlay = new ProgressOverlay(this); }
         catch (RuntimeException unavailable) { Diagnostics.record(this, "PROGRESS_OVERLAY_UNAVAILABLE"); }
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && CANCEL_ACTION.equals(intent.getAction())) {
+            ProgressBus.cancelAttempt(new com.pbuchman.duduhome.automation.AttemptToken(
+                    intent.getStringExtra(CANCEL_SESSION_EXTRA), intent.getLongExtra(CANCEL_ID_EXTRA, -1)));
+            if (!monitoringStarted) stopSelf(startId);
+            return monitoringStarted ? START_STICKY : START_NOT_STICKY;
+        }
+        monitoringStarted = true;
         HomeConfiguration next = HomeConfiguration.load(this);
         if (state == null || !ready(this) || PrivateImport.pending(this)) {
             Diagnostics.record(this, "MONITOR_STOP_NOT_READY");
@@ -141,12 +162,13 @@ public final class HomeMonitorService extends Service implements LocationListene
             config = next;
             int saved = config.revision.equals(state.getString("revision", "")) ? state.getInt("flags", 0) : 0;
             detector = new HomeDetector(config.geometry, saved);
+            detector.requireFreshBaseline();
             if (!state.edit().putString("revision", config.revision).putInt("flags", saved).commit()) {
                 stopSelf(); return START_NOT_STICKY;
             }
         }
         Diagnostics.record(this, "MONITOR_START HOME=" + (detector == null ? 0 : 1)
-                + " FLAGS=" + (detector == null ? 0 : detector.flags()));
+                + " FLAGS=" + (detector == null ? 0 : detector.committedFlags()));
         if (detector == null) automation.noHomeConfiguration();
         checkCycle();
         subscribe();
@@ -214,7 +236,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (lastFix - lastSummary >= 30000) {
             Diagnostics.record(this, "GPS_SUMMARY FIXES=" + fixes + " POOR=" + poorFixes
                     + " HOME=" + (detector == null ? 0 : 1)
-                    + " FLAGS=" + (detector == null ? 0 : detector.flags()));
+                    + " FLAGS=" + (detector == null ? 0 : detector.committedFlags()));
             fixes = poorFixes = 0; lastSummary = lastFix;
         }
         if (motionOrigin == null) motionOrigin = new Location(location);
@@ -230,7 +252,8 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (detector != null && !acceptHome(location, fixTime)) return;
         updateGateArea(fixTime + 3000);
         if (!automation.allowsMotionDetection()) {
-            motion.clear(); motionOrigin = null;
+            motion.observeBaseline(motionFix);
+            motion.clearMovementEvidence(); motionOrigin = null;
             ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION, java.util.List.of());
             return;
         }
@@ -255,18 +278,32 @@ public final class HomeMonitorService extends Service implements LocationListene
                 location.hasSpeed() ? location.getSpeed() : 0,
                 lastFix - fixTime, location.isFromMockProvider()));
         ProgressBus.offer(this, progressEpoch, ProgressBus.HOME, detector.progress());
-        int flags = detector.flags();
-        if (flags != state.getInt("flags", 0) && !state.edit().putInt("flags", flags).commit()) {
-            stopSelf(); return false; // Persist consumed events before any side effect.
+        synchronized (detector) {
+            int flags = detector.committedFlags();
+            if (flags != state.getInt("flags", 0) && !state.edit().putInt("flags", flags).commit()) {
+                stopSelf(); return false;
+            }
         }
         for (HomeEvent event : events) {
             HomeConfiguration current = HomeConfiguration.load(this);
             if (current == null || !current.enabled || !current.revision.equals(config.revision)
                     || PrivateImport.pending(this)) { stopSelf(); return false; }
-            Diagnostics.record(this, "EVENT " + event.name());
             automation.home(event);
         }
         return true;
+    }
+    private java.util.function.BooleanSupplier homeReservation(HomeEvent event) {
+        HomeDetector owner = detector;
+        HomeConfiguration configuration = config;
+        return () -> {
+            if (owner == null || owner != detector || configuration != config || destroyed || PrivateImport.pending(this)) return false;
+            synchronized (owner) {
+                owner.commit(event);
+                boolean saved = state.edit().putInt("flags", owner.committedFlags()).commit();
+                if (!saved) handler.post(this::stopSelf);
+                return saved;
+            }
+        };
     }
     private void updateGateArea(long validUntil) {
         if (automation == null) return;
@@ -292,6 +329,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (tripPresentation != null) tripPresentation.close();
         if (trip != null) trip.breakSegment();
         if (automation != null) automation.close();
+        ProgressBus.clearCancellationListener(cancellation);
         destroyed = true;
         progressEpoch = ProgressBus.reset(this, Reason.SERVICE_STOPPED);
         if (progressOverlay != null) progressOverlay.close();

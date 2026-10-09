@@ -1,5 +1,20 @@
 # Design decisions
 
+## Full street names and current-attempt cancellation - October 9
+
+- Preserve overlay position and priority; use locality 24 sp, primary road 32 sp with up to
+  three natural lines and maximum 390 dp width. Measured overflow exposes Pełna nazwa;
+  the full passive screen and expanded notification retain all address text.
+- Give detection, queued and running work an explicit captured process/attempt token.
+  Cancellation is idempotent, visible in bounded touchable UI and notification fallback.
+- Keep unsent reservations and diagnostics in RAM; user cancellation discards them.
+  Commit durable protection at sending, preserving conservative non-user failure/expiry limits.
+- Rearm a cancelled occurrence only after qualified fresh baseline evidence. Media is one
+  Yanosik/Spotify group; cancellation never bypasses gate-area priority or a sent reservation.
+- Cleanup keeps shared leases until actual completion; no robot undo operation is introduced.
+  Prior reserve-at-enqueue and non-touchable-banner decisions below are historical.
+
+
 ## Combined test baseline, October 6
 
 Android, Routebook server/UI, deployment tooling and synthetic contract fixtures share one

@@ -13,9 +13,9 @@
         <ImageView android:layout_width="96dp" android:layout_height="96dp" android:layout_marginTop="24dp"
             android:src="@drawable/art_navigation_pin" android:importantForAccessibility="no" />
         <TextView android:id="@+id/trip_locality" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:textSize="42sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_primary" />
+            android:gravity="center" android:textSize="24sp" android:fontFamily="sans-serif-medium" android:textColor="@color/text_primary" />
         <TextView android:id="@+id/trip_street" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:layout_marginTop="8dp" android:textSize="28sp" android:textColor="@color/text_secondary" />
+            android:gravity="center" android:layout_marginTop="8dp" android:textSize="32sp" android:fontFamily="sans-serif-medium" android:breakStrategy="simple" android:hyphenationFrequency="none" android:textColor="@color/text_primary" />
         <TextView android:id="@+id/trip_distance" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:gravity="center" android:layout_marginTop="24dp" android:textSize="36sp" android:textColor="@color/accent_blue" />
         <TextView android:id="@+id/trip_status" android:layout_width="match_parent" android:layout_height="wrap_content"

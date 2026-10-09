@@ -67,6 +67,7 @@ public final class MainActivity extends Activity {
     private boolean configurationSaved = true;
     private HomeAction currentAction = HomeAction.GATE;
     private boolean gateLease;
+    private Button cancelAttempt;
     private long actionAttempt;
     private View roborockSetup;
     private EditText roborockInput;
@@ -91,6 +92,8 @@ public final class MainActivity extends Activity {
         statusTitle = findViewById(R.id.status_title);
         statusDescription = findViewById(R.id.status_description);
         errorActions = findViewById(R.id.error_actions);
+        cancelAttempt = findViewById(R.id.cancel_attempt);
+
         numberSetupContent = findViewById(R.id.number_setup_content);
         callStatusContent = findViewById(R.id.call_status_content);
         menuContent = findViewById(R.id.menu_content);
@@ -262,7 +265,7 @@ public final class MainActivity extends Activity {
 
     private void manualAction(HomeAction action) {
         returnToMenu = true; currentAction = action;
-        actionAttempt = ProgressBus.request(this, ProgressBus.kind(action)); startSelected();
+        actionAttempt = ProgressBus.requestManual(this, ProgressBus.kind(action)); startSelected();
     }
     public android.view.ViewGroup progressHost() {
         return resumed && menuContent.getVisibility() == View.VISIBLE && getWindow().getDecorView().hasWindowFocus()
@@ -278,6 +281,7 @@ public final class MainActivity extends Activity {
 
     private void showMenu() {
         actionAttempt = 0;
+        cancelAttempt.setVisibility(View.GONE);
         hideKeyboard();
         roborockSetup.setVisibility(View.GONE);
         roborockInput.setText("");
@@ -309,7 +313,7 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() { handleBack(); }
 
     private void handleBack() {
-        if (actionRunning) finishAction();
+        if (actionRunning) ProgressBus.cancelAttempt(ProgressBus.token(actionAttempt));
         else if (menuContent.getVisibility() != View.VISIBLE) showMenu();
         else finishAndRemoveTask();
     }
@@ -329,7 +333,7 @@ public final class MainActivity extends Activity {
     }
 
     private void startAttempt() {
-        if (actionAttempt == 0) actionAttempt = ProgressBus.request(this, ProgressBus.kind(HomeAction.GATE));
+        if (actionAttempt == 0) actionAttempt = ProgressBus.requestManual(this, ProgressBus.kind(HomeAction.GATE));
         if (busyNotice()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         currentAction = HomeAction.GATE;
         actionRunning = true;
@@ -358,6 +362,7 @@ public final class MainActivity extends Activity {
         if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
         final Runnable gateSuccess = HomeActions.gateSuccessCallback();
+        final java.util.concurrent.atomic.AtomicBoolean gateCleaned = new java.util.concurrent.atomic.AtomicBoolean();
         ProgressBus.update(this, attempt, Phase.ACCEPTED, Reason.NONE);
         gateLease = true;
         roborockSetup.setVisibility(View.GONE);
@@ -369,16 +374,24 @@ public final class MainActivity extends Activity {
                 gateNumber,
                 gateNumberStore,
                 new GateCallCoordinator.Listener() {
-                    @Override public void onFinished() { releaseGateLease(); }
+                    @Override public void onFinished() {
+                        gateCleaned.set(true);
+                        releaseGateLease();
+                        if (ProgressBus.cancelled(attempt)) {
+                            ProgressBus.finishCancellation(attempt);
+                            showCancelled(attempt);
+                        }
+                    }
 
                     @Override
                     public void onStateChanged(
                             GateCallState state,
                             String title,
                             String description) {
+                        if (ProgressBus.cancelled(attempt)) return;
                         if (state != GateCallState.ERROR && state != GateCallState.SUCCESS)
                             ProgressBus.update(MainActivity.this, attempt, Phase.STARTED, Reason.NONE);
-                        com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_STATE_" + state.name());
+                        com.pbuchman.duduhome.diagnostics.Diagnostics.recordAttempt(MainActivity.this, attempt, "GATE_STATE_" + state.name());
                         if (generation == uiGeneration && !isFinishing()) {
                             renderState(state, title, description);
                         }
@@ -386,6 +399,7 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onSuccess() {
+                        if (ProgressBus.cancelled(attempt)) return;
                         gateSuccess.run();
                         ProgressBus.update(MainActivity.this, attempt, Phase.SUCCEEDED, Reason.NONE);
                         if (generation == uiGeneration && !isFinishing()) {
@@ -395,8 +409,9 @@ public final class MainActivity extends Activity {
 
                     @Override
                     public void onError(GateError error, String detail) {
+                        if (ProgressBus.cancelled(attempt)) return;
                         ProgressBus.update(MainActivity.this, attempt, Phase.ERROR, Reason.NONE);
-                        com.pbuchman.duduhome.diagnostics.Diagnostics.record(MainActivity.this, "GATE_ERROR_" + error.name());
+                        com.pbuchman.duduhome.diagnostics.Diagnostics.recordAttempt(MainActivity.this, attempt, "GATE_ERROR_" + error.name());
                         if (generation != uiGeneration || isFinishing()) {
                             return;
                         }
@@ -408,7 +423,14 @@ public final class MainActivity extends Activity {
                             showError(error);
                         }
                     }
-                });
+                }, reservation -> ProgressBus.claimSend(getApplicationContext(), attempt, reservation));
+        final GateCallCoordinator executingCoordinator = coordinator;
+        ProgressBus.onCancel(attempt, () -> {
+            showCancelling(attempt);
+            executingCoordinator.close();
+            if (gateCleaned.get()) { showCancelled(attempt); return false; }
+            return true;
+        });
         coordinator.start();
     }
 
@@ -464,6 +486,10 @@ public final class MainActivity extends Activity {
         statusIcon.setScaleX(1f);
         statusIcon.setScaleY(1f);
         errorActions.setVisibility(View.GONE);
+        cancelAttempt.setVisibility(View.VISIBLE);
+        cancelAttempt.setEnabled(true);
+        final com.pbuchman.duduhome.automation.AttemptToken displayedAttempt = ProgressBus.token(actionAttempt);
+        cancelAttempt.setOnClickListener(view -> ProgressBus.cancelAttempt(displayedAttempt));
         statusTitle.setText(R.string.state_starting);
         statusDescription.setText(R.string.state_starting_description);
     }
@@ -513,12 +539,35 @@ public final class MainActivity extends Activity {
                 R.string.error_icon_description);
     }
 
+    private void showCancelling(long attempt) {
+        if (actionAttempt != attempt || isFinishing() || isDestroyed()) return;
+        ++uiGeneration;
+        statusIcon.removeCallbacks(finishAfterSuccess);
+        statusIcon.removeCallbacks(finishAfterInformation);
+        cancelAttempt.setEnabled(false);
+        statusTitle.setText(R.string.cancelling_attempt);
+        statusDescription.setText(ProgressBus.sent(attempt) ? R.string.attempt_command_sent : R.string.attempt_cancelled);
+    }
+    private void showCancelled(long attempt) {
+        if (actionAttempt != attempt || isFinishing() || isDestroyed()) return;
+        coordinator = null;
+        actionRunning = false;
+        cancelAttempt.setVisibility(View.GONE);
+        progress.setVisibility(View.GONE);
+        errorActions.setVisibility(View.GONE);
+        statusTitle.setText(ProgressBus.sent(attempt) ? R.string.attempt_command_sent : R.string.attempt_cancelled);
+        statusDescription.setText(ProgressBus.sent(attempt)
+                ? "Wysłana komenda nie została cofnięta. Zatrzymano dalsze kroki."
+                : "Kolejne wystąpienie warunku będzie wykrywane od początku.");
+        statusIcon.postDelayed(finishAfterInformation, INFORMATION_DISPLAY_MS);
+    }
     private void showInformation(
             int titleResource,
             String description,
             int iconResource,
             int iconDescriptionResource) {
         ++uiGeneration;
+        cancelAttempt.setVisibility(View.GONE);
         statusIcon.removeCallbacks(finishAfterInformation);
         if (coordinator != null) {
             coordinator.close();
@@ -569,6 +618,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showError(GateError error) {
+        cancelAttempt.setVisibility(View.GONE);
         actionRunning = false;
         progress.setVisibility(View.GONE);
         statusIcon.animate().cancel();
@@ -585,6 +635,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showSuccessAnimation() {
+        cancelAttempt.setVisibility(View.GONE);
         progress.setVisibility(View.GONE);
         errorActions.setVisibility(View.GONE);
         statusIcon.setImageResource(R.drawable.ic_success);
@@ -616,7 +667,7 @@ public final class MainActivity extends Activity {
     }
 
     private void startCleaning() {
-        if (actionAttempt == 0) actionAttempt = ProgressBus.request(this, ProgressBus.kind(currentAction));
+        if (actionAttempt == 0) actionAttempt = ProgressBus.requestManual(this, ProgressBus.kind(currentAction));
         if (busyNotice()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         RoborockStore store = new RoborockStore(this);
         RoborockCredentials credentials = store.read();
@@ -642,29 +693,45 @@ public final class MainActivity extends Activity {
         statusDescription.setText(R.string.cleaning_description);
         RoborockClient client = new RoborockClient();
         java.util.concurrent.atomic.AtomicBoolean delivered = new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.atomic.AtomicBoolean transportFinished = new java.util.concurrent.atomic.AtomicBoolean();
         java.util.concurrent.ScheduledExecutorService timer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         java.util.function.Consumer<RoborockClient.Result> complete = result -> {
-            if (!delivered.compareAndSet(false, true)) return;
+            if (ProgressBus.cancelled(attempt) || !delivered.compareAndSet(false, true)) return;
             ProgressBus.update(application, attempt, result == RoborockClient.Result.ACCEPTED ? Phase.SUCCEEDED
                     : result == RoborockClient.Result.NETWORK_UNKNOWN ? Phase.UNKNOWN : Phase.ERROR, Reason.NONE);
-            com.pbuchman.duduhome.diagnostics.Diagnostics.record(application, executing.name() + "_RESULT_" + result.name());
+            com.pbuchman.duduhome.diagnostics.Diagnostics.recordAttempt(application, attempt, executing.name() + "_RESULT_" + result.name());
             runOnUiThread(() -> {
                 if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
                 renderCleaningResult(result);
             });
         };
+        ProgressBus.onCancel(attempt, () -> {
+            delivered.set(true);
+            showCancelling(attempt);
+            timer.shutdownNow();
+            client.cancelTransport();
+            if (transportFinished.get()) { showCancelled(attempt); return false; }
+            return true;
+        });
         timer.schedule(() -> { complete.accept(RoborockClient.Result.NETWORK_UNKNOWN); client.cancelTransport(); }, 20, java.util.concurrent.TimeUnit.SECONDS);
         new Thread(() -> {
             try {
                 ProgressBus.update(application, attempt, Phase.STARTED, Reason.NONE);
-                RoborockClient.Result result = client.execute(selected);
+                RoborockClient.Result result = client.execute(selected, () -> ProgressBus.claimSend(application, attempt));
                 if (result == RoborockClient.Result.AUTH_REJECTED) store.reject(credentials);
                 complete.accept(result);
-            } finally { timer.shutdownNow(); HomeActions.end(); }
+            } finally {
+                transportFinished.set(true);
+                timer.shutdownNow(); HomeActions.end();
+                if (ProgressBus.cancelled(attempt)) runOnUiThread(() -> {
+                    ProgressBus.finishCancellation(attempt); showCancelled(attempt);
+                });
+            }
         }, "RoborockRoutine").start();
     }
 
     private void renderCleaningResult(RoborockClient.Result result) {
+        cancelAttempt.setVisibility(View.GONE);
         updateActionIllustration();
         actionRunning = false;
         if (result == RoborockClient.Result.AUTH_REJECTED) { showRoborockSetup(true); return; }

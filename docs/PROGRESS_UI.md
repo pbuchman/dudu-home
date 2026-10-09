@@ -4,8 +4,8 @@
 
 The Gdzie jestem overlay belongs to the existing monitor but has a separate presentation
 controller. Any visible automation progress, protected MainActivity screen, pending home action
-or execution hides it. The measurement session continues. Its two-line bounded window receives
-taps and is non-focusable; the automation banner remains non-touchable. Tapping the location
+or execution hides it. The measurement session continues. Its bounded window wraps long street names and receives
+taps without focus; the automation banner receives cancellation touches within its own bounds. Tapping the location
 notification during a protected action defers opening until the menu is safe. See [trip UI](WHERE_AM_I.md).
 
 
@@ -19,7 +19,8 @@ One top-centred banner, maximum 480 dp, at least 16 dp from available window edg
 WindowManager fits normal system bars; no fullscreen/layout-no-limits flags. Wrap-content
 supports larger text. Title 22 sp, detail 18 sp, current platform font and dark background.
 Sand identifies gate events, mint cleaning, blue navigation. Icon and text accompany colour.
-No percentages, sound, buttons, flashing, focus or screen wake. An open, focused menu hosts
+No percentages, sound, flashing, focus or screen wake. A visible **Anuluj tę próbę** button
+has a minimum 76 dp touch target and immediately disables after a tap. An open, focused menu hosts
 the same layout inline. Only one host owns it at a time.
 
 | Detection | Title | Detail | Evidence |
@@ -60,20 +61,23 @@ See AUTOMATION_SEQUENCE for queue deadlines, reservations and presentation prior
   and cancellation category, plus Stage NONE/APPROACHING_JUNCTION/APPROACHING_GATE. Stage survives
   model delivery and cancellation; the renderer selects copy without doing GPS maths.
   Its tracker is a side channel inside the same accept evaluation.
-  Observers cannot affect returned events, persistent flags or detection thresholds.
+  Reading observations cannot affect returned events or detection thresholds. The explicit
+  cancellation control delegates a captured process-bound token to ProgressBus; it never
+  dispatches an action or directly resets a quota.
 - ProgressModel.State adds a process-local attempt/presentation ID, generation and display
   expiry. Candidate/action maps are separate; completed attempt history is bounded to 16.
 - ProgressBus serializes delivery on the main thread, posting worker outcomes there. Old
   generations, older evidence IDs/timestamps, backwards action states and repeated terminal
   results are ignored. Observer failure cannot prevent action handling.
-- Phases distinguish CANDIDATE, CONFIRMED, CANCELLED, REQUESTED, ACCEPTED, STARTED, SKIPPED,
+- Phases distinguish CANDIDATE, CONFIRMED, CANCELLED, REQUESTED, ACCEPTED, STARTED, CANCELLING, SKIPPED,
   SUCCEEDED, ERROR and UNKNOWN. Executor success means its existing protocol result, never
   physical gate/robot observation. UNKNOWN preserves transport/lifecycle uncertainty.
 - Reading, subscribing, recreating a menu or redelivering a snapshot never sends a command.
   Neither progress nor actions are restored from the journal after process restart.
 
-HomeActions creates an attempt before checking existing guards and preserves daily cleaning
-reservation before other checks. DISPATCH remains intent, not proof of execution. Valid token
+HomeActions creates an attempt before checking existing guards. Pending reservations remain
+in RAM; actual external execution commits its durable reservation immediately before sending.
+Non-user skipped, failed or expired attempts retain the conservative consumed-limit behavior. DISPATCH remains intent, not proof of execution. Valid token
 delivery or a ready visible Activity acknowledges the request. Gate startup/HTTP worker
 publishes STARTED. Completion reports independently of a closed view. View closure never
 releases the shared Binder/HTTP lease early or reopens a screen on a late outcome.
@@ -84,6 +88,27 @@ IDs are counters, never authorizing tokens. Combined baseline categories stay co
 daily-limit-or-storage and busy-or-maintenance cannot be presented as a more specific certainty.
 
 ## Cancellation and concurrency
+
+The explicit **Anuluj tę próbę** control is available during detection, queue wait and execution,
+in the banner or existing action screen. Yanosik and Spotify are one cancellation group.
+An immutable token includes process session and attempt ID; stale or terminal tokens are inert.
+Repeated taps cannot schedule another cancellation. **Przerywam…** remains visible during
+transport cleanup; shared exclusion is released only when cleanup finishes. If overlays are
+unavailable, a silent ongoing notification supplies the same immutable explicit service action.
+
+Before external sending, user cancellation drops the pending steps without consuming limits
+or writing durable history of that attempt. It blocks only the current occurrence in RAM.
+After sending, show **Polecenie już wysłane. Zatrzymano dalsze kroki** and preserve reservations;
+no robot stop command or closing of an already launched media app is implied. Gate cancellation
+may only clean up its own call and retains the durable 60-second call block.
+
+New driving evidence requires ten continuous seconds of qualified standstill below 0.5 m/s
+(accuracy <=15 m, age <=3 s), then the unchanged fresh 10-second/15-metre movement test.
+Home departure/cleaning requires a fresh five-second standstill within the 45-metre parking
+area; return requires five seconds outside the 300-metre junction approach before a new return.
+Bad GPS breaks these intervals. Cancelling a gate attempt does not release the media gate-area
+precondition. Restart does not restore queued work and requires a fresh baseline.
+
 
 Evidence loss reports the available reason: stop, unreliable GPS, changed conditions, new
 cycle, changed configuration or service stop. Cancellation lasts 2 s; a new valid candidate
@@ -98,7 +123,8 @@ evaluated. Existing execution/result/error/configuration views and locks suppres
 It does not masquerade as an Activity or change allowsExternalLaunch().
 
 ProgressOverlay uses the existing grant and TYPE_APPLICATION_OVERLAY with FLAG_NOT_FOCUSABLE
-and FLAG_NOT_TOUCHABLE. Alpha is capped at the system maximum obscuring opacity for
+and FLAG_NOT_TOUCH_MODAL. It receives touches inside its bounded rectangle and passes outside
+touches through; it has no transparent full-screen input surface. Alpha is capped at the system maximum obscuring opacity for
 [touch pass-through](https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_NOT_TOUCHABLE).
 It never opens MainActivity for progress. Existing action delivery remains subject to
 [background-launch restrictions](https://developer.android.com/guide/components/activities/background-starts).

@@ -69,8 +69,8 @@ final class MonitorCycleChecks {
                 AutomationRuntime waiting = new AutomationRuntime(context);
                 waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
                 AutomationCoordinator waitingQueue = (AutomationCoordinator)get(waiting,"queue");
-                check(waitingQueue.hasHomeWaiting() && !DailyCleaning.reserve(context),
-                        "busy gate queues cleaning and reserves quota immediately");
+                check(waitingQueue.hasHomeWaiting() && DailyCleaning.available(context, java.time.LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")).toEpochDay()),
+                        "busy gate queues cleaning with quota pending only in RAM");
                 waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
                 check(((java.util.Map<?,?>)get(waitingQueue,"queued")).size() == 1,
                         "duplicate cleaning cannot enqueue twice");

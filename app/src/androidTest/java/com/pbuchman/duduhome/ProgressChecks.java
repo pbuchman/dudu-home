@@ -81,7 +81,8 @@ final class ProgressChecks {
             WindowManager.LayoutParams p=(WindowManager.LayoutParams)view.getLayoutParams();
             check(p.type==WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,"overlay type");
             check((p.flags&WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)!=0,"no focus");
-            check((p.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)!=0,"no touch");
+            check((p.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)==0,"bounded overlay receives cancellation touches");
+            check((p.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)!=0,"touches outside pass through");
             check((p.flags&WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)==0,"no screen wake");
             check(p.alpha<=.8f,"touch obscuring limit");
             check(HomeActions.allowsExternalLaunch(),"overlay cannot change action eligibility");

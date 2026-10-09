@@ -13,18 +13,21 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.3.0-rc1` (code 21).**
-> Includes Where am I and automatic Routebook collection with durable offline delivery.
+> **Combined test candidate `1.3.0-rc2` (code 22).**
+> Adds readable long street names and current-attempt cancellation to Where am I,
+> automation and the combined Routebook baseline. [Release notes](docs/RELEASE_1_3_0_RC2.md).
 > Android, backend, private map UI and deployment tooling now share one source revision.
 > Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
 > Source only: no public APK, map database, private configuration or signing key.
 
-![Current four-action menu and navigation groups - synthetic emulator capture](docs/images/current/home-complete.png)
+![Four-action menu and navigation groups - historical synthetic emulator capture](docs/images/current/home-complete.png)
 
-These are captures of the running Android UI with invented fixture data, not mockups or
-physical gate/robot/drive acceptance. The [complete gallery](docs/UI_GALLERY.md) covers
-navigation, action results, settings, automation, media and every trip state.
+These are captures of running Android Views with invented fixture data. The menu and earlier
+action screenshots are the historical 1.2 baseline; they predate cancellation controls. The
+new street captures below include local implementation changes on code 21 before the code 22
+version bump. [Gallery manifests and provenance](docs/UI_GALLERY.md) distinguish both sets.
+Screenshots do not certify physical gate/robot actions, radio touch, driving or sleep/wake.
 
 | Navigation groups | Gate execution |
 | --- | --- |
@@ -32,7 +35,7 @@ navigation, action results, settings, automation, media and every trip state.
 | **Cleaning and manual mop** | **Settings and private setup** |
 | ![Manual mop accepted renderer](docs/images/current/mop-accepted.png) | ![Settings](docs/images/current/settings-menu.png) |
 | **Current place and trip distance** | **Minimal background overlay** |
-| ![Active trip with synthetic locality](docs/images/current/trip-active.png) | ![Two-line location overlay](docs/images/current/trip-overlay.png) |
+| ![Full location screen with invented long names](docs/images/cancellation/trip-long-names.png) | ![Readable wrapped street card](docs/images/cancellation/trip-overlay-long-name.png) |
 | **Automation progress** | **Media playback feedback** |
 | ![Departure detection renderer](docs/images/current/detection-departure.png) | ![Spotify PLAYING renderer](docs/images/current/spotify-playing.png) |
 
@@ -58,8 +61,8 @@ Server runtime secrets and actual recorded locations remain outside the reposito
 - **Mopowanie (Full Mop):** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
   Missing Mop configuration never starts Full Cleaning instead.
 - **Gdzie jestem:** explicitly start, pause, resume or end a trip. Show locality, street and
-  session kilometres. Count qualified GPS movement in the background; show a silent two-line
-  overlay and notification that open the full screen when tapped. Local OSM data works offline;
+  session kilometres. Count qualified GPS movement in the background; show a silent card with up to three readable street lines
+  and an expanded full-address notification that open the full screen when tapped. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
 - **Routebook:** automatically collect GPS independently of the manual trip counter, retain
@@ -69,8 +72,9 @@ Server runtime secrets and actual recorded locations remain outside the reposito
 - **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
-  attempt. No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
-  action and its result screen; the daily attempt remains consumed. Manual cleaning remains independent.
+  attempt. Explicit user cancellation before sending releases the opportunity.
+  No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
+  action and its result screen; non-user failures and expiry still consume the daily attempt. Manual cleaning remains independent.
 - **Three Google Maps navigation slots:** private JSON import, generic icons and empty-slot guidance.
   Each slot accepts up to 12 ordered places: zero shows setup guidance, one starts navigation
   directly, and two, three or more open a modal chooser. Add a third place by appending to the
@@ -81,13 +85,20 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
   skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
   gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
-  retry. A stop or process restart does not rearm it. The DUDU ignition
+  retry. A stop or process restart does not rearm a sent attempt. The DUDU ignition
   task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
   and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
 - **Spotify resume:** open the radio's Spotify, then use only its unambiguous local Android
   media session. Send at most one `play()` and confirm `PLAYING`, not merely an accepted request.
   No playlist selection or remote Spotify Connect control. Cold-start session availability passed
   on the recorded code 13 radio test; see [queue and Spotify contract](docs/AUTOMATION_SEQUENCE.md).
+
+**Anuluj tę próbę** is available during detection, queue wait and execution, including in a
+notification when overlays are unavailable. It cancels only the current process occurrence;
+Yanosik and Spotify share that control. A pre-send cancellation consumes no durable quota
+or attempt history. A newly detected occurrence can start fresh after its required baseline.
+Already sent commands cannot be undone; call/HTTP cleanup and durable safety blocks remain.
+See [cancellation and UI](docs/PROGRESS_UI.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions

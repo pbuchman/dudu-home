@@ -1,0 +1,27 @@
+{
+  "application_commit": "c04a686a8f4411422bb76c99bce4633344f42ed4",
+  "working_tree_changes": true,
+  "apk_sha256": "ba3328b41115f203b341ff6f32f78e97453ad5bd3c6496a7704ae91f44ee2cf8",
+  "version": "1.3.0-rc1",
+  "version_code": 21,
+  "capture_date": "2026-10-09",
+  "dimensions": [
+    2000,
+    1200
+  ],
+  "density": 240,
+  "locale": "en-US",
+  "font_scale": 1.0,
+  "synthetic": true,
+  "notes": "Local street/cancellation implementation captured before the 1.3.0-rc2/code22 version change. System locale en-US; application fixture text is Polish. These captures are not from a code22 rebuild or physical radio.",
+  "files": [
+    "trip-overlay-long-name.png",
+    "trip-overlay-overflow.png",
+    "trip-long-names.png"
+  ],
+  "file_sha256": {
+    "trip-overlay-long-name.png": "f51737e635fb64e23f61abe7bc22c9f283e9add5b2e292d11ef98c054549a34c",
+    "trip-overlay-overflow.png": "848113c257e5f59157a7437681b250d2f9bb85836b9eb9d4e10635e819106780",
+    "trip-long-names.png": "3b27f49abd95039d24ade0bfff5a24eb455c61236786b5ea4b545f70d88ce4a7"
+  }
+}

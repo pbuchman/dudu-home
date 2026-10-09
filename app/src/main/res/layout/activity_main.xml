@@ -246,6 +246,13 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="17sp" />
 
+                <Button android:id="@+id/cancel_attempt" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minHeight="76dp" android:minWidth="76dp"
+                    android:layout_marginTop="20dp" android:paddingHorizontal="24dp"
+                    android:background="@drawable/button_secondary" android:textColor="@color/text_primary"
+                    android:textSize="20sp" android:textAllCaps="false" android:text="@string/cancel_attempt"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/error_actions"
                     android:layout_width="wrap_content"

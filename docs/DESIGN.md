@@ -4,16 +4,21 @@
 
 The 1.2 candidate adds a fourth tile using the existing pin illustration and mint tile styling.
 All four actions share equal width in the landscape row; narrow screens retain the existing
-vertical layout. The trip view uses the existing dark gradient, 42 sp locality, 28 sp street,
-36 sp distance and 56 dp buttons in a scrollable layout. Long names wrap in the full view.
-The location overlay is 300 x 64 dp, two single-line ellipsized labels (22/16 sp), without
-buttons or kilometres. It yields to the existing automation banner.
+vertical layout. The current trip view uses the existing dark gradient, 24 sp locality,
+32 sp primary street, 36 sp distance and 56 dp trip-session buttons in a scrollable layout.
+The full street has unlimited lines. The top-right location card is at most 390 dp wide,
+with 16 dp window margins and content-dependent height. The street naturally wraps into up
+to three lines; text does not shrink or scroll. Measured overflow exposes an ellipsis and
+**Pełna nazwa** with a minimum 76 dp touch target. The complete address stays available in
+accessibility text and the expanded notification. The card yields to automation presentation.
 
 Capture current screens with `python3 scripts/capture-readme.py emulator-5554` after building
 both APKs. The runner refuses physical devices, resets only emulator app data and uses
 2000 x 1200 landscape, density 240 and font scale 1.0. Fixtures contain invented places and
 no executors. Review every pixel before copying files from build/ui-checks/gallery into
-`docs/images/current`. The manifest records source/artifact provenance; mockups are not captures.
+`docs/images/current` for a regenerated complete gallery. The October 9 street-only captures
+are separately preserved in `docs/images/cancellation`; their manifest explicitly identifies
+the code 21 dirty implementation build, not a code 22 rebuild. Mockups are not captures.
 See [gallery](UI_GALLERY.md). Earlier three-tile imagery below is historical.
 
 
@@ -45,7 +50,10 @@ Nie dodano ozdobnych liczników, wykresów, dekoracyjnych etykiet ani kolejnych 
 
 Od wersji 0.5 istniejący styl uzupełnia pasek rozpoznawania GPS, bez przebudowy menu.
 Ta sama ikona, nagłówek 22 sp, opis 18 sp i pasek występują nad inną aplikacją lub w menu.
-Bez nowych przycisków i procentów. Kontrakt: [PROGRESS_UI.md](PROGRESS_UI.md).
+Od 1.3.0-rc2 przycisk „Anuluj tę próbę” ma cel dotykowy minimum 76 x 76 dp i po
+naciśnięciu od razu się blokuje. Nakładka odbiera dotyk w swoich granicach, bez fokusu;
+poza nią dotyk przechodzi do aplikacji pod spodem. Jest też akcja w powiadomieniu,
+gdy nakładki są niedostępne. Bez procentów. Kontrakt: [PROGRESS_UI.md](PROGRESS_UI.md).
 Zrzuty `progress-*.png` pochodzą z emulatora, na syntetycznych danych. Widok wykonywania
 akcji jest podglądem renderera, nie dowodem telefonu do bramy.
 

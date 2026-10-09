@@ -1,8 +1,23 @@
 # Handoff - local Full Cleaning implementation
 
+## Current candidate: 1.3.0-rc2 / code 22
+
+The release candidate adds a wrapping 390 dp street card (24 sp locality, 32 sp road, three
+lines and explicit overflow expansion) and current-attempt cancellation across detection,
+queue and execution. Unsent user-cancelled attempts keep no durable history/quota;
+sent commands retain safety reservations and cleanup. Media cancellation groups Yanosik
+and Spotify, and qualified fresh baseline evidence is required to arm a new occurrence.
+Version is 1.3.0-rc2/code 22. The owner authorized source-only PR, green Actions, merge and
+prerelease publication. Radio installation and private configuration changes are separate.
+Build/lint, synthetic detector/progress/trip and full emulator checks passed before this
+version bump; current validation results belong in VERIFICATION.md. Final artifact and CI
+checks must be recorded by the release coordinator. Do not infer hardware acceptance.
+See WHERE_AM_I.md, PROGRESS_UI.md and AUTOMATION_SEQUENCE.md for the current contracts.
+
 ## Current integration baseline
 
-Use main and the combined 1.3.0-rc1/code 21 source after the integration PR is merged.
+Use the exact merged main revision for 1.3.0-rc2/code 22 after the cancellation PR merges.
+Combined 1.3.0-rc1/code 21 is the preceding baseline.
 Do not build older feature worktrees for radio updates. Android, Routebook backend/UI and
 fixtures are together; follow INTEGRATED_RELEASE.md and ROUTEBOOK.md. The records below
 are historical. Existing private radio configuration remains authoritative.

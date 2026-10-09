@@ -28,8 +28,8 @@ final class GatePriorityChecks {
                 HomeActions.end();
                 check(runtime.allowsMotionDetection(),"call completion releases motion after cleanup");
                 runtime.motion();
-                check(!session.available() && !session.available(JourneySession.Target.SPOTIFY),
-                        "both attempts reserved only after gate completion and qualified motion");
+                check(session.available() && session.available(JourneySession.Target.SPOTIFY),
+                        "both pending attempts remain uncommitted until external work starts");
                 // Reset synchronously, before any posted drain can run a media executor.
                 runtime.reset(DetectionProgress.Reason.WAKE);
                 runtime.gateArea(DEPARTURE,freshUntil); success.run();

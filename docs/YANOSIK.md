@@ -2,6 +2,19 @@
 
 ## Implemented
 
+### Current user-cancellation contract
+
+Yanosik + Spotify form one cancellable attempt. The banner/status-screen control and fallback
+notification capture a process-bound attempt token. Cancelling unsent work consumes no durable
+session reservation and leaves no persistent cancellation history. The same GPS occurrence is
+suppressed in RAM until ten seconds of accurate, fresh standstill below 0.5 m/s, followed by a
+new full movement test. A stop after an already sent attempt does not rearm it. Restart needs
+fresh standstill for unsent work and preserves sent reservations. A Yanosik launch cannot be
+undone; cancellation after launch suppresses pending Spotify. Unknown launch outcomes remain
+consumed. This supersedes older reserve-at-enqueue descriptions below; hardware acceptance
+of the new controls and rearming remains pending.
+
+
 ### Current sequence - 0.5.6
 
 Gate → cleaning → Yanosik → Spotify, considering only qualified tasks. Yanosik retains its
@@ -53,8 +66,8 @@ An implausible jump resets evidence. No home geometry is needed for this hook. H
 still require their private geometry and enabled configuration. All monitoring respects
 permissions and maintenance/import. No new tile, UI setting or periodic launch timer.
 
-MotionHook qualifies movement on fresh GPS. The runtime reserves independent Yanosik and Spotify
-attempts and queues them, rather than discarding recognition while another action owns the UI.
+MotionHook qualifies movement on fresh GPS. The runtime queues independent Yanosik and Spotify
+steps under one cancellable group, rather than discarding recognition while another action owns the UI.
 Screen locks, priority and expiry decide when a queued launch may execute. Events from the same
 fix are collected before dispatch. Media launch does not call or send a robot command.
 
