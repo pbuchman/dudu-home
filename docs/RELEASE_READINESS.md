@@ -11,11 +11,16 @@ Code-23 build/lint, detector/progress/trip/parser, diagnostic/installer/navigati
 Routebook and full emulator checks passed; synthetic backup/update/import/quota preservation
 and overlay visual checks passed. Final incremental SafetyChecks after failed-write latch
 hardening passed. Extended exact consumed departure-cycle preservation across backed-up
-update/import and process restart passed. Two local PostGIS cases were skipped and remain CI work.
-See VERIFICATION.md for exact counts and boundaries. Publish source only after PR checks,
-merged-main checks and prerelease tag checks pass. Current map rebuild reuses the existing
-source timestamp 2026-09-27T20:23:36Z; counts/bytes/hash are pending. Deliver the signed local
-APK, schema-2 map and hash/installation documentation privately, never as public assets.
+update/import and process restart passed. The national schema-2 pack completed from source
+timestamp 2026-09-27T20:23:36Z; full validation, atomic Android 36 emulator installation and
+sampled national lookup passed. Private read-only diagnostic collection also passed; the
+synthetic stopped state did not verify a live monitor dump. See VERIFICATION.md for measurements.
+
+[PR #10](https://github.com/pbuchman/dudu-home/pull/10) initial commit `0e43336` passed PR
+and branch CI, including actual PostGIS/browser checks that were skipped locally. Enforce
+final PR, merged-main and prerelease-tag gates separately and record final results on the
+release page. Prepare the final merged-source signed APK/hash manifest privately after
+merge; map/manifest and installation/diagnostic documentation stay outside public assets.
 
 No current radio ADB access or installed version is confirmed. A backed-up same-signature
 update, two real wake cycles, good GPS at parking, three-second forward/reversing departure,

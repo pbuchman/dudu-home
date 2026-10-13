@@ -160,14 +160,20 @@ See [verification](VERIFICATION.md), [installation](OPERATIONS.md) and the
 [complete UI gallery](UI_GALLERY.md). Real route accuracy, radio background presentation and
 vendor sleep/wake require separate physical evidence. Deep sleep without GPS cannot be measured.
 
-### RC3 Poland artifact preparation
+### Validated RC3 Poland artifact
 
-Rebuild the national schema-2 pack from the existing PBF snapshot with source timestamp
+The national schema-2 pack was rebuilt from the existing PBF snapshot with source timestamp
 **2026-09-27T20:23:36Z**. This is a new index format over existing source data, not a latest
-OSM download. Keep the input, output and manifest outside Git. The final bytes, counts and
-SHA-256 remain pending until the completed manifest is validated and recorded privately.
-Reserve space for the old and staged new map plus the application backup; do not infer the
-new size from the historical pack below. Real city/village acceptance remains pending.
+OSM download. It contains 3,469,164,544 bytes, 30,345,794 roads, 109,263 settlement points,
+8,622,804 addresses and 26,879 areas, including 26,791 administrative-locality areas.
+Input, output, hash and validated manifest remain outside Git. Reserve space for old and
+staged new maps plus the application backup.
+
+Full manifest/integrity validation and staged/hash/atomic installation passed on a dedicated
+Android 36 emulator. NationalMapChecks covered 64/64 sampled roads, matched 59 streets with
+zero wrong streets (p95 43 ms, maximum 91 ms) and matched 32/32 sampled administrative-level-8
+interiors with zero ambiguity. These samples do not guarantee national coverage or radio
+performance. Actual city/village/drive acceptance remains pending; see VERIFICATION.md.
 
 ### Historical schema-1 Poland artifact
 

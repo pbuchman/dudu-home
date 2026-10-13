@@ -21,6 +21,11 @@ pending media startup so it cannot cover the chosen navigation.
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
 > Source only: no public APK, map database, private configuration or signing key.
 
+RC3 local safety checks and national schema-2 map validation/Android emulator lookup passed;
+initial [PR #10 checks](https://github.com/pbuchman/dudu-home/pull/10/checks) are green.
+Final PR/main/tag publication gates are enforced separately. [Evidence and limits](docs/VERIFICATION.md)
+distinguish these results from the pending physical-radio acceptance.
+
 ![Four-action menu and navigation groups - historical synthetic emulator capture](docs/images/current/home-complete.png)
 
 These are captures of running Android Views with invented fixture data. The menu and earlier

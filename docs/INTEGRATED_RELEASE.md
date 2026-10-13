@@ -11,11 +11,14 @@ reservations and cleanup. See [release notes](RELEASE_1_3_0_RC3.md) for exact sc
 The owner authorized source-only PR/checks/merge/prerelease. Code-23 build/lint, local
 synthetic/emulator/tooling/Routebook and privacy checks passed as recorded in VERIFICATION.md.
 Final incremental SafetyChecks after failed-write latch hardening passed; the extended
-exact consumed departure-cycle preservation check across backed-up update/import and process restart passed;
-two local PostGIS cases were skipped. PR, main and tag validation remain pending.
-Prepare a signed local APK,
-schema-2 Poland pack, matching hashes and installation/diagnostic instructions outside Git.
-The map reuses source timestamp 2026-09-27T20:23:36Z; final measurements remain pending.
+exact consumed departure-cycle preservation check across backed-up update/import and process
+restart passed. The schema-2 Poland pack completed from source timestamp 2026-09-27T20:23:36Z;
+full manifest validation, atomic Android 36 emulator installation and national lookup passed.
+Read-only private diagnostic collection passed; the stopped synthetic state had no live dump.
+Initial `0e43336` of [PR #10](https://github.com/pbuchman/dudu-home/pull/10) passed PR/branch CI,
+including PostGIS/browser checks skipped locally. Enforce final PR/main/tag gates separately;
+record final results on the release page. Prepare the final merged-source signed APK/hash
+manifest after merge and keep map/manifest/installation/diagnostic artifacts outside Git.
 Physical ADB is unavailable, so no current radio version or RC3 update is confirmed. Two
 wake cycles and city/village/drive acceptance remain pending. Source publication does not
 establish radio installation, server deployment, pairing or a private configuration change.

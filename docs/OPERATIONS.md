@@ -28,15 +28,18 @@ the app merely to produce a success result.
 ## RC3 local artifacts and unattended radio update
 
 The current candidate is 1.3.0-rc3/code 23. Build its signed local APK from the exact reviewed
-main revision and keep it outside public release assets. Prepare a schema-2 Poland index
-with its manifest from the existing source timestamp 2026-09-27T20:23:36Z; do not call this
+main revision and keep it outside public release assets. The schema-2 Poland index and its
+validated manifest were built from source timestamp 2026-09-27T20:23:36Z; do not call this
 a latest-data download. Record source SHA, APK version/signing fingerprint/SHA-256, map
 schema/source timestamp/counts/bytes/SHA-256 in a private handoff beside installation notes.
 Code-23 build/lint, local synthetic/emulator/tooling/Routebook, update/import/quota and
 privacy checks passed, including final incremental SafetyChecks after failed-write latch
 hardening; see VERIFICATION.md. Extended exact consumed departure-cycle preservation across
-backed-up update/import and process restart passed. National map build/Android lookup, artifact hashes and
-PR/main/tag CI results remain pending.
+backed-up update/import and process restart passed. National manifest validation, staged/hash/
+atomic Android 36 emulator installation and sampled lookup passed. Initial PR/branch CI is
+green, including PostGIS/browser checks; enforce final PR/main/tag gates separately and
+record final results on the release page. Complete the private merged-source APK/hash
+manifest after merge. The known signing certificate matches; physical installation is separate.
 
 Update APK and map together: the app reads schema 1 for compatibility, but the old pack
 does not contain the new locality evidence. Normal map installation requires schema 2.

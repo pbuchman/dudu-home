@@ -18,8 +18,10 @@
 - Build/lint, synthetic detector/progress/trip/parser/tooling, Routebook, full emulator,
   update/import/quota and privacy checks passed, including final incremental SafetyChecks
   after failed-write latch hardening. Extended exact consumed departure-cycle preservation
-  across backed-up update/import and process restart passed. Map/national lookup/hashes and
-  PR/main/tag CI are pending.
+  across backed-up update/import and process restart passed. National schema-2 validation/
+  emulator installation/lookup and private read-only diagnostic collection passed.
+- Initial PR/branch CI passed, including PostGIS/browser checks. Final PR/main/tag gates are
+  enforced separately; final results belong on the release page. Final APK/hash handoff is private.
 - Source-only prerelease candidate; installation, driving and repeated wake acceptance remain
   pending. See [verification](docs/VERIFICATION.md) and [release notes](docs/RELEASE_1_3_0_RC3.md).
 

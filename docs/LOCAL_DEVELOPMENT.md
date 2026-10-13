@@ -12,9 +12,10 @@ phone snapshot/idle admission adds latency before dial.
 
 Schema-2 maps add administrative locality evidence, independent street/locality quality and
 stabilization, and protection against weaker Photon replacement. Schema 1 remains readable;
-the fix requires the code-23 APK and schema-2 pack. Rebuild the national pack from the
-existing source timestamp 2026-09-27T20:23:36Z, not a latest download. Final counts/bytes/hash
-and the local signed APK manifest are pending. See WHERE_AM_I.md and OPERATIONS.md.
+the fix requires the code-23 APK and schema-2 pack. The national pack completed from the
+existing source timestamp 2026-09-27T20:23:36Z, not a latest download. Full manifest validation,
+atomic Android 36 emulator installation and national lookup passed; map/manifest/hash stay
+private. See WHERE_AM_I.md and OPERATIONS.md for details and the final merged APK handoff.
 
 Private bounded asynchronous diagnostics expose reasons, cycle/reservation state and
 correlation without names/coordinates/phone fragments or durable pre-send cancellation
@@ -24,8 +25,11 @@ synthetic signature-checked update/import/quota preservation and privacy checks 
 Final incremental SafetyChecks after failed-write latch hardening passed. The extended
 installer run passed exact consumed departure-cycle preservation across backed-up update/import
 and process restart, alongside existing quota/navigation/signature checks.
-Two local PostGIS cases remain skipped; PR, main and tag CI are pending. Exact measured
-results and limitations are recorded in VERIFICATION.md.
+Two PostGIS cases were skipped locally; initial commit `0e43336` of
+[PR #10](https://github.com/pbuchman/dudu-home/pull/10) passed PR/branch CI including actual
+PostGIS/browser. Private read-only diagnostic collection passed on the emulator; a live
+dump was unavailable in its synthetic stopped state. Enforce final PR/main/tag gates
+separately and record final results on the release page. Exact evidence is in VERIFICATION.md.
 Radio ADB is unavailable: no current installed version or RC3 installation is confirmed.
 Two real wake cycles and city/village/drive acceptance remain pending. Code/data causes
 are identified; the exact physical failure cause remains unconfirmed.

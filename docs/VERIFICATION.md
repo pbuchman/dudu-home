@@ -6,7 +6,7 @@
   schema-2 locality evidence/quality and private rejection diagnostics. Exact contracts are
   in FUNCTIONAL.md, WHERE_AM_I.md and RELEASE_1_3_0_RC3.md.
 - `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` passed for code 23.
-- Detector/progress checks passed for a gate close to parking, 15 m geometry, reversing,
+- Detector/progress checks passed for a gate close to parking, GPS accuracy 15 m, reversing,
   already-moving initial fixes, gap/quality recovery, boot/wake/restart protection and
   failed-persistence closure. Cleaning/return/exit behavior stayed identical over 20,000
   synthetic samples; the retained motion baseline also matched over 20,000 samples.
@@ -14,8 +14,8 @@
   Radio-update (8), diagnostics (4), private-tools (8), navigation (6), public-tree (1)
   and fresh-installer (5) tests passed.
 - Routebook Java checks passed with 84 assertions. `npm ci`, build, nine contract checks,
-  19 backend tests and 13 UI tests passed. Two local PostGIS cases were skipped; CI is
-  configured to run actual PostGIS, so local results do not establish those integrations.
+  19 backend tests and 13 UI tests passed. Two local PostGIS cases were skipped; the green
+  initial PR/branch Routebook CI below ran actual PostGIS and browser checks separately.
 - Full emulator SafetyChecks, including DepartureCycleChecks, JournalChecks and LocalityChecks,
   passed; first-launch no-dial and the overlay visual check passed. Synthetic same-signature
   backup/update/import and quota preservation passed. The final incremental SafetyChecks
@@ -27,10 +27,26 @@
 - Working tree and complete history passed the private config/Roborock/navigation denylist
   scan, with manual review of generic existing vocabulary. Public screenshots remain the
   historical gallery, not new physical-radio captures.
-- PR, merged-main and prerelease tag checks are separate pending publication gates.
-- National schema-2 pack is being rebuilt outside Git from source timestamp
-  2026-09-27T20:23:36Z. Final counts, bytes, SHA-256 and APK/signing manifest are pending;
-  historical schema-1 measurements below do not describe this new artifact.
+- Read-only diagnostic collection on the emulator passed: 803 journal records and three
+  correlated attempts. The monitor was unavailable in this synthetic stopped state, so this
+  does not verify a live monitor dump or hardware collection.
+- National schema-2 pack completed from source timestamp 2026-09-27T20:23:36Z:
+  3,469,164,544 bytes, 30,345,794 roads, 109,263 settlement points, 8,622,804 addresses and
+  26,879 areas, including 26,791 administrative-locality areas. The historical schema-1
+  pack had 219 areas. Actual source data, database, SHA-256 and manifest stay outside Git.
+- Full `radio_update.map_manifest` validation and `install_map` staged transfer/hash/atomic
+  rename passed on a dedicated Android 36 emulator; installation took 35 seconds.
+  NationalMapChecks covered 64/64 sampled roads: 59 street matches, zero wrong streets,
+  resolver p95 43 ms and maximum 91 ms. All 32 sampled administrative-level-8 interior
+  points matched with zero ambiguity. No actual names/coordinates were printed. These
+  samples do not certify nationwide accuracy, radio performance or actual driving.
+- Local APK signing certificate matches the known key. The final merged-source APK/hash
+  manifest will be prepared privately after merge; emulator map installation is not radio
+  installation.
+- Initial source commit `0e43336` passed both PR and branch CI (`check` and Routebook,
+  including PostGIS/browser): [PR #10 checks](https://github.com/pbuchman/dudu-home/pull/10/checks).
+  Final PR, merged-main and prerelease-tag gates are enforced separately; final results
+  belong on the release page. This entry does not claim main/tag checks are completed.
 - Code/data diagnosis identified directional/minimum-displacement gate suppression and
   missing administrative locality polygons. Current physical-radio cause is unconfirmed.
   ADB hardware access is unavailable; no new installation or current installed version is

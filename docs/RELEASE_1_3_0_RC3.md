@@ -47,12 +47,20 @@ Synthetic backup/update/import/quota preservation and overlay visual checks pass
 The final incremental SafetyChecks run after failed-write latch hardening also passed.
 The extended installer check passed exact consumed departure-cycle preservation across
 backed-up update/import and process restart, alongside existing quota/navigation/signature checks.
-Two local PostGIS cases remain skipped and are configured for CI. Exact counts and limits
+Two local PostGIS cases were skipped; initial PR/branch CI ran PostGIS and browser checks successfully. Exact counts and limits
 are in [VERIFICATION.md](VERIFICATION.md); previous RC2 results are separate historical evidence.
 
-PR, merged-main and prerelease tag checks remain pending. The national schema-2 build is
-still running; final map counts/bytes/hash, the national Android lookup check and the local
-signed APK manifest await completed artifacts.
+The national schema-2 pack completed with 26,879 areas, including 26,791 administrative
+localities. Full manifest validation and staged/hash/atomic installation passed on Android 36
+emulator. National lookup covered 64/64 roads, matched 59 streets with zero wrong streets,
+and matched 32/32 sampled administrative-level-8 interiors without ambiguity. Read-only
+diagnostic collection passed with 803 records/three attempts; its stopped synthetic state
+did not provide a live monitor dump. Pack/hash/manifest remain private; APK signer matches
+the known key. The final merged-source APK/hash manifest is prepared privately after merge.
+
+[PR #10](https://github.com/pbuchman/dudu-home/pull/10) initial commit `0e43336` passed both
+PR and branch CI. Final PR, merged-main and prerelease-tag gates are enforced separately;
+the release page records final results. Main/tag completion is not asserted here.
 
 Physical radio access via ADB is unavailable. No code-23 installation or current installed
 version is confirmed. Required acceptance includes departure in both directions/reversing,

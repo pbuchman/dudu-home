@@ -51,6 +51,10 @@ only the private journal and allowlisted dump fields without starting the app or
 device state. `summarize` rebuilds the private process/attempt report locally. Preserve the
 original wall/elapsed observation times and its bounded-retention/process-death limitations.
 
+RC3 read-only collection passed on the emulator with 803 records and three correlated attempts.
+The monitor was unavailable in that synthetic stopped state; this does not verify its live
+dump or hardware capture. Current measured results are in VERIFICATION.md.
+
 Historical source 0.5.6 preserves the cycle adapter and baseline-zero fix below. Installation
 of 0.5.5/code 12 was confirmed September 14, but full wake acceptance is still pending.
 The media sequence now uses Spotify instead of HOME and independently reserves both targets.
