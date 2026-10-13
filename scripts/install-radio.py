@@ -42,7 +42,7 @@ def main():
     from navigation_config import validate_navigation
     if validate_navigation(installed_nav)!=validate_navigation(canonical_nav):raise Blocked('Installed navigation differs from canonical source')
     preserved={}
-    for name in ('gate_settings','daily_cleaning','journey_session','home_detector'):
+    for name in ('gate_settings','daily_cleaning','journey_session','home_detector','departure_cycle'):
         result=subprocess.run([*adb,'exec-out','run-as',PACKAGE,'cat',f'shared_prefs/{name}.xml'],capture_output=True)
         try:ET.fromstring(result.stdout);preserved[name]=result.stdout
         except ET.ParseError:pass
@@ -89,7 +89,7 @@ def main():
         time.sleep(2)
         service=run(adb,['shell','dumpsys','activity','service',PACKAGE+'/.location.HomeMonitorService']).decode()
         if 'monitor_running=true' not in service or 'registered=true' not in service:raise Blocked('Monitor startup not confirmed')
-        receipt={'status':'installed','apk_sha256':installed_hash,'map_sha256':manifest['sha256'],
+        receipt={'status':'installed','apk_sha256':installed_hash,'map_sha256':manifest['sha256'],'map_schema':manifest['schema'],
                  'configuration_preserved':True,'monitor_registered':True,'road_test':'not performed','ui_smoke':smoke_trip(adb)}
         (backup/'installation-result.json').write_text(json.dumps(receipt,indent=2)+'\n')
         print('PASS: exact APK installed, map verified, full configuration preserved, monitor registered. Driving/wake not tested.')

@@ -156,7 +156,8 @@ final class ProgressChecks {
         capture(i,"progress-action.png");
         i.runOnMainSync(preview::finish);
         String category="PROGRESS_TEST_"+"A".repeat(170);
-        for(int n=0;n<1800;n++)Diagnostics.record(c,category);
+        for(int n=0;n<1800;n++) { Diagnostics.record(c,category); if(n%32==0)check(Diagnostics.awaitWrites(),"journal drain"); }
+        check(Diagnostics.awaitWrites(),"journal final drain");
         File journal=new File(c.getNoBackupFilesDir(),"diagnostics.txt");
         File previous=new File(c.getNoBackupFilesDir(),"diagnostics.previous.txt");
         check(previous.exists()&&previous.length()<=128*1024+300&&journal.length()<=128*1024+300,"existing two-file rotation bound");

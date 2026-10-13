@@ -76,10 +76,15 @@ final class PhotonPlaces {
         if(!returned.valid() || fix.distance(returned)>100) return null;
         String city=clean(p.optString("city")), street=clean(p.optString("street"));
         if("highway".equals(p.optString("osm_key")) && street.isEmpty()) street=clean(p.optString("name"));
-        boolean pointSettlement="place".equals(p.optString("osm_key")) && java.util.Set.of("city","town","village","hamlet").contains(p.optString("osm_value"));
+        boolean placeFeature="place".equals(p.optString("osm_key"));
+        boolean pointSettlement=placeFeature && java.util.Set.of("city","town","village").contains(p.optString("osm_value"));
         if(pointSettlement) { String name=clean(p.optString("name")); city=name.isEmpty() ? "" : "Okolice "+name; }
+        else if(placeFeature) city=""; // Hamlets, estates and districts are not primary locality evidence.
         if(city.isEmpty() && street.isEmpty()) return null;
-        return new PlaceResult(city,street,"photon",!pointSettlement && !city.isEmpty(),true);
+        return new PlaceResult(city,street,city.isEmpty() ? PlaceResult.Quality.UNKNOWN
+                : pointSettlement ? PlaceResult.Quality.NEARBY : PlaceResult.Quality.ADDRESS,
+                street.isEmpty() ? PlaceResult.Quality.UNKNOWN : PlaceResult.Quality.MATCHED,
+                pointSettlement ? "photon_place_node" : "photon_address","photon_street",true);
     }
     private static String clean(String value) {
         String text=value.replaceAll("[\\p{Cntrl}]", " ").trim();

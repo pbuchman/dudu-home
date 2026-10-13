@@ -1,5 +1,28 @@
 # Change history
 
+## 1.3.0-rc3 (code 23) - 2026-10-13
+
+- Recognize departure after three continuous seconds of good GPS movement in any direction,
+  including reversing, from a parking opportunity; remove the initial five-second stop,
+  direction-to-gate and minimum-displacement requirements for this event.
+- Persist a separate departure cycle opportunity across app restarts and updates; grant a
+  fresh one on a new boot or confirmed increasing vendor wake. Keep genuine-return and
+  pre-send cancellation rearming, cleaning/return thresholds and all phone safeguards.
+- Add schema-2 OSM locality boundaries, including Polish administrative level 8 independently
+  of place tags. Prefer reliable containment to a hamlet hint; match locality and street
+  independently and prevent weak Photon evidence from replacing a certain offline locality.
+- Keep schema-1 maps readable; the locality correction requires both code 23 and a new map pack.
+  Rebuild locally from the existing September 27 source, not a newly downloaded snapshot.
+- Expand private bounded diagnostics and prepare read-only collection/reporting for missed
+  events. No durable history is retained for an unsent user-cancelled occurrence.
+- Build/lint, synthetic detector/progress/trip/parser/tooling, Routebook, full emulator,
+  update/import/quota and privacy checks passed, including final incremental SafetyChecks
+  after failed-write latch hardening. Extended exact consumed departure-cycle preservation
+  across backed-up update/import and process restart passed. Map/national lookup/hashes and
+  PR/main/tag CI are pending.
+- Source-only prerelease candidate; installation, driving and repeated wake acceptance remain
+  pending. See [verification](docs/VERIFICATION.md) and [release notes](docs/RELEASE_1_3_0_RC3.md).
+
 ## 1.3.0-rc2 (code 22) - 2026-10-09
 
 - Wrap long street names at a fixed readable size, with an explicit full-name action for

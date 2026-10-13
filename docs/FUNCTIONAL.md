@@ -9,6 +9,33 @@ the full view when tapped. Automation presentation and execution take priority. 
 operation dispatches a gate/robot command or resets an automation reservation.
 See [the complete trip contract](WHERE_AM_I.md) and [current UI gallery](UI_GALLERY.md).
 
+## Wczesny wyjazd - 1.3.0-rc3 / code 23
+
+Pierwszy dobry GPS w obszarze 45 m od parkingu pozwala od razu rozpocząć wykrywanie ruchu,
+także jeśli auto już jedzie. Zdarzenie `DEPARTURE_STARTED` wymaga 3 s ciągłego ruchu z
+prędkością GPS co najmniej 0,7 m/s, w dowolnym kierunku, również podczas cofania. Cała
+sekwencja pozostaje w obszarze wyjazdu 85 m od parkingu. Każda próbka musi mieć dokładność
+do 15 m i wiek do 3 s; przerwa ponad 2 s, postój lub zły pomiar zerują odliczanie.
+Nie wymagamy kierunku do bramy, minimalnego przesunięcia ani początkowego postoju 5 s.
+Po ustanowieniu dobrej bazy parkingowej tego cyklu postój/zły GPS/przerwa zerują tylko
+odliczanie: odzyskany dobry ruch nadal może rozpocząć 3 s wewnątrz obszaru 85 m, także
+poza początkowymi 45 m. Pierwszy dobry pomiar cyklu poza 45 m ani anulowanie przed wysłaniem
+nie uzyskują takiego skrótu do wymaganej nowej bazy.
+
+Nowy pełny start systemu albo potwierdzony wzrost licznika wybudzeń producenta dopuszcza
+nową okazję parkingową. Pierwszy odczyt licznika jest konserwatywną bazą, nie dodatkowym
+wybudzeniem. Restart procesu, aktualizacja APK, menu, upływ blokady i przerwa GPS nie
+odblokowują użytej okazji. Stan wyjazdu jest niezależny od baz Yanosika/Spotify i ręcznej
+nawigacji Maps. Pierwszy dobry GPS poza parkingiem zamyka okazję startową: sam późniejszy
+wjazd na parking nie uruchamia wyjazdu. Potrzebny jest rzeczywisty rozpoznany powrót i
+świeży postój 5 s. Taki sam kwalifikowany postój jest wymagany po anulowaniu przed wysłaniem.
+
+Trzy sekundy dotyczą rozpoznania zdarzenia, nie gwarantowanego czasu połączenia. Wykonawca
+nadal rejestruje callbacki, zbiera snapshot telefonu i wymaga świeżego idle przed jednym
+dial. Nie rozłącza istniejącej rozmowy; trwała blokada 60 s i outgoing → idle pozostają.
+Progi sprzątania i powrotu oraz pierwszeństwo bramy przed mediami są zachowane. Testy na
+fizycznym DUDU7, w tym dwa rzeczywiste wybudzenia, pozostają do wykonania.
+
 
 ## Pierwszeństwo obszaru bramy - 1.0.0-rc3
 
@@ -46,7 +73,7 @@ Szczegółowy kontrakt kolejki i odtwarzania: [AUTOMATION_SEQUENCE.md](AUTOMATIO
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
-Obecny zakres obejmuje trzy kafelki akcji oraz trzy kafelki nawigacji. Full Mop działa wyłącznie ręcznie. Spotify wznawia
+Obecny zakres obejmuje cztery kafelki w pierwszym rzędzie oraz trzy kafelki nawigacji. Full Mop działa wyłącznie ręcznie. Spotify wznawia
 muzykę na radiu po potwierdzeniu jazdy, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
 a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
@@ -54,7 +81,7 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
 | Sytuacja | Zachowanie |
 |---|---|
-| Otwarcie aplikacji | Menu „Otwórz bramę”, „Pełne sprzątanie”, „Mopowanie”; brak numeru przypomina formularzem, który można opuścić do menu |
+| Otwarcie aplikacji | Menu „Otwórz bramę”, „Pełne sprzątanie”, „Mopowanie”, „Gdzie jestem”; brak numeru przypomina formularzem, który można opuścić do menu |
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu; „Anuluj tę próbę” odbiera dotyk tylko w granicach paska, odczyt stanu nie uruchamia akcji |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
@@ -118,7 +145,7 @@ wykonuje akcji i nie resetuje cyklu. Brak zgody blokuje automatyczny start Yanos
 
 | Zdarzenie | Znaczenie | Akcja teraz |
 |---|---|---|
-| `DEPARTURE_STARTED` | Potwierdzony, trwający ruch z obszaru parkowania w kierunku bramy | Jedna próba telefonu do bramy |
+| `DEPARTURE_STARTED` | 3 s ciągłego, kwalifikowanego ruchu z okazji parkingowej w dowolnym kierunku | Jedna próba telefonu do bramy |
 | `RETURN_APPROACH` | Potwierdzony powrót przez skrzyżowanie i dojazd do punktu podejścia | Jedna próba telefonu do bramy |
 | `OUTBOUND_CHECKPOINT` | Przecięcie tego samego punktu podejścia w stronę wyjazdu | Pierwsza automatyczna próba Full Cleaning w danym dniu |
 | `JOURNEY_EXIT` | Dalszy wyjazd przez skrzyżowanie w dowolnym obsługiwanym kierunku | Zdarzenie diagnostyczne, bez akcji |
@@ -128,8 +155,9 @@ punkcie po zewnętrznej stronie osiedla. Nie przesuwamy sprzątania do dalszego 
 Powrót nie uruchamia odkurzacza. Sam zapłon, restart i odzyskanie Internetu nie są zdarzeniami akcji.
 
 Detektor toleruje sąsiednie miejsca parkingowe w obszarze 45 m od punktu odniesienia. Wymaga
-świeżych i dokładnych pomiarów, potwierdzonego postoju oraz utrzymującego się ruchu w kierunku
-bramy. Nie utożsamia pojedynczego skoku GPS z wyjazdem. Nie potrafi jednak zagwarantować
+świeżych i dokładnych pomiarów oraz utrzymującego się ruchu przez 3 s. Początkowa okazja
+nie wymaga postoju; ponowne uzbrojenie po powrocie lub anulowaniu wymaga postoju opisanego
+wyżej. Nie utożsamia pojedynczego skoku GPS z wyjazdem. Nie potrafi jednak zagwarantować
 rozpoznania zamiaru kierowcy w każdym nieznanym manewrze - to ograniczenie GPS i małej kalibracji.
 
 ## Dokładnie co oznacza „raz dziennie”

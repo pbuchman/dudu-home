@@ -36,10 +36,11 @@ public final class TripChecks {
         throw new AssertionError("trip state "+state);
     }
     public static void run(Instrumentation i) throws Exception {
-        Context c=i.getTargetContext();fixture(c);
+        Context c=i.getTargetContext();LocalityChecks.run(c);fixture(c);
         OfflinePlaces offline=new OfflinePlaces(c);
         PlaceResult place=offline.resolve(fix(.001));
         check(place.complete() && place.street().equals("Ulica Przykładowa"),"offline on unvisited road");
+        check(offline.schemaVersion()==1,"legacy map remains readable");
         check(!offline.resolve(fix(1)).covered(),"no coverage not nearest distant settlement");
         try(SQLiteDatabase db=SQLiteDatabase.openDatabase(new File(c.getNoBackupFilesDir(),"places.sqlite").toString(),null,0)) {
             db.execSQL("UPDATE roads SET city='' ");
@@ -55,6 +56,8 @@ public final class TripChecks {
         pointResponse.getJSONArray("features").getJSONObject(0).put("properties",new JSONObject("{\"osm_key\":\"place\",\"osm_value\":\"village\",\"name\":\"Miejscowość Testowa\"}"));
         PlaceResult nearby=PhotonPlaces.parse(pointResponse,fix(.001));
         check(!nearby.certain() && nearby.locality().startsWith("Okolice "),"Photon point is not settlement containment");
+        pointResponse.getJSONArray("features").getJSONObject(0).getJSONObject("properties").put("osm_value","hamlet");
+        check(PhotonPlaces.parse(pointResponse,fix(.001))==null,"Photon hamlet cannot become primary locality");
         check(PhotonPlaces.parse(new JSONObject("{\"features\":[]}"),fix(0))==null,"empty response");
         var quota=c.getSharedPreferences("trip_photon_quota",0);quota.edit().clear().commit();
         AtomicInteger calls=new AtomicInteger();

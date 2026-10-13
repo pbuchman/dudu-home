@@ -55,6 +55,7 @@ final class NavigationChecks {
         require(!session.reserve() && session.reserve(JourneySession.Target.SPOTIFY));
         prefs.edit().clear().commit();
         com.pbuchman.duduhome.diagnostics.Diagnostics.record(c,"TEST_CATEGORY");
+        require(com.pbuchman.duduhome.diagnostics.Diagnostics.awaitWrites());
         var journal = new java.io.File(c.getNoBackupFilesDir(),"diagnostics.txt"); long size=journal.length();
         com.pbuchman.duduhome.diagnostics.Diagnostics.record(c,"invalid payload\nsecond line");
         require(size>0 && size==journal.length());

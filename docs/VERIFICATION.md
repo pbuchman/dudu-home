@@ -1,5 +1,48 @@
 # Verification ledger
 
+## RC3 local validation: 1.3.0-rc3 / code 23, 2026-10-13
+
+- Scope: early three-second any-direction departure, independent persisted cycle opportunity,
+  schema-2 locality evidence/quality and private rejection diagnostics. Exact contracts are
+  in FUNCTIONAL.md, WHERE_AM_I.md and RELEASE_1_3_0_RC3.md.
+- `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` passed for code 23.
+- Detector/progress checks passed for a gate close to parking, 15 m geometry, reversing,
+  already-moving initial fixes, gap/quality recovery, boot/wake/restart protection and
+  failed-persistence closure. Cleaning/return/exit behavior stayed identical over 20,000
+  synthetic samples; the retained motion baseline also matched over 20,000 samples.
+- Trip pure checks and five synthetic OSM parser tests passed with osmium installed.
+  Radio-update (8), diagnostics (4), private-tools (8), navigation (6), public-tree (1)
+  and fresh-installer (5) tests passed.
+- Routebook Java checks passed with 84 assertions. `npm ci`, build, nine contract checks,
+  19 backend tests and 13 UI tests passed. Two local PostGIS cases were skipped; CI is
+  configured to run actual PostGIS, so local results do not establish those integrations.
+- Full emulator SafetyChecks, including DepartureCycleChecks, JournalChecks and LocalityChecks,
+  passed; first-launch no-dial and the overlay visual check passed. Synthetic same-signature
+  backup/update/import and quota preservation passed. The final incremental SafetyChecks
+  run after failed-write latch hardening also passed the full gate/robot/navigation/progress/
+  cancellation/trip suites.
+- The extended installer harness passed exact consumed `departure_cycle` state preservation
+  across backed-up update/import and process restart, alongside existing quota/navigation/
+  signature checks.
+- Working tree and complete history passed the private config/Roborock/navigation denylist
+  scan, with manual review of generic existing vocabulary. Public screenshots remain the
+  historical gallery, not new physical-radio captures.
+- PR, merged-main and prerelease tag checks are separate pending publication gates.
+- National schema-2 pack is being rebuilt outside Git from source timestamp
+  2026-09-27T20:23:36Z. Final counts, bytes, SHA-256 and APK/signing manifest are pending;
+  historical schema-1 measurements below do not describe this new artifact.
+- Code/data diagnosis identified directional/minimum-displacement gate suppression and
+  missing administrative locality polygons. Current physical-radio cause is unconfirmed.
+  ADB hardware access is unavailable; no new installation or current installed version is
+  confirmed. Historical radio evidence below is not RC3 acceptance.
+- Pending hardware: good GPS at parking before departure, forward/reversing movement,
+  stop/poor-fix/gap controls, restart/update/menu deduplication, genuine return and qualified
+  rearm, two real vendor wake cycles, locality/street city/village comparison and diagnostic
+  event → dispatch → snapshot → own dial → outgoing → idle correlation. Preserve cleaning
+  daily quota, gate-before-media priority and pre-send cancellation behavior.
+- Publication remains source-only. Private map/config/APK/diagnostic artifacts are not assets;
+  existing gallery captures retain their historical provenance.
+
 ## Versioned 1.3.0-rc2 / code 22, 2026-10-09
 
 - The versioned debug app and instrumentation APK built successfully; lint passed.

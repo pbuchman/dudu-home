@@ -28,6 +28,15 @@ def main():
     result = run('shell', 'am', 'instrument', '-w', PACKAGE+'.test/'+PACKAGE+'.SafetyChecks')
     if b'PASS:' not in result or b'FAIL:' in result: raise RuntimeError('Synthetic prerequisites failed')
     before = run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml')
+    # Seed a consumed gate opportunity for this emulator boot; imports and restarts must retain it.
+    run('shell', 'am', 'force-stop', PACKAGE)
+    boot = int(run('shell', 'settings', 'get', 'global', 'boot_count').strip())
+    departure = (f'<map><int name="boot" value="{boot}"/><long name="counter" value="0"/>'
+                 '<long name="generation" value="123"/><string name="baseline">PARKING</string>'
+                 '<boolean name="consumed" value="true"/><boolean name="away" value="false"/></map>').encode()
+    subprocess.run(adb+['shell', f"run-as {PACKAGE} sh -c 'umask 077; cat > shared_prefs/departure_cycle.xml'"],
+                   input=departure, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    departure_before = run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/departure_cycle.xml')
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix='dudu-home-install-check-') as temporary:
         private = Path(temporary)
@@ -68,13 +77,17 @@ def main():
             raise RuntimeError('Navigation import or empty slots failed')
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Update reset daily quota')
+        if departure_before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/departure_cycle.xml'):
+            raise RuntimeError('Update reset consumed gate opportunity')
         run('shell', 'am', 'force-stop', PACKAGE)
         run('shell', 'am', 'start', '-n', PACKAGE+'/.ui.MainActivity')
         if before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/daily_cleaning.xml'):
             raise RuntimeError('Restart reset daily quota')
+        if departure_before != run('exec-out', 'run-as', PACKAGE, 'cat', 'shared_prefs/departure_cycle.xml'):
+            raise RuntimeError('Restart reset consumed gate opportunity')
     # Clear only synthetic robot credentials, preserving a safe menu for visual inspection.
     run('shell', 'run-as', PACKAGE, 'rm', 'no_backup/roborock.enc')
-    print('PASS: mismatched phone refused; signature-checked backup/update, encrypted one-time import, private navigation, quota across restart; no calls or cleaning')
+    print('PASS: mismatched phone refused; signature-checked backup/update, encrypted one-time import, private navigation, quota and gate opportunity across restart; no calls or cleaning')
 
 
 if __name__ == '__main__': main()

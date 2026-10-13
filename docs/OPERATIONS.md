@@ -1,6 +1,53 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## Unattended 1.2 radio update
+## Read-only failure capture before opening or updating the app
+
+Resolve an owner-only `PRIVATE_DIR` outside every Git repository (0700). With the existing
+authorized radio connection, collect to a new directory whose parent already exists:
+
+```sh
+python3 scripts/automation-diagnostics.py collect --serial DEVICE_SERIAL \
+  --output "$PRIVATE_DIR/new-capture"
+python3 scripts/automation-diagnostics.py summarize "$PRIVATE_DIR/new-capture"
+```
+
+The tool only checks the existing ADB device state, reads app-private `diagnostics.txt` and
+its previous file via `run-as`, and captures allowlisted service dump fields. It never
+starts/stops/installs the app or reads configuration, firmware logcat or the Routebook
+database. It creates a 0700 capture directory and 0600 journal, monitor and summary files;
+an existing output directory is rejected. Console output is category-only. Keep all captures
+private, including coarse location-quality and action timing evidence.
+
+The summary groups process/attempt timelines with original observation wall/elapsed times,
+current departure rejection/GPS buckets and cycle/reservation state. Bounded retention,
+dropped asynchronous rows and process death can leave gaps: absence of a row is not proof
+that no action occurred. Read the complete correlation before blaming GPS, detector, queue
+or phone IPC. See STARTUP_DIAGNOSTICS.md. Missing hardware blocks capture; do not open/reset
+the app merely to produce a success result.
+
+## RC3 local artifacts and unattended radio update
+
+The current candidate is 1.3.0-rc3/code 23. Build its signed local APK from the exact reviewed
+main revision and keep it outside public release assets. Prepare a schema-2 Poland index
+with its manifest from the existing source timestamp 2026-09-27T20:23:36Z; do not call this
+a latest-data download. Record source SHA, APK version/signing fingerprint/SHA-256, map
+schema/source timestamp/counts/bytes/SHA-256 in a private handoff beside installation notes.
+Code-23 build/lint, local synthetic/emulator/tooling/Routebook, update/import/quota and
+privacy checks passed, including final incremental SafetyChecks after failed-write latch
+hardening; see VERIFICATION.md. Extended exact consumed departure-cycle preservation across
+backed-up update/import and process restart passed. National map build/Android lookup, artifact hashes and
+PR/main/tag CI results remain pending.
+
+Update APK and map together: the app reads schema 1 for compatibility, but the old pack
+does not contain the new locality evidence. Normal map installation requires schema 2.
+Keep the prior APK/map pair for the updater's backed-up recovery; do not downgrade only
+the APK while leaving an incompatible new map. Reserve space for both staged and installed
+maps plus private backups. Map schema 2 is unrelated to navigation JSON schema 2.
+
+Current physical ADB access is unavailable; no RC3 update or current installed version is
+confirmed. Once authorized connectivity exists, collect failure evidence before opening
+or updating the app, then use the existing guarded procedure below. Never clear application
+data to reset departure eligibility or other safety state.
 
 Use the current private handoff to resolve the canonical navigation file, including every group
 member; never substitute an older shorter navigation file. Build the APK and dated map pack first.
@@ -33,7 +80,7 @@ a recovery blocker. Run the radio UI smoke only when connected; a successful upd
 proof of driving accuracy or vendor wake behavior. See WHERE_AM_I and VERIFICATION.
 
 
-## Bieżąca instalacja 1.1.0
+## Historycznie potwierdzona instalacja 1.1.0
 
 27 września zainstalowano code 18 z kopią APK/danych, kontrolą podpisu i zgodności SHA-256.
 Import prywatnego pełnego pliku potwierdził układ 1/3/1. Pierwsze dwa cele grupy, inne sloty,
@@ -125,7 +172,7 @@ Współrzędne są w stopniach WGS84; punkt parkingu jest odniesieniem, a nie je
 | `gate_number` | Poprawny, znormalizowany numer lub null; null zachowuje istniejący numer |
 | `gate_number_verified_on_current_device` | Nie wystarczy historyczne true: instalator porówna numer z bieżącymi preferencjami radia |
 | `points.parking` | Środek obszaru parkowania |
-| `points.gate` | Brama, cel początkowego ruchu wyjazdowego |
+| `points.gate` | Brama; RC3 nie wymaga ruchu w jej kierunku dla wczesnego wyjazdu |
 | `points.approach` | Punkt otwierania przy powrocie i uruchamiania sprzątania przy wyjeździe |
 | `points.junction` | Skrzyżowanie identyfikujące właściwy powrót i dalszy wyjazd |
 | `automation_enabled` | Instalator ustala wartość na podstawie jawnej flagi `--enable-automation`, nie ufając zapisanej starej wartości |
@@ -225,14 +272,22 @@ Podczas jazdy kierowca nie obsługuje UI ani terminala. Nie potrzeba kolejnych o
    uruchomienie właściwej rutyny w telefonie. **Nie zatrzymuj automatycznie sprzątania.** Użytkownik
    decyduje w aplikacji Roborock, co dalej. Ręczny start nie zużywa limitu automatycznego.
 4. **Wyjazd:** z zaparkowanego auta uruchom radio i silnik. Sam start niczego nie wywołuje.
-   Rusz w kierunku bramy: jedna automatyczna próba bramy. Przy zewnętrznym punkcie kontrolnym:
+   Potwierdź dobry GPS w obszarze parkowania, rusz w dowolnym kierunku, także cofając:
+   po 3 s kwalifikowanego ciągłego ruchu powstaje zdarzenie jednej próby bramy. Snapshot i
+   świeży idle telefonu nadal poprzedzają dial, więc czas zdarzenia nie jest czasem połączenia.
+   Sprawdź postój/zły GPS/przerwę ponad 2 s oraz brak ponowienia po restarcie/menu.
+   Przy zewnętrznym punkcie kontrolnym:
    jedna automatyczna próba Full Cleaning, postęp/wynik, powrót do wcześniejszego ekranu.
 5. **Powrót:** jedź przez skonfigurowane skrzyżowanie i podejście: jedna próba bramy, bez sprzątania.
    Zaparkuj także w sąsiednim miejscu w dozwolonym obszarze.
 6. **Drugi wyjazd tego dnia:** brama nadal działa; checkpoint nie wysyła drugiego automatycznego
    Full Cleaning. Nie trzeba dojeżdżać do dalszego skrzyżowania. Ręczny kafelek pozostaje niezależny.
 7. **Zasilanie:** na postoju sprawdź rozruch dwuetapowy oraz bezpośredni, wybudzenie i powrót
-   monitoringu bez akcji/odtworzenia checkpointu. Ponowne uruchomienie nie resetuje dziennej rezerwacji.
+   monitoringu bez akcji/odtworzenia checkpointu. Obserwuj dwa rzeczywiste wzrosty licznika
+   wybudzeń i nową okazję parkingową w każdym cyklu. Pierwsza obserwacja licznika jest bazą;
+   restart procesu/aktualizacja/przerwa GPS nie odblokowują użytej okazji. Pierwszy dobry GPS
+   poza parkingiem wymaga rzeczywistego powrotu i postoju 5 s przed ponownym wyjazdem.
+   Ponowne uruchomienie nie resetuje dziennej rezerwacji sprzątania.
 
 Jeżeli robot nadal sprząta przy automatycznej próbie, aplikacja zgodnie z decyzją użytkownika
 nie sprawdza stanu - wysyła rutynę. Zaplanuj kolejność prób, świadomie uwzględniając tę możliwość.

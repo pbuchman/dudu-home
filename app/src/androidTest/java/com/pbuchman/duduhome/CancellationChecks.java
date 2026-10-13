@@ -12,6 +12,7 @@ public final class CancellationChecks {
             var context = i.getTargetContext();
             ProgressBus.reset(context, Reason.RESET);
             var journal = new java.io.File(context.getNoBackupFilesDir(), "diagnostics.txt");
+            check(Diagnostics.awaitWrites(), "diagnostic drain before cancellation");
             long before = journal.length();
             long id = ProgressBus.requestManual(context, Kind.CLEANING);
             int[] reservations = {0}, cleanup = {0};
@@ -24,6 +25,7 @@ public final class CancellationChecks {
             check(!ProgressBus.claimSend(context,id), "cancelled admission cannot send");
             Diagnostics.recordAttempt(context,id,"LATE_CANCELLED_CALLBACK");
             ProgressBus.update(context,id,Phase.SUCCEEDED,Reason.NONE);
+            check(Diagnostics.awaitWrites(), "diagnostic drain after cancellation");
             check(journal.length() == before, "cancelled pre-send attempt has no durable diagnostics, including late callback");
             var state = ProgressBus.snapshot().stream().filter(s -> s.id()==id).findFirst().orElseThrow();
             check(state.phase()==Phase.CANCELLED && state.reason()==Reason.USER_CANCELLED, "late success does not revive cancellation");

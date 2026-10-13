@@ -13,9 +13,9 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.3.0-rc2` (code 22).**
-> Adds readable long street names and current-attempt cancellation to Where am I,
-> automation and the combined Routebook baseline. [Release notes](docs/RELEASE_1_3_0_RC2.md).
+> **Combined test candidate `1.3.0-rc3` (code 23).**
+> Adds an early three-second departure event in any direction, stronger offline locality
+> evidence and private rejection diagnostics. [Release notes](docs/RELEASE_1_3_0_RC3.md).
 > Android, backend, private map UI and deployment tooling now share one source revision.
 > Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
@@ -69,7 +69,12 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   unacknowledged points in SQLite and send the newest fix before historical backlog. The
   private web map shows live/day/range history, observed stops and distance summaries.
   Upload needs separate private provisioning; [architecture and pairing](docs/ROUTEBOOK.md).
-- **Automatic gate calls:** sustained departure toward the gate and a directional return approach.
+- **Automatic gate calls:** after three continuous seconds of qualified GPS movement in any
+  direction, including reversing, following a good fix in the parking area. A new boot or
+  confirmed increasing vendor wake cycle can supply a fresh parking opportunity; ordinary
+  restart/update/menu entry and GPS gaps cannot. Return still requires its directional route.
+  This is event timing: fresh phone idle and the Binder snapshot add time before dial.
+  [Exact conditions and rearming](docs/FUNCTIONAL.md).
 - **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
   calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
   attempt. Explicit user cancellation before sending releases the opportunity.
@@ -196,6 +201,11 @@ short-lived import file is deleted after successful import. App backups are disa
 An authorized ADB/debug session is privileged access: keep it restricted and disconnect afterward.
 
 Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
+RC3 adds departure rejection reasons, cycle/reservation state and per-component locality quality
+to private diagnostics. Capture these before manually opening or updating the app after a
+failure; a missing event and a rejected phone attempt have different causes. The available
+code-level causes are documented in [RC3 notes](docs/RELEASE_1_3_0_RC3.md), without claiming
+the cause of an unobserved radio incident.
 Version 0.4.1 keeps a bounded private diagnostic journal across process restarts, recording
 monitor startup, GPS delivery counts, events, blocked actions and results. This diagnostic journal is not uploaded.
 Routebook separately sends configured GPS records

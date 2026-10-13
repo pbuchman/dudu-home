@@ -1,25 +1,36 @@
-# Release readiness - 2026-10-09
+# Release readiness - 2026-10-13
 
-## Current: 1.3.0-rc2 / code 22
+## Current: 1.3.0-rc3 / code 23
 
-Adds readable street wrapping/full-name expansion and cancellation for detecting, queued and
-running attempts. Unsent user cancellation has no durable quota/history; sent commands keep
-reservations and cleanup. Yanosik/Spotify cancellation is grouped; fresh baseline evidence
-is required to arm a new occurrence. Legacy non-user failures/expiry remain consumed.
-See [release notes](RELEASE_1_3_0_RC2.md) and [current verification](VERIFICATION.md).
+The candidate adds early three-second movement in any direction, independent persisted
+parking opportunities, schema-2 locality evidence and private rejection diagnostics.
+Exact conditions and limits are in [release notes](RELEASE_1_3_0_RC3.md), FUNCTIONAL.md and
+WHERE_AM_I.md. Cleaning/return thresholds and all phone safeguards remain unchanged.
 
-The owner authorized a source-only prerelease after PR checks pass and the change is merged.
-Versioned app/instrumentation build, lint and full emulator safety/UI checks passed. Detector,
-progress, trip, Routebook pure checks and installer/privacy tooling also passed. The staged
-tree/history passed the private configuration denylist scan. PR and merged-main Actions
-remain publication gates, with final run links recorded on the GitHub release page. No APK, map data or private assets belong
-to the release. The previous stable radio-verified version remains 1.1.0/code 18.
+Code-23 build/lint, detector/progress/trip/parser, diagnostic/installer/navigation/privacy,
+Routebook and full emulator checks passed; synthetic backup/update/import/quota preservation
+and overlay visual checks passed. Final incremental SafetyChecks after failed-write latch
+hardening passed. Extended exact consumed departure-cycle preservation across backed-up
+update/import and process restart passed. Two local PostGIS cases were skipped and remain CI work.
+See VERIFICATION.md for exact counts and boundaries. Publish source only after PR checks,
+merged-main checks and prerelease tag checks pass. Current map rebuild reuses the existing
+source timestamp 2026-09-27T20:23:36Z; counts/bytes/hash are pending. Deliver the signed local
+APK, schema-2 map and hash/installation documentation privately, never as public assets.
 
-Physical DUDU readability/touch and fallback notifications, cancellation before/after own dial,
-HTTP cancellation during cleanup, actual Yanosik/Spotify startup and qualified rearming on a
-real journey still require observations. Existing GPS, Routebook delivery and sleep/wake
-acceptance remain incomplete. Cancellation cannot undo a sent robot command or terminate a
-pre-existing call. A green emulator or CI run does not establish these hardware outcomes.
+No current radio ADB access or installed version is confirmed. A backed-up same-signature
+update, two real wake cycles, good GPS at parking, three-second forward/reversing departure,
+restart/stop/bad-fix/gap controls, genuine return/rearm and city/village/street acceptance
+remain pending. Preserve previous unresolved RC2 cancellation and Routebook acceptance;
+a green local/CI run does not resolve them. Historical stable 1.1.0/code 18 is the last
+recorded accepted radio version, not a fresh installed-version observation.
+
+## Historical 1.3.0-rc2 / code 22
+
+Readable street wrapping/full-name expansion and current-attempt cancellation introduced in
+RC2 remain included. Its versioned build/lint, synthetic/emulator and privacy checks passed
+as recorded in VERIFICATION.md. Those results do not validate RC3. Real touch/overlay,
+notification fallback, own-call and HTTP cleanup cancellation, media startup and qualified
+rearming acceptance remain pending. Source-only delivery includes no APK/maps/private assets.
 
 ## Historical 1.3.0-rc1 / code 21, combined test baseline
 

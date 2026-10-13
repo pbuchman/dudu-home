@@ -37,10 +37,10 @@ public final class TripController {
     private TripDistance distance = new TripDistance(0);
     private String state = "OFF", error = "";
     private long generation, fixTime, savedAt;
-    private PlaceResult place = PlaceResult.unknown(false), candidate;
-    private int confirmations;
+    private PlaceResult place = PlaceResult.unknown(false);
+    private PlaceStabilizer stabilizer = new PlaceStabilizer();
     private boolean loaded, storageFailed;
-    private TripFix currentFix, resolvedFix;
+    private TripFix currentFix, resolvedFix, enrichmentFix;
     private volatile Snapshot snapshot = new Snapshot("OFF", 0, 0, 0, PlaceResult.unknown(false), "", false);
     private TripController(Context context) {
         store = new TripStore(context); offline = new OfflinePlaces(context); photon = new PhotonPlaces(context);
@@ -69,7 +69,7 @@ public final class TripController {
             if (next.equals(state)) return;
             if (command.equals("START")) distance = new TripDistance(0);
             state = next; generation++; distance.breakSegment(); fixes.clear(); latest.set(null);
-            currentFix = null; resolvedFix = null; fixTime = 0; candidate = null; confirmations = 0;
+            currentFix = null; resolvedFix = null; enrichmentFix = null; fixTime = 0; stabilizer = new PlaceStabilizer();
             place = PlaceResult.unknown(false); save(); publish();
         });
     }
@@ -93,7 +93,7 @@ public final class TripController {
                 if (currentFix != null && fix.elapsed() <= currentFix.elapsed()) continue;
                 currentFix = fix; fixTime = fix.elapsed();
                 if (resolvedFix == null || resolvedFix.distance(fix) > 60) {
-                    place = PlaceResult.unknown(false); candidate = null; confirmations = 0;
+                    place = PlaceResult.unknown(false); stabilizer = new PlaceStabilizer();
                 }
                 latest.set(new Job(generation, fix));
                 if (resolving.compareAndSet(false, true)) resolver.execute(this::resolve);
@@ -109,13 +109,10 @@ public final class TripController {
             while ((job = latest.getAndSet(null)) != null) {
                 Job selected = job;
                 PlaceResult local = offline.resolve(job.fix());
-                postPlace(selected, local);
+                postPlace(selected, local, false);
                 if (!local.complete()) {
                     PlaceResult online = photon.resolve(job.fix());
-                    if (online != null) postPlace(selected, new PlaceResult(
-                            online.locality().isEmpty() ? local.locality() : online.locality(),
-                            online.street().isEmpty() ? local.street() : online.street(), "photon",
-                            online.certain() || local.certain(), online.covered() || local.covered()));
+                    if (online != null) postPlace(selected, PlaceResult.enrich(local, online), true);
                 }
             }
         } finally {
@@ -123,19 +120,18 @@ public final class TripController {
             if (latest.get() != null && resolving.compareAndSet(false, true)) resolver.execute(this::resolve);
         }
     }
-    private void postPlace(Job job, PlaceResult result) {
+    private void postPlace(Job job, PlaceResult result, boolean online) {
         counter.execute(() -> {
             if (!state.equals("ACTIVE") || generation != job.generation() || currentFix == null
                     || currentFix.distance(job.fix()) > 60 || currentFix.elapsed() - job.fix().elapsed() > 10000) return;
-            // Do not replace recent richer online evidence with an incomplete local hint on the same road.
-            if (result.source().equals("offline") && !result.complete() && candidate != null
-                    && candidate.source().equals("photon") && resolvedFix != null
-                    && resolvedFix.distance(job.fix()) < 40) return;
-            // Different sources for one fix must not count as two independent confirmations.
-            boolean same = candidate != null && candidate.locality().equals(result.locality()) && candidate.street().equals(result.street());
-            if (!same) { candidate = result; confirmations = 1; }
-            else if (resolvedFix == null || resolvedFix.elapsed() != job.fix().elapsed()) confirmations++;
-            if (confirmations >= 2 || (result.locality().isEmpty() && result.street().isEmpty())) place = result;
+            // Preserve nearby recent online enrichment field by field, while new local containment wins.
+            PlaceResult evidence=result;
+            if (result.source().equals("offline") && stabilizer.latest().source().equals("photon")
+                    && enrichmentFix != null && enrichmentFix.distance(job.fix()) < 40
+                    && job.fix().elapsed()-enrichmentFix.elapsed() <= 30000)
+                evidence=PlaceResult.enrich(result,stabilizer.latest().onlineEvidence());
+            place=stabilizer.offer(evidence,job.fix().elapsed());
+            if (online) enrichmentFix=job.fix();
             resolvedFix = job.fix(); publish();
         });
     }
@@ -147,6 +143,9 @@ public final class TripController {
     public String diagnostic() {
         Snapshot s = snapshot;
         return "trip_state=" + s.state() + " loaded=" + s.loaded() + " gps_fresh=" + s.fresh()
-                + " map=" + offline.status() + " storage_ok=" + s.error().isEmpty();
+                + " map=" + offline.status() + " map_schema=" + offline.schemaVersion()
+                + " locality_quality=" + s.place().localityQuality() + " street_quality=" + s.place().streetQuality()
+                + " locality_source=" + s.place().localitySource() + " street_source=" + s.place().streetSource()
+                + " storage_ok=" + s.error().isEmpty();
     }
 }

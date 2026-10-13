@@ -9,7 +9,7 @@ taps without focus; the automation banner receives cancellation touches within i
 notification during a protected action defers opening until the menu is safe. See [trip UI](WHERE_AM_I.md).
 
 
-Source version `0.5.6-local`, versionCode 13, progress based on `911d18b`. Java 17, native Views/XML,
+Current candidate `1.3.0-rc3`, versionCode 23; the original progress baseline was `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
@@ -25,7 +25,7 @@ the same layout inline. Only one host owns it at a time.
 
 | Detection | Title | Detail | Evidence |
 |---|---|---|---|
-| Departure | Wyjazd z domu | Potwierdzam ruch w stronę bramy | Qualified movement duration toward gate / existing 3 s requirement |
+| Departure | Wyjazd z domu | Potwierdzam ruch | Qualified continuous movement in any direction / 3 s requirement |
 | Return before turn | Powrót do domu | Sprawdzam trasę powrotu | Supported road approach, reducing distance to junction |
 | Return after turn | Powrót do domu | Potwierdzam dojazd do bramy | Junction sequence plus inward movement, then inbound checkpoint |
 | Cleaning | Pełne sprzątanie | Potwierdzam wyjazd z osiedla | Consumed departure plus outward movement, then outward checkpoint |
@@ -37,8 +37,13 @@ Return fills 0-30% as junction distance reduces from the existing 300 m approach
 probability or intent. Only the unchanged return event produces 100% and immediate dispatch.
 A traffic stop holds observed fill; departing the route cancels. Late GPS starts at the actual
 stage rather than replaying a fictitious approach. Cleaning still uses the half-fill sequence.
-Departure starts only after existing
-displacement/direction gates; navigation uses the existing 10 s requirement. All fill values
+Departure starts with a good fix in its qualified parking opportunity and fills from three
+seconds of continuous movement in any direction; it has no direction/displacement gate or
+initial five-second stop. Bad fixes, a stop or a gap over two seconds reset the candidate.
+They preserve this cycle's established parking baseline, so fresh movement can restart
+within 85 m without returning inside 45 m. A first good cycle fix outside parking and
+pre-send cancellation still require their qualified new baseline.
+Navigation uses the existing 10 s requirement. All fill values
 come from the detector. Time passing in UI cannot increase them. Radio start alone gives no
 prediction. Manual buttons bypass detection; Mop stays manual only.
 
@@ -109,6 +114,13 @@ area; return requires five seconds outside the 300-metre junction approach befor
 Bad GPS breaks these intervals. Cancelling a gate attempt does not release the media gate-area
 precondition. Restart does not restore queued work and requires a fresh baseline.
 
+The initial RC3 departure opportunity is distinct from cancellation rearming. A new boot or
+confirmed increasing vendor wake permits fresh good GPS at parking without a prior stop;
+first observation is conservative and app restart/update/menu/GPS gap cannot reset a used
+opportunity. A first good fix outside parking closes this startup opportunity. Genuine return
+plus qualified five-second parking standstill can rearm departure. Manual Maps changes only
+the media baseline, not this independent departure state. See FUNCTIONAL.md for exact limits.
+
 
 Evidence loss reports the available reason: stop, unreliable GPS, changed conditions, new
 cycle, changed configuration or service stop. Cancellation lasts 2 s; a new valid candidate
@@ -161,7 +173,7 @@ streets, phone fragments, credentials or server payloads. UI never parses logs.
 - Synthetic screenshots are generated in ignored build/ui-checks. Reviewed copies belong in
   docs/images. The action screenshot is a renderer preview, without a call or HTTP request.
 
-Hardware update: 0.5.4/code 11 is the last verified installation. Existing-Yanosik skip,
+Historical hardware update at this milestone: 0.5.4/code 11 was the last verified installation. Existing-Yanosik skip,
 automatic desktop return after 10 s and actual warning overlays passed. Version 0.5.5 adds
 typed cycle observations: baseline establishment never resets UI; only a verified increase
 resets old progress. Its installation/first-wake test remains pending, as do early/inward

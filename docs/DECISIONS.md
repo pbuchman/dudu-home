@@ -1,5 +1,28 @@
 # Design decisions
 
+## Early departure, locality evidence and diagnostics - October 13
+
+- The owner chose three seconds of GPS movement in any direction, including reversing,
+  starting immediately with good GPS in the parking area. The initial opportunity needs no
+  five-second stop, gate direction or minimum displacement. Keep strict GPS qualification.
+- Store departure cycle eligibility separately from media/manual Maps baselines. A new boot
+  or confirmed increasing vendor counter permits one fresh parking opportunity; first cycle
+  observation stays conservative. App restart/update/menu/GPS gaps never rearm a used one.
+  A first good fix outside parking closes the startup opportunity; later parking requires
+  genuine-return evidence and five seconds of standstill. Preserve cancellation rearming.
+- Preserve cleaning and return thresholds, gate-before-media priority and every Binder rule.
+  Three seconds recognizes an event; fresh idle verification still precedes any dial.
+- Map schema 2 indexes Polish administrative level-8 locality boundaries without requiring
+  place tags. Locality matching is independent of street selection. Reliable boundary evidence
+  outranks nearby hamlets; municipality, district and neighbourhood names are not primary
+  locality substitutes. Nearest city/town/village remains explicitly approximate.
+- Track quality and stabilize locality/street separately. Photon may fill missing components
+  but cannot downgrade a certain offline locality. Schema 1 remains readable; new evidence
+  requires the APK and a schema-2 pack. Reuse the existing September 27 OSM snapshot.
+- Record bounded private categories/reasons, dump state and correlation asynchronously.
+  Read-only collection/reporting does not start actions or change state. Unsent user-cancelled
+  occurrences retain no durable cancellation history. New hardware acceptance stays pending.
+
 ## Full street names and current-attempt cancellation - October 9
 
 - Preserve overlay position and priority; use locality 24 sp, primary road 32 sp with up to

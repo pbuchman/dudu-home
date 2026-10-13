@@ -9,7 +9,7 @@ out = root / 'build' / 'progress-checks'
 out.mkdir(parents=True, exist_ok=True)
 java = root / 'app/src/main/java/com/pbuchman/duduhome'
 sources = [java / p for p in ('automation/HomeEvent.java', 'automation/DetectionProgress.java',
-    'automation/ProgressModel.java', 'location/HomeDetector.java', 'location/MotionDetector.java')]
+    'automation/ProgressModel.java', 'startup/DuduCycle.java', 'location/DepartureCycle.java', 'location/HomeDetector.java', 'location/MotionDetector.java')]
 for name in ('HomeDetector', 'MotionDetector'):
     path = f'app/src/main/java/com/pbuchman/duduhome/location/{name}.java'
     source = subprocess.check_output(['git', 'show', f'911d18b:{path}'], cwd=root).decode()

@@ -23,6 +23,12 @@ Without a matching map/online result, show an unknown locality/street while cont
 count qualified GPS movement. A point settlement without containment/address evidence is
 labelled **Okolice …**. A municipality is not substituted for a town or village.
 
+RC3 matches locality independently of street selection. A reliable containing locality
+boundary outranks a nearby hamlet; a road can be unknown while the locality remains certain,
+and a matched road can remain visible while locality is unknown. Municipality/gmina, district
+and neighbourhood labels are never promoted to primary locality names. A nearest
+city/town/village point without containment/address evidence stays **Okolice …**.
+
 ## Safety and presentation priority
 
 The existing location foreground service supplies one immutable copy of each GPS fix after
@@ -66,13 +72,19 @@ interval. Storage failure stops counting and reports an error instead of claimin
 It reads a Geofabrik OSM extract, uses a disk-backed node index and writes:
 
 - road segments with names, references and explicit locality tags;
-- settlement points and settlement areas (not administrative municipality polygons);
+- city/town/village and subordinate settlement points, plus settlement areas;
+- named Polish `boundary=administrative`, `admin_level=8` locality polygons, regardless of
+  whether their relations also carry a `place` tag, with explicit kind/provenance;
 - locality-bearing address points/building centroids;
 - grid lookup tables, schema, provenance, date, licensing and a SHA-256 manifest.
 
 Android opens the resulting SQLite file read-only with platform APIs. Nearby road geometry,
-heading and ambiguity checks select a street. Settlement areas or nearby consistent addresses
-supply locality evidence; otherwise only a nearby settlement hint is shown. This is a bounded
+heading and ambiguity checks select a street. Administrative locality boundaries, primary
+settlement areas and nearby consistent addresses supply locality evidence independently.
+Reliable primary containment wins over hamlet evidence; weaker nearby city/town/village points
+remain explicit hints. Locality quality is UNKNOWN, AMBIGUOUS, NEARBY, ADDRESS or CONTAINMENT;
+street quality is tracked separately, including MATCHED. Each component records its own
+source category and stabilizes across distinct fixes. This is a bounded
 local matcher, not a full navigation/routing engine. Missing or conflicting OSM data stays unknown.
 
 ```sh
@@ -89,6 +101,12 @@ builder. The installer validates checksums, schema, integrity, counts and availa
 streams a temporary file, verifies its device checksum, then atomically renames it. A failed
 upload leaves the old index intact. National maps are installed locally, not bundled in APKs
 or published as source assets. Refresh by building a new dated pack and rerunning the installer.
+
+The builder now writes **map schema 2**. RC3 can still read schema 1, but an old pack lacks
+the new administrative-boundary evidence: fixing locality requires both the code-23 APK
+and a schema-2 pack. Ordinary installation validates schema 2; legacy acceptance is reserved
+for backed-up recovery, not a normal installation override. Keep the previous APK and pack
+together for rollback. This map schema is independent of navigation JSON schema 2.
 
 Sources: [Geofabrik Poland](https://download.geofabrik.de/europe/poland.html),
 [OSM settlement model](https://wiki.openstreetmap.org/wiki/Key:place).
@@ -108,7 +126,10 @@ Native HTTPS uses platform TLS, a descriptive User-Agent, no redirects, 3 s conn
 read timeouts, a 64 KiB response cap, 429/Retry-After handling and exponential backoff.
 Only coordinates for the requested current position are sent; no phone, robot configuration
 or trip total is sent. Responses are bounded, checked for proximity and treated as stale when
-the session/position changes. Names stabilize across distinct fixes. A small in-memory result
+the session/position changes. Names stabilize separately for locality and street across
+distinct fixes. Photon may fill a missing street without replacing a certain offline locality;
+a nearby/ambiguous online label cannot downgrade reliable containment or address evidence.
+A small in-memory result
 cache is an optimization; the downloaded map is the actual offline fallback.
 
 [Geoapify Free](https://www.geoapify.com/pricing/) is an alternative with 3000 credits/day
@@ -131,12 +152,23 @@ adb -s DEVICE shell dumpsys activity service com.pbuchman.duduhome/.location.Hom
 ```
 
 It reports monitor registration, action-busy state, trip state, GPS freshness, map readiness and
-storage health. It does not print positions, names, phone numbers or credentials.
+storage health. RC3 reports map schema, locality/street quality and source independently;
+`map=ready` alone does not prove schema-2 boundary coverage. It does not print positions,
+names, phone numbers or credentials.
 
 See [verification](VERIFICATION.md), [installation](OPERATIONS.md) and the
 [complete UI gallery](UI_GALLERY.md). Real route accuracy, radio background presentation and
 vendor sleep/wake require separate physical evidence. Deep sleep without GPS cannot be measured.
 
-### Prepared Poland artifact
+### RC3 Poland artifact preparation
+
+Rebuild the national schema-2 pack from the existing PBF snapshot with source timestamp
+**2026-09-27T20:23:36Z**. This is a new index format over existing source data, not a latest
+OSM download. Keep the input, output and manifest outside Git. The final bytes, counts and
+SHA-256 remain pending until the completed manifest is validated and recorded privately.
+Reserve space for the old and staged new map plus the application backup; do not infer the
+new size from the historical pack below. Real city/village acceptance remains pending.
+
+### Historical schema-1 Poland artifact
 
 The September 28 build uses the PBF replication timestamp 2026-09-27T20:23:36Z. The builder reads that timestamp when available; the supplied date is only a fallback. The resulting database is 3,277,447,168 bytes. Reserve space for both old and staged map copies during updates, plus the private application backup. See VERIFICATION.md for sample-based Android resolver measurements.

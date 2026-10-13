@@ -24,7 +24,7 @@
     <string name="progress_departure">Wyjazd z domu</string>
     <string name="progress_return">Powrót do domu</string>
     <string name="progress_yanosik">Yanosik</string>
-    <string name="progress_departure_detail">Potwierdzam ruch w stronę bramy</string>
+    <string name="progress_departure_detail">Potwierdzam 3 sekundy ruchu</string>
     <string name="progress_return_detail">Potwierdzam dojazd do bramy</string>
     <string name="progress_cleaning_detail">Potwierdzam wyjazd z osiedla</string>
     <string name="progress_motion_detail">Potwierdzam jazdę</string>
