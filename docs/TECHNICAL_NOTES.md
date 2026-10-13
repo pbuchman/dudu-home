@@ -10,6 +10,13 @@
 The independent [Where am I module](WHERE_AM_I.md) reuses the location service; it does not
 change the calling IPC, callbacks, reservation or hangup rules below.
 
+RC3 recognizes a departure event after three seconds of qualified GPS movement in any
+direction. It does not shorten the phone snapshot or bypass fresh idle admission below.
+Event time, dispatch, `DIAL_REQUESTED`, outgoing and idle are separate diagnostic milestones;
+three seconds is not a promise that the phone has dialled. Cycle and rejection diagnostics
+contain categories/counters only and cannot initiate a Binder command. See FUNCTIONAL.md
+and STARTUP_DIAGNOSTICS.md. The new detector's physical acceptance is pending.
+
 ## Explicit user cancellation
 
 The action screen and progress surfaces now expose current-attempt cancellation. The same

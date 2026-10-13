@@ -25,6 +25,7 @@ jobs:
       - run: python3 -m pip install osmium==4.3.1
       - run: bash scripts/check-trip.sh
       - run: python3 scripts/test-radio-update.py
+      - run: python3 scripts/test-automation-diagnostics.py
       - run: bash scripts/check-routebook.sh
       - run: bash scripts/check-detector.sh
       - run: python3 scripts/check-progress.py

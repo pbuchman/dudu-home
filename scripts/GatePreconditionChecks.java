@@ -36,7 +36,7 @@ public final class GatePreconditionChecks {
             var events = home.accept(new HomeDetector.Fix(n*1000L,new HomeDetector.Point(n*2,0),3,2,0,false));
             gate.observe(home.gateArea());
             boolean drive = moving.accept(new MotionDetector.Fix(n*1000L,n*2,0,3,2,true,0,false));
-            check(events.isEmpty(), "unarmed movement is not an invented gate call");
+            check(events.equals(n==3 ? java.util.List.of(HomeEvent.DEPARTURE_STARTED) : java.util.List.of()), "parking arms three seconds of any-direction motion exactly once");
             check(!gate.allowsMedia(), "gate envelope blocks generic driving before any candidate");
             if(n>=10) check(drive,"regression really covers ready generic movement");
         }

@@ -216,6 +216,10 @@ public final class AutomationRuntime {
         dispatchedHomeAttempt = -1;
         mediaGroup.clear();
     }
+    public String diagnostic() {
+        return "queue_home_waiting=" + queue.hasHomeWaiting() + " queue_generation=" + queue.generation()
+                + " gate_media_allowed=" + gateAllowsMedia() + " external_launch_allowed=" + HomeActions.allowsExternalLaunch();
+    }
     public void close() {
         reset(Reason.SERVICE_STOPPED); closed = true;
         HomeActions.clearSchedulingListener(listener);

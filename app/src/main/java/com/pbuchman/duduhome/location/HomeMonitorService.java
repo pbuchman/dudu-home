@@ -57,6 +57,29 @@ public final class HomeMonitorService extends Service implements LocationListene
     private HomeConfiguration config;
     private HomeDetector detector;
     private SharedPreferences state;
+    private DepartureCycle departureCycle;
+    private long startupId;
+    private Boolean initialParking;
+    private String lastDepartureDiagnostic;
+    private String accuracyBucket = "NO_FIX", ageBucket = "NO_FIX", speedBucket = "NO_FIX";
+    private DepartureCycle createDepartureCycle() {
+        SharedPreferences saved = getSharedPreferences("departure_cycle", 0);
+        return new DepartureCycle(new DepartureCycle.Store() {
+            public DepartureCycle.State read() {
+                DepartureCycle.Baseline baseline;
+                try { baseline = DepartureCycle.Baseline.valueOf(saved.getString("baseline", "UNKNOWN")); }
+                catch (IllegalArgumentException invalid) { baseline = DepartureCycle.Baseline.OUTSIDE; }
+                return new DepartureCycle.State(saved.getInt("boot", -1), saved.getLong("counter", -1),
+                        saved.getLong("generation", 0), baseline, saved.getBoolean("consumed", false), saved.getBoolean("away", false));
+            }
+            public Object identity() { return saved; }
+            public boolean write(DepartureCycle.State next) {
+                return saved.edit().putInt("boot", next.boot()).putLong("counter", next.counter())
+                        .putLong("generation", next.generation()).putString("baseline", next.baseline().name())
+                        .putBoolean("consumed", next.consumed()).putBoolean("away", next.away()).commit();
+            }
+        });
+    }
     private boolean registered;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private long lastFix;
@@ -111,7 +134,8 @@ public final class HomeMonitorService extends Service implements LocationListene
 
     @Override public void onCreate() {
         super.onCreate();
-        Diagnostics.record(this, "MONITOR_CREATE");
+        startupId = Diagnostics.startup();
+        Diagnostics.record(this, "MONITOR_CREATE STARTUP=" + startupId);
         progressEpoch = ProgressBus.reset(this, Reason.RESET);
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel(CHANNEL, "Automatyzacja domu", NotificationManager.IMPORTANCE_LOW));
@@ -126,6 +150,9 @@ public final class HomeMonitorService extends Service implements LocationListene
         trip = com.pbuchman.duduhome.trip.TripController.get(this);
         tripPresentation = new com.pbuchman.duduhome.ui.TripPresentation(this);
         state = getSharedPreferences("home_detector", 0);
+        departureCycle = createDepartureCycle();
+        if (!departureCycle.ensureBoot(Settings.Global.getInt(getContentResolver(), Settings.Global.BOOT_COUNT, -1),
+                state.getInt("flags", 0))) Diagnostics.record(this, "DEPARTURE_STATE_BLOCKED STARTUP=" + startupId);
         locations = getSystemService(LocationManager.class);
         automation = new AutomationRuntime(this, this::homeReservation);
         motion.requireStationaryBaseline();
@@ -161,13 +188,13 @@ public final class HomeMonitorService extends Service implements LocationListene
             progressEpoch = ProgressBus.reset(this, Reason.CONFIGURATION);
             config = next;
             int saved = config.revision.equals(state.getString("revision", "")) ? state.getInt("flags", 0) : 0;
-            detector = new HomeDetector(config.geometry, saved);
+            detector = new HomeDetector(config.geometry, saved, departureCycle);
             detector.requireFreshBaseline();
             if (!state.edit().putString("revision", config.revision).putInt("flags", saved).commit()) {
                 stopSelf(); return START_NOT_STICKY;
             }
         }
-        Diagnostics.record(this, "MONITOR_START HOME=" + (detector == null ? 0 : 1)
+        Diagnostics.record(this, "MONITOR_START STARTUP=" + startupId + " HOME=" + (detector == null ? 0 : 1)
                 + " FLAGS=" + (detector == null ? 0 : detector.committedFlags()));
         if (detector == null) automation.noHomeConfiguration();
         checkCycle();
@@ -189,6 +216,19 @@ public final class HomeMonitorService extends Service implements LocationListene
     private void onCycleRead(DuduCycle.Observation cycle) {
         if (destroyed) return;
         cyclePending = false;
+        DepartureCycle.Result departureResult = departureCycle == null ? DepartureCycle.Result.UNAVAILABLE
+                : departureCycle.observe(cycle);
+        if (departureResult == DepartureCycle.Result.REARMED && detector != null) {
+            // Independent of JourneySession's manual-Maps rebaseline.
+            if (automation != null) automation.reset(Reason.WAKE);
+            progressEpoch = ProgressBus.reset(this, Reason.WAKE);
+            detector.clearEvidence(); detector.departureCycleChanged();
+        }
+        if (!cycleReady && initialParking != null && departureCycle != null) departureCycle.firstFix(initialParking);
+        String departureCategory = "DEPARTURE_CYCLE_" + departureResult + " STARTUP=" + startupId
+                + " GENERATION=" + (departureCycle == null ? 0 : departureCycle.state().generation());
+        if (!departureCategory.equals(lastDepartureDiagnostic)) Diagnostics.record(this, departureCategory);
+        lastDepartureDiagnostic = departureCategory;
         JourneySession session = new JourneySession(this);
         JourneySession.ObservationResult result = session.observeAwakeCycle(cycle);
         if (result == JourneySession.ObservationResult.REARMED) {
@@ -231,6 +271,13 @@ public final class HomeMonitorService extends Service implements LocationListene
         lastFix = SystemClock.elapsedRealtime();
         long fixTime = location.getElapsedRealtimeNanos() / 1000000;
         fixes++;
+        double accuracy = location.hasAccuracy() ? location.getAccuracy() : Double.NaN;
+        long age = lastFix - fixTime;
+        accuracyBucket = !location.hasAccuracy() ? "MISSING" : !Double.isFinite(accuracy) || accuracy < 0 ? "INVALID"
+                : accuracy <= 5 ? "LE_5M" : accuracy <= 15 ? "LE_15M" : accuracy <= 25 ? "LE_25M" : "OVER_25M";
+        ageBucket = age < 0 ? "FUTURE" : age <= 3000 ? "LE_3S" : age <= 15000 ? "LE_15S" : "OVER_15S";
+        speedBucket = !location.hasSpeed() ? "MISSING" : !Float.isFinite(location.getSpeed()) || location.getSpeed() < 0 ? "INVALID"
+                : location.getSpeed() < .5 ? "STOPPED" : location.getSpeed() < .7 ? "BELOW_MOVEMENT" : "MOVING";
         if (!location.hasAccuracy() || location.getAccuracy() > 15 || lastFix - fixTime > 3000
                 || location.isFromMockProvider()) poorFixes++;
         if (lastFix - lastSummary >= 30000) {
@@ -272,12 +319,28 @@ public final class HomeMonitorService extends Service implements LocationListene
     }
 
     private boolean acceptHome(Location location, long fixTime) {
+        if (!cycleReady) {
+            // The first qualified startup zone is remembered, but movement cannot emit before
+            // the initial vendor read has established this boot/wake's departure opportunity.
+            double age = lastFix - fixTime;
+            if (initialParking == null && location.hasAccuracy() && Float.isFinite(location.getAccuracy())
+                    && location.getAccuracy() >= 0 && location.getAccuracy() <= 15 && age >= 0 && age <= 3000
+                    && !location.isFromMockProvider() && Double.isFinite(location.getLatitude())
+                    && Double.isFinite(location.getLongitude()) && (!location.hasSpeed()
+                    || Float.isFinite(location.getSpeed()) && location.getSpeed() >= 0)) {
+                HomeDetector.Point point = config.project(location.getLatitude(), location.getLongitude());
+                initialParking = Double.isFinite(point.x()) && Double.isFinite(point.y())
+                        ? point.distance(config.geometry.parking()) <= 45 : null;
+            }
+            return true;
+        }
         java.util.List<HomeEvent> events = detector.accept(new HomeDetector.Fix(fixTime,
                 config.project(location.getLatitude(), location.getLongitude()),
                 location.hasAccuracy() ? location.getAccuracy() : Double.POSITIVE_INFINITY,
                 location.hasSpeed() ? location.getSpeed() : 0,
-                lastFix - fixTime, location.isFromMockProvider()));
+                lastFix - fixTime, location.isFromMockProvider(), location.hasSpeed()));
         ProgressBus.offer(this, progressEpoch, ProgressBus.HOME, detector.progress());
+        recordDepartureReason();
         synchronized (detector) {
             int flags = detector.committedFlags();
             if (flags != state.getInt("flags", 0) && !state.edit().putInt("flags", flags).commit()) {
@@ -295,15 +358,41 @@ public final class HomeMonitorService extends Service implements LocationListene
     private java.util.function.BooleanSupplier homeReservation(HomeEvent event) {
         HomeDetector owner = detector;
         HomeConfiguration configuration = config;
+        long generation = owner == null ? -1 : owner.departureGeneration();
         return () -> {
             if (owner == null || owner != detector || configuration != config || destroyed || PrivateImport.pending(this)) return false;
             synchronized (owner) {
+                if (event == HomeEvent.DEPARTURE_STARTED && owner.departureGeneration() != generation) return false;
                 owner.commit(event);
+                if (event == HomeEvent.DEPARTURE_STARTED && (owner.committedFlags() & 1) == 0) return false;
                 boolean saved = state.edit().putInt("flags", owner.committedFlags()).commit();
                 if (!saved) handler.post(this::stopSelf);
                 return saved;
             }
         };
+    }
+    private void recordDepartureReason() {
+        String reason = "DEPARTURE_" + detector.departureReason() + " STARTUP=" + startupId
+                + " CYCLE=" + detector.departureGeneration()
+                + " ACCURACY=" + accuracyBucket + " AGE=" + ageBucket + " SPEED=" + speedBucket;
+        if (reason.equals(lastDepartureDiagnostic)) return;
+        lastDepartureDiagnostic = reason;
+        // Candidate/confirmed occurrence history belongs to its cancellable RAM buffer.
+        for (var observed : ProgressBus.snapshot()) {
+            if (observed.kind() == com.pbuchman.duduhome.automation.DetectionProgress.Kind.DEPARTURE
+                    && ProgressBus.active(observed.id())) {
+                Diagnostics.recordAttempt(this, observed.id(), reason + " ID=" + observed.id()
+                        + " ELAPSED_MS=" + detector.departureElapsedMs());
+                return;
+            }
+        }
+        if (detector.departureReason() == HomeDetector.DepartureReason.CANDIDATE
+                || detector.departureReason() == HomeDetector.DepartureReason.CONFIRMED
+                || detector.departureReason() == HomeDetector.DepartureReason.CANCELLED_BASELINE) return;
+        if (ProgressBus.snapshot().stream().anyMatch(observed -> observed.kind()
+                == com.pbuchman.duduhome.automation.DetectionProgress.Kind.DEPARTURE
+                && ProgressBus.active(observed.id()))) return;
+        Diagnostics.record(this, reason);
     }
     private void updateGateArea(long validUntil) {
         if (automation == null) return;
@@ -342,6 +431,15 @@ public final class HomeMonitorService extends Service implements LocationListene
     @Override protected void dump(java.io.FileDescriptor fd, java.io.PrintWriter writer, String[] args) {
         writer.println("monitor_running=" + !destroyed + " registered=" + registered);
         writer.println("action_busy=" + HomeActions.busy());
+        writer.println("startup=" + startupId + " cycle_ready=" + cycleReady);
+        if (departureCycle != null) writer.println("departure_cycle=" + departureCycle.state().generation()
+                + " baseline=" + departureCycle.state().baseline() + " consumed=" + departureCycle.state().consumed()
+                + " blocked=" + departureCycle.blocked());
+        writer.println("departure_reason=" + (detector == null ? "CONFIG_MISSING_OR_DISABLED" : detector.departureReason())
+                + " candidate_elapsed_ms=" + (detector == null ? 0 : detector.departureElapsedMs()));
+        writer.println("gps_accuracy=" + accuracyBucket + " gps_age=" + ageBucket + " gps_speed=" + speedBucket);
+        writer.println("diagnostic_pending=" + Diagnostics.pendingWrites() + " dropped=" + Diagnostics.droppedWrites());
+        if (automation != null) writer.println(automation.diagnostic());
         if (trip != null) writer.println(trip.diagnostic());
         if (routebook != null) writer.println(routebook.diagnostic());
     }

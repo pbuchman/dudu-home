@@ -17,7 +17,9 @@ public final class DetectorEquivalence {
         var a=current.accept(new HomeDetector.Fix(t,new HomeDetector.Point(x,y),accuracy,speed,age,mock));
         var b=baseline.accept(new BaselineHomeDetector.Fix(t,new BaselineHomeDetector.Point(x,y),accuracy,speed,age,mock));
         current.progress();current.progress();
-        if(!a.equals(b)||current.flags()!=baseline.flags())throw new AssertionError("decision/flags divergence at sample "+count);
+        a = a.stream().filter(e -> e != com.pbuchman.duduhome.automation.HomeEvent.DEPARTURE_STARTED).toList();
+        b = b.stream().filter(e -> e != com.pbuchman.duduhome.automation.HomeEvent.DEPARTURE_STARTED).toList();
+        if(!a.equals(b)||(current.flags() & ~1)!=(baseline.flags() & ~1))throw new AssertionError("decision/flags divergence at sample "+count);
         count++;
     }
     public static void main(String[] args) throws Exception {
@@ -46,6 +48,6 @@ public final class DetectorEquivalence {
             }
             files++;
         }
-        System.out.println("PASS: identical events, sample times and flags; "+count+" home samples, 20000 motion samples, "+files+" replay files");
+        System.out.println("PASS: identical cleaning/return/exit events, sample times and flags (departure deliberately changed); "+count+" home samples, 20000 motion samples, "+files+" replay files");
     }
 }

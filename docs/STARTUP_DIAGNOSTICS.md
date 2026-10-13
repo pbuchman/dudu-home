@@ -1,6 +1,61 @@
 # DUDU startup recovery and private diagnostics
 
-Current source 0.5.6 preserves the cycle adapter and baseline-zero fix below. Installation
+## RC3 departure cycle and failure evidence
+
+The code-23 candidate has an independent durable departure-cycle opportunity. A new boot
+or confirmed increasing vendor wake permits fresh qualified GPS at parking, without an
+initial five-second stop. A first cycle observation establishes a conservative baseline;
+restart/update/menu entry, a repeated/rolled-back/unavailable counter or a GPS gap cannot
+rearm a used opportunity. Media/manual Maps baselines cannot change it. Genuine return
+and qualified five-second parking standstill remain the route rearm; pre-send cancellation
+also needs its fresh baseline. See FUNCTIONAL.md for movement/accuracy/age/gap limits.
+
+Collect private diagnostics before manual app start or update after a missed action. RC3
+adds bounded transition/rejection reasons and correlated detector/reservation/executor state,
+plus read-only dump fields for cycle, GPS freshness and per-component locality evidence.
+The journal writes asynchronously through a bounded worker; it is not an action trigger.
+Unsent user-cancelled occurrences discard buffered diagnostics and retain no durable
+cancellation history. Do not confuse event recognition, dispatch, phone idle admission and
+actual dial. A three-second event still precedes the unchanged phone snapshot.
+
+The earlier directional/minimum-displacement departure checks can suppress an event when
+the configured gate is close to parking; the old pack lacks administrative locality
+boundaries. Those are code/data causes, not proof of the reported radio's exact failure.
+No current radio ADB access or installed version is confirmed for this candidate. Two real
+vendor wake cycles, good GPS before leaving and event-to-dial correlation remain pending.
+
+The read-only service dump exposes `startup`, `cycle_ready`, `departure_cycle`, `baseline`,
+`consumed`, `blocked`, `departure_reason`, `candidate_elapsed_ms` and coarse `gps_accuracy`,
+`gps_age`, `gps_speed` buckets. `diagnostic_pending` and `dropped` show asynchronous journal
+pressure; a dropped row means the journal is incomplete, not that no action occurred.
+Queue observation adds `queue_home_waiting`, `queue_generation`, `gate_media_allowed` and
+`external_launch_allowed`, also captured by the collector's allowlist.
+Trip diagnostics add `map_schema`, locality/street quality and source. No component names
+or actual GPS values are printed.
+
+| Departure reason | Interpretation |
+| --- | --- |
+| `NO_FIX`, `MOCK`, `STALE`, `ACCURACY`, `NONFINITE`, `OUT_OF_ORDER`, `JUMP` | No usable qualified input; inspect GPS delivery before blaming phone IPC |
+| `GAP`, `SPEED_MISSING`, `STOPPED` | Continuous movement interval cannot complete |
+| `OUTSIDE_PARKING_BASELINE`, `OUTSIDE_DEPARTURE` | Startup parking opportunity or departure-area requirement was not met |
+| `CONSUMED`, `CANCELLED_BASELINE`, `STATE_BLOCKED` | Used opportunity, fresh cancellation baseline required, or state persistence blocked |
+| `CANDIDATE`, `CONFIRMED` | Recognition progressing or event recognized; inspect dispatch and executor correlation next |
+
+Reason transitions carry startup/cycle counters and the current attempt ID when applicable;
+IDs are diagnostic correlation only. Buffered candidate rows are discarded on unsent user
+cancellation. No reason grants permission to skip phone idle, add another dial or reset state.
+
+Use `scripts/automation-diagnostics.py collect --serial DEVICE_SERIAL --output` with a new
+owner-only directory outside Git; OPERATIONS.md has the complete command. The tool reads
+only the private journal and allowlisted dump fields without starting the app or changing
+device state. `summarize` rebuilds the private process/attempt report locally. Preserve the
+original wall/elapsed observation times and its bounded-retention/process-death limitations.
+
+RC3 read-only collection passed on the emulator with 803 records and three correlated attempts.
+The monitor was unavailable in that synthetic stopped state; this does not verify its live
+dump or hardware capture. Current measured results are in VERIFICATION.md.
+
+Historical source 0.5.6 preserves the cycle adapter and baseline-zero fix below. Installation
 of 0.5.5/code 12 was confirmed September 14, but full wake acceptance is still pending.
 The media sequence now uses Spotify instead of HOME and independently reserves both targets.
 QUEUE task categories and attempt IDs record waiting, start and expiry; SPOTIFY categories

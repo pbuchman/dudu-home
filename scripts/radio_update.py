@@ -88,24 +88,47 @@ def sha(path):
         for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)
     return h.hexdigest()
 
-def map_manifest(path):
+def map_manifest(path,allow_legacy=False):
     path=Path(path).resolve()
     manifest=json.loads(path.with_suffix('.manifest.json').read_text())
-    if manifest.get('schema')!=1 or manifest.get('file')!=path.name or manifest.get('bytes')!=path.stat().st_size or manifest.get('sha256')!=sha(path):
+    supported=(1,2) if allow_legacy else (2,)
+    if manifest.get('schema') not in supported or manifest.get('file')!=path.name or manifest.get('bytes')!=path.stat().st_size or manifest.get('sha256')!=sha(path):
         raise Blocked('Map manifest/checksum mismatch')
     spec=importlib.util.spec_from_file_location('place_builder',Path(__file__).with_name('build-place-index.py'))
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     metadata,counts=module.validate(path)
-    if metadata!=manifest['metadata'] or counts!=manifest['counts']:raise Blocked('Map metadata mismatch')
+    if metadata!=manifest['metadata'] or counts!=manifest['counts'] or metadata['schema']!=str(manifest['schema']):raise Blocked('Map metadata mismatch')
     return manifest
 
 def install_map(adb,path,manifest):
-    with open(path,'rb') as source:
-        run(adb,['shell',f"run-as {PACKAGE} sh -c 'umask 077; cat > no_backup/places.sqlite.new'"],stdin=source,timeout=900)
-    output=run(adb,['shell','run-as',PACKAGE,'sha256sum','no_backup/places.sqlite.new']).decode().split()
-    if not output or output[0]!=manifest['sha256']:raise Blocked('Staged map checksum mismatch')
-    run(adb,['shell',f"run-as {PACKAGE} sh -c 'mv no_backup/places.sqlite.new no_backup/places.sqlite'"])
-    run(adb,['shell',f"run-as {PACKAGE} sh -c 'cat > no_backup/places.manifest.json'"],input=json.dumps(manifest).encode())
+    # Validate the real local database before ADB. Hash verification binds staged bytes to that validation.
+    validated=map_manifest(path)
+    if validated!=manifest:raise Blocked('Map manifest changed before installation')
+    manifest_bytes=json.dumps(manifest).encode()
+    committed=False
+    try:
+        with open(path,'rb') as source:
+            run(adb,['shell',f"run-as {PACKAGE} sh -c 'umask 077; cat > no_backup/places.sqlite.new'"],stdin=source,timeout=900)
+        output=run(adb,['shell','run-as',PACKAGE,'sha256sum','no_backup/places.sqlite.new']).decode().split()
+        if not output or output[0]!=manifest['sha256']:raise Blocked('Staged map checksum mismatch')
+        run(adb,['shell',f"run-as {PACKAGE} sh -c 'umask 077; cat > no_backup/places.manifest.json.new'"],input=manifest_bytes)
+        output=run(adb,['shell','run-as',PACKAGE,'sha256sum','no_backup/places.manifest.json.new']).decode().split()
+        if not output or output[0]!=hashlib.sha256(manifest_bytes).hexdigest():raise Blocked('Staged manifest checksum mismatch')
+        # Publish the verified database last. Any preceding failure leaves the old database intact.
+        command=(f"run-as {PACKAGE} sh -c 'set -e; "
+                 "if test -e no_backup/places.manifest.json; then cp no_backup/places.manifest.json no_backup/places.manifest.json.previous; "
+                 "else rm -f no_backup/places.manifest.json.previous; fi; "
+                 "mv no_backup/places.manifest.json.new no_backup/places.manifest.json; "
+                 "if mv no_backup/places.sqlite.new no_backup/places.sqlite; then exit 0; fi; "
+                 "if test -e no_backup/places.manifest.json.previous; then mv no_backup/places.manifest.json.previous no_backup/places.manifest.json; "
+                 "else rm -f no_backup/places.manifest.json; fi; exit 1'")
+        run(adb,['shell',command])
+        committed=True
+    finally:
+        cleanup=['no_backup/places.sqlite.new','no_backup/places.manifest.json.new']
+        if committed:cleanup.append('no_backup/places.manifest.json.previous')
+        try:run(adb,['shell','run-as',PACKAGE,'rm','-f',*cleanup])
+        except (Blocked,OSError,subprocess.SubprocessError):pass
 
 def ui_tree(adb):
     run(adb,['shell','uiautomator','dump','/data/local/tmp/dudu-trip-ui.xml'])

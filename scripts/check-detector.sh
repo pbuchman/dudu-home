@@ -4,8 +4,11 @@ cd "$(dirname "$0")/.."
 mkdir -p build/detector
 javac -d build/detector app/src/main/java/com/pbuchman/duduhome/automation/HomeEvent.java \
   app/src/main/java/com/pbuchman/duduhome/automation/DetectionProgress.java \
-  app/src/main/java/com/pbuchman/duduhome/location/HomeDetector.java scripts/DetectorChecks.java scripts/DetectorReplay.java
+  app/src/main/java/com/pbuchman/duduhome/startup/DuduCycle.java \
+  app/src/main/java/com/pbuchman/duduhome/location/DepartureCycle.java \
+  app/src/main/java/com/pbuchman/duduhome/location/HomeDetector.java scripts/DetectorChecks.java scripts/DetectorReplay.java scripts/DepartureChecks.java
 java -cp build/detector com.pbuchman.duduhome.location.DetectorChecks
+java -cp build/detector com.pbuchman.duduhome.location.DepartureChecks
 javac -d build/detector app/src/main/java/com/pbuchman/duduhome/location/MotionDetector.java \
   app/src/main/java/com/pbuchman/duduhome/automation/DetectionProgress.java \
   app/src/main/java/com/pbuchman/duduhome/automation/MotionHook.java scripts/MotionChecks.java

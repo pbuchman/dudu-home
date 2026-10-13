@@ -1,26 +1,50 @@
 # Handoff - local Full Cleaning implementation
 
-## Current candidate: 1.3.0-rc2 / code 22
+## Current candidate: 1.3.0-rc3 / code 23
 
-The release candidate adds a wrapping 390 dp street card (24 sp locality, 32 sp road, three
-lines and explicit overflow expansion) and current-attempt cancellation across detection,
-queue and execution. Unsent user-cancelled attempts keep no durable history/quota;
-sent commands retain safety reservations and cleanup. Media cancellation groups Yanosik
-and Spotify, and qualified fresh baseline evidence is required to arm a new occurrence.
-Version is 1.3.0-rc2/code 22. The owner authorized source-only PR, green Actions, merge and
-prerelease publication. Radio installation and private configuration changes are separate.
-Build/lint, synthetic detector/progress/trip and full emulator checks passed before this
-version bump; current validation results belong in VERIFICATION.md. Final artifact and CI
-checks must be recorded by the release coordinator. Do not infer hardware acceptance.
-See WHERE_AM_I.md, PROGRESS_UI.md and AUTOMATION_SEQUENCE.md for the current contracts.
+RC3 adds the three-second departure event in any direction, including reversing, from fresh
+qualified parking evidence; an initial five-second stop is unnecessary. Its independent
+persisted cycle opportunity admits a new boot or confirmed increasing vendor wake, never
+an app restart/update/menu/GPS gap. Preserve genuine-return and pre-send cancellation
+rearming, cleaning/return thresholds, gate priority and every phone Binder safety rule.
+See FUNCTIONAL.md and PROGRESS_UI.md for exact thresholds. Three seconds is event time;
+phone snapshot/idle admission adds latency before dial.
+
+Schema-2 maps add administrative locality evidence, independent street/locality quality and
+stabilization, and protection against weaker Photon replacement. Schema 1 remains readable;
+the fix requires the code-23 APK and schema-2 pack. The national pack completed from the
+existing source timestamp 2026-09-27T20:23:36Z, not a latest download. Full manifest validation,
+atomic Android 36 emulator installation and national lookup passed; map/manifest/hash stay
+private. See WHERE_AM_I.md and OPERATIONS.md for details and the final merged APK handoff.
+
+Private bounded asynchronous diagnostics expose reasons, cycle/reservation state and
+correlation without names/coordinates/phone fragments or durable pre-send cancellation
+history. Collect before manual app start/update after failure. Code-23 build/lint, synthetic
+detector/progress/trip/parser and tooling, Routebook and full emulator safety checks passed;
+synthetic signature-checked update/import/quota preservation and privacy checks also passed.
+Final incremental SafetyChecks after failed-write latch hardening passed. The extended
+installer run passed exact consumed departure-cycle preservation across backed-up update/import
+and process restart, alongside existing quota/navigation/signature checks.
+Two PostGIS cases were skipped locally; initial commit `0e43336` of
+[PR #10](https://github.com/pbuchman/dudu-home/pull/10) passed PR/branch CI including actual
+PostGIS/browser. Private read-only diagnostic collection passed on the emulator; a live
+dump was unavailable in its synthetic stopped state. Enforce final PR/main/tag gates
+separately and record final results on the release page. Exact evidence is in VERIFICATION.md.
+Radio ADB is unavailable: no current installed version or RC3 installation is confirmed.
+Two real wake cycles and city/village/drive acceptance remain pending. Code/data causes
+are identified; the exact physical failure cause remains unconfirmed.
+
+The owner authorized source-only PR, green Actions, merge and prerelease. Keep all actual
+configuration, APKs, maps, keys, raw diagnostics and artifact receipts outside Git/releases.
+Existing gallery is historical, not a new capture. See RELEASE_1_3_0_RC3.md.
 
 ## Current integration baseline
 
-Use the exact merged main revision for 1.3.0-rc2/code 22 after the cancellation PR merges.
-Combined 1.3.0-rc1/code 21 is the preceding baseline.
-Do not build older feature worktrees for radio updates. Android, Routebook backend/UI and
-fixtures are together; follow INTEGRATED_RELEASE.md and ROUTEBOOK.md. The records below
-are historical. Existing private radio configuration remains authoritative.
+Build the local code-23 APK from the exact merged main revision after the RC3 PR merges;
+record source/version/signature/hash in the private manifest. RC2/code 22 is the preceding
+combined candidate. Android, Routebook backend/UI and fixtures share source; follow
+INTEGRATED_RELEASE.md and ROUTEBOOK.md. Keep current full private configuration authoritative.
+The remaining records below are historical.
 
 
 ## 1.2 trip development

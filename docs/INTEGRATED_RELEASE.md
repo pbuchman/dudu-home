@@ -1,18 +1,27 @@
-# Combined main candidate: 1.3.0-rc2 / code 22
+# Combined main candidate: 1.3.0-rc3 / code 23
 
 ## Current change over the combined baseline
 
-1.3.0-rc2/code 22 adds wrapping long street names, explicit overflow expansion, full-address
-notification presentation and current-attempt cancellation to combined 1.3.0-rc1/code 21.
-The cancellation control covers detection, waiting and execution, with grouped Yanosik/Spotify
-and a notification fallback. Pending user-cancelled work has no durable quota/history; sent
-operations retain safety reservations and actual cleanup. Repeated triggers require qualified
-fresh baseline evidence. See [release notes](RELEASE_1_3_0_RC2.md).
+RC3 adds early three-second departure in any direction, persisted independent parking
+opportunities, schema-2 locality boundaries/quality and private rejection diagnostics over
+RC2/code 22. It retains full street wrapping/expansion and current-attempt cancellation.
+Unsent user-cancelled work has no durable quota/history; sent operations retain safety
+reservations and cleanup. See [release notes](RELEASE_1_3_0_RC3.md) for exact scope/limits.
 
-The owner authorized source-only PR/checks/merge/prerelease. Final exact-revision build and CI
-results belong in VERIFICATION.md; the preparation notes do not claim those future results.
-No radio install, server deployment, pairing or private configuration change is implied by
-source publication. The sequence below remains the separately authorized hardware workflow.
+The owner authorized source-only PR/checks/merge/prerelease. Code-23 build/lint, local
+synthetic/emulator/tooling/Routebook and privacy checks passed as recorded in VERIFICATION.md.
+Final incremental SafetyChecks after failed-write latch hardening passed; the extended
+exact consumed departure-cycle preservation check across backed-up update/import and process
+restart passed. The schema-2 Poland pack completed from source timestamp 2026-09-27T20:23:36Z;
+full manifest validation, atomic Android 36 emulator installation and national lookup passed.
+Read-only private diagnostic collection passed; the stopped synthetic state had no live dump.
+Initial `0e43336` of [PR #10](https://github.com/pbuchman/dudu-home/pull/10) passed PR/branch CI,
+including PostGIS/browser checks skipped locally. Enforce final PR/main/tag gates separately;
+record final results on the release page. Prepare the final merged-source signed APK/hash
+manifest after merge and keep map/manifest/installation/diagnostic artifacts outside Git.
+Physical ADB is unavailable, so no current radio version or RC3 update is confirmed. Two
+wake cycles and city/village/drive acceptance remain pending. Source publication does not
+establish radio installation, server deployment, pairing or a private configuration change.
 
 ## Historical consolidation and current installation candidate
 
@@ -26,7 +35,7 @@ outside this repository. Third-party apps remain separately installed packages.
 Main is the testing baseline after the integration PR merges. Build the APK from that exact
 main commit and record source SHA, version, signing-certificate fingerprint and APK SHA-256
 in the private release manifest. Source-only GitHub prereleases contain no APK or credentials.
-Use the versioned code 22 artifact for this change. Code 21 is the preceding combined baseline;
+Use the versioned code 23 artifact with its schema-2 pack. Code 22 is the preceding candidate;
 do not use the earlier code 19 or detached code 20 artifacts as its replacement.
 
 Included Android features: gate/Roborock actions and safeguards, gate-before-media priority,
@@ -43,14 +52,16 @@ operator tooling. The backend is a separately deployed service, not embedded in 
 2. Back up the installed APK and private state. Preserve the entire ordered navigation config,
    gate cooldown, daily quota and consumed journey state using the existing updater in
    OPERATIONS.md. Use maintenance only while idle and finish by removing it.
-3. Install the exact main APK. Transfer the separately stored Poland index atomically after
+3. Install the exact main code-23 APK. Transfer the separately stored schema-2 Poland index atomically after
    validating its manifest and sufficient temporary/final disk space. Verify installed APK and
    index hashes, import completion, config equality, permissions and monitor recovery.
 4. Test the menu and trip lifecycle, wrapped street card/full-name expansion and notification.
    Check explicit cancellation before sending and after own execution admission, notification
    fallback, retained cleanup locks and fresh rearming evidence. Sent robot commands are not
    undone; use normal phone-app control if needed. During a passenger
-   ride compare locality/street names, movement distance and GPS quality against the route.
+   ride compare city/village/street names, component quality, movement distance and GPS quality
+   against the route; verify three-second departure including reversing, used-opportunity
+   protection and genuine-return rearm. Observe two real vendor wake cycles.
    Do not trigger gate calls or robot routines as incidental smoke tests.
 5. Read Routebook's installation UUID privately. Check the existing server and private map
    deployment, back up its config, then bind that UUID with a dedicated token and an explicit

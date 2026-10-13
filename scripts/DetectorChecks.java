@@ -41,7 +41,7 @@ public final class DetectorChecks {
 
         DetectorChecks maneuver = new DetectorChecks();
         maneuver.park(); maneuver.move(point(0, 20)); maneuver.move(point(0, 0)); maneuver.park();
-        maneuver.expect();
+        maneuver.expect(HomeEvent.DEPARTURE_STARTED);
 
         DetectorChecks returning = new DetectorChecks();
         returning.position = point(400, 220);
@@ -65,7 +65,7 @@ public final class DetectorChecks {
         fromHomeRoad.move(point(400, 100)); fromHomeRoad.move(point(100, 100)); fromHomeRoad.expect();
 
         DetectorChecks startupMoving = new DetectorChecks();
-        startupMoving.move(point(0, -40)); startupMoving.expect();
+        startupMoving.move(point(0, -40)); startupMoving.expect(HomeEvent.DEPARTURE_STARTED);
         DetectorChecks poor = new DetectorChecks();
         poor.park();
         for (int n = 0; n < 20; n++) poor.fix(point(0, -n*2), 2, 30, 0, false);
@@ -100,13 +100,13 @@ public final class DetectorChecks {
         check((pending.detector.committedFlags() & 4) != 0, "commit is irrevocable");
 
         DetectorChecks candidate = new DetectorChecks();
-        candidate.park(); candidate.move(point(0, -14)); candidate.expect();
+        candidate.park(); candidate.fix(point(0,-2),2,1,0,false); candidate.fix(point(0,-4),2,1,0,false); candidate.expect();
         candidate.detector.cancel(DetectionProgress.Kind.DEPARTURE);
         candidate.move(point(0, -40)); candidate.expect();
         candidate.move(point(100, 100)); candidate.expect(HomeEvent.OUTBOUND_CHECKPOINT);
 
         DetectorChecks departure = new DetectorChecks();
-        departure.park(); departure.move(point(0, -14));
+        departure.park(); departure.fix(point(0,-2),2,1,0,false); departure.fix(point(0,-4),2,1,0,false);
         departure.detector.cancel(DetectionProgress.Kind.DEPARTURE);
         departure.detector.clearEvidence();
         departure.move(point(0, -40)); departure.move(point(0, 0)); departure.expect();
