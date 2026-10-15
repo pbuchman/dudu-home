@@ -200,6 +200,7 @@ export default function App({
             range={data.range}
             parts={data.parts}
             loading={data.loading}
+            error={data.error}
           />
           <section className="map-column">
             <div className="position-strip">

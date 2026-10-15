@@ -1,18 +1,25 @@
 import type { Day, Range } from "./types";
 import type { Geometry } from "./model";
 import { km, time, partialMonth, observationGaps } from "./model";
+import { recordedTime } from "./recorded-time";
 export function Summary({
   day,
   range,
   parts,
   loading,
+  error,
 }: {
   day?: Day;
   range?: Range;
   parts: Record<string, Geometry>;
   loading: boolean;
+  error?: string;
 }) {
   const gaps = observationGaps(parts);
+  const value = range ?? day;
+  const observations = range
+    ? range.days.reduce((n, d) => n + d.point_count, 0)
+    : day?.point_count;
   return (
     <aside className="summary" aria-label="Podsumowanie historii">
       <h1>{range ? "Wybrany zakres" : "Twój dzień"}</h1>
@@ -32,6 +39,19 @@ export function Summary({
           <span>obserwacji</span>
         </div>
       </div>
+      <dl className="recorded-metric">
+        <dt>Czas w samochodzie</dt>
+        <dd>
+          {loading
+            ? "Pobieranie…"
+            : error
+              ? "Błąd pobierania"
+              : value
+                ? recordedTime(value.recorded_seconds, observations !== 0)
+                : "Niedostępne"}
+        </dd>
+        <dd className="recorded-explanation">na podstawie zapisu GPS</dd>
+      </dl>
       {loading && !day && !range ? (
         <p role="status">Pobieranie historii…</p>
       ) : null}
@@ -100,15 +120,26 @@ export function MonthlyChart({ range }: { range: Range }) {
   const max = Math.max(...range.months.map((m) => m.meters), 1);
   return (
     <section className="monthly">
-      <h2>Kilometry miesięcznie</h2>
-      <div role="img" aria-label="Wykres miesięczny szacowanych kilometrów GPS">
+      <h2>Podsumowanie miesięczne</h2>
+      <div>
         {range.months.map((m) => (
           <div className="bar-row" key={m.month}>
             <div>
               <strong>{m.month}</strong>
               <span>{km(m.meters)} km</span>
             </div>
-            <div className="bar-track">
+            <p className="month-recorded">
+              Czas w samochodzie:{" "}
+              <strong>
+                {recordedTime(
+                  m.recorded_seconds,
+                  range.days.some(
+                    (d) => d.date.startsWith(m.month) && d.point_count > 0,
+                  ),
+                )}
+              </strong>
+            </p>
+            <div className="bar-track" aria-hidden="true">
               <div
                 className="bar"
                 style={{ width: `${(m.meters / max) * 100}%` }}
@@ -122,24 +153,34 @@ export function MonthlyChart({ range }: { range: Range }) {
       </div>
       <details>
         <summary>Dane dzienne ({range.days.length})</summary>
-        <table>
-          <thead>
-            <tr>
-              <th>Dzień</th>
-              <th>km GPS</th>
-              <th>Postoje</th>
-            </tr>
-          </thead>
-          <tbody>
-            {range.days.map((d) => (
-              <tr key={d.date}>
-                <td>{d.date}</td>
-                <td>{km(d.meters)}</td>
-                <td>{d.stop_count}</td>
+        <div
+          className="table-scroll"
+          role="region"
+          aria-label="Dane dzienne"
+          tabIndex={0}
+        >
+          <table>
+            <caption>Dane dzienne · czas na podstawie zapisu GPS</caption>
+            <thead>
+              <tr>
+                <th scope="col">Dzień</th>
+                <th scope="col">km GPS</th>
+                <th scope="col">Czas w samochodzie</th>
+                <th scope="col">Postoje</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {range.days.map((d) => (
+                <tr key={d.date}>
+                  <th scope="row">{d.date}</th>
+                  <td>{km(d.meters)}</td>
+                  <td>{recordedTime(d.recorded_seconds, d.point_count > 0)}</td>
+                  <td>{d.stop_count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </details>
     </section>
   );

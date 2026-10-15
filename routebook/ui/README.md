@@ -132,3 +132,27 @@ Odczyt analiz obejmuje najwyżej 31 dni i 650000 punktów z ograniczonym konteks
 szczegóły jednej podróży mają limit 100000 punktów. Przekroczenie limitu daje jawny
 błąd, bez obcinania danych. Statystyki oblicza backend; ten UI nie zmienia Androida,
 kolektora GPS ani danych źródłowych.
+
+## Czas w samochodzie
+
+Widoki Dzień/Na żywo i Zakres, miesięczne zestawienie oraz tabela dni pokazują
+`recorded_seconds` z odpowiedniego poziomu odpowiedzi API. Analizy korzystają
+z `totals.recorded_seconds` oraz osobnych wartości `days[]`, `weeks[]` i `months[]`.
+Ta metryka obejmuje ruch i postoje przy ciągłym zapisie GPS; nie jest sumą czasów
+podróży ani wynikiem obliczeń z geometrii mapy. Objaśnienie „na podstawie zapisu GPS”
+zachowuje granicę między obserwacją GPS a pomiarem zapłonu lub obecności kierowcy.
+
+Brak pola, `null` i nieprawidłowa liczba pokazują „Niedostępne”, a poprawne zero
+przy obserwacjach pokazuje „0 s”. Potwierdzony `point_count: 0` pokazuje „Brak danych”.
+Opcjonalny licznik obserwacji w analizach pozwala rozpoznać pusty okres niezależnie
+od liczby podróży; starszy backend bez licznika nadal może podać poprawny czas.
+Ładowanie i błędy mają własne komunikaty. Zaokrąglenie następuje tylko podczas
+formatowania sekund, bez zawijania po 24 godzinach.
+
+`recorded-time.unit.test.ts` sprawdza semantykę braków i wiązanie odpowiedzi;
+`recorded-time.browser.test.ts` używa wyłącznie wymyślonych odpowiedzi API dla
+dnia 14 października (45 min), 15 października (10 min) i sumy 55 min. Sprawdza
+też SSE po późnym dosłaniu danych, opóźnioną odpowiedź starego wyboru, błąd,
+brak/null/zero oraz desktop i telefon. Browser plugin not available: użyto
+istniejącego Playwright Chromium, bez dodawania zależności przeglądarkowych.
+Dowody zapisywać poza repo przez `ROUTEBOOK_UI_EVIDENCE_DIR`.
