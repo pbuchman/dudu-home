@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+const evidence =
+  process.env.ROUTEBOOK_UI_EVIDENCE_DIR ?? "/tmp/dudu-routebook-14-ui";
 export default defineConfig({
   testDir: "tests",
   testMatch: "**/*.browser.test.ts",
@@ -11,12 +13,12 @@ export default defineConfig({
       "json",
       {
         outputFile: process.env.ROUTEBOOK_TEST_URL
-          ? "output/browser-production-results.json"
-          : "output/browser-results.json",
+          ? `${evidence}/browser-production-results.json`
+          : `${evidence}/browser-results.json`,
       },
     ],
   ],
-  outputDir: "output/playwright",
+  outputDir: `${evidence}/playwright`,
   use: {
     baseURL: process.env.ROUTEBOOK_TEST_URL ?? "http://127.0.0.1:5178",
     viewport: { width: 1586, height: 992 },

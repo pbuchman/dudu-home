@@ -120,6 +120,13 @@
     <string name="trip_start">Rozpocznij</string>
     <string name="trip_end">Zakończ</string>
     <string name="trip_permissions">Brak uprawnień lokalizacji lub powiadomień. Sprawdź instalację.</string>
+    <string name="trip_overlay_drag">Przesuń</string>
+    <string name="trip_overlay_drag_description">Przeciągnij, aby przesunąć panel</string>
+    <string name="trip_overlay_close">Ukryj panel</string>
+    <string name="trip_overlay_show">Pokaż panel w tle</string>
+    <string name="trip_overlay_hide">Ukryj panel w tle</string>
+    <string name="trip_overlay_save_error">Nie udało się zapisać ustawień panelu. Spróbuj ponownie.</string>
+    <string name="trip_overlay_hint">Panel pokazuje się podczas aktywnego pomiaru. Ukrycie nie zatrzymuje licznika ani zapisu GPS.</string>
     <string name="trip_full_name">Pełna nazwa</string>
     <string name="cancel_attempt">Anuluj tę próbę</string>
     <string name="cancelling_attempt">Przerywam…</string>

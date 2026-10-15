@@ -1,6 +1,16 @@
-# Combined main candidate: 1.3.0-rc3 / code 23
+# Combined main candidate: 1.4.0-rc1 / code 25
 
-## Current change over the combined baseline
+## Current change and independent delivery
+
+The 1.4 candidate adds private Home Dev journey analytics and persistent movable/dismissible
+Android location presentation. Collection, immutable offline records and ingestion v1 stay
+unchanged. [Current release notes](RELEASE_1_4_0_RC1.md) define scope and acceptance.
+One tested merged commit identifies source, private APK and server/UI. Publish source only,
+then deploy the existing Home Dev service with backup and preserved archive/provisioning.
+Radio installation remains in a separate workstream; the historical installation procedure
+below is background, not an instruction to install the older code-23 artifact.
+
+## Historical RC3 change over the combined baseline
 
 RC3 adds early three-second departure in any direction, persisted independent parking
 opportunities, schema-2 locality boundaries/quality and private rejection diagnostics over

@@ -17,6 +17,9 @@ final class TripUiChecks {
     }
     static void run(Instrumentation i)throws Exception {
         Context c=i.getTargetContext();
+        TripOverlayPreferences overlayPreferences=new TripOverlayPreferences(c);
+        check(overlayPreferences.setVisible(true)&&overlayPreferences.savePosition(1f,0f),"initial UI preferences durable");
+        checkPreferenceFailure(c);
         checkLocationCard(i, c);
         TripController controller=TripController.get(c);
         controller.command("START");state(controller,"ACTIVE");
@@ -32,6 +35,13 @@ final class TripUiChecks {
         i.waitForIdleSync();
         i.runOnMainSync(()->{
             check(HomeActions.allowsMediaLaunch(),"passive trip screen allows media automation");
+            TripController.Snapshot before=controller.snapshot();
+            trip.findViewById(R.id.trip_overlay_toggle).performClick();
+            check(!overlayPreferences.visible(),"passive screen can hide panel");
+            trip.findViewById(R.id.trip_overlay_toggle).performClick();
+            check(overlayPreferences.visible(),"passive screen restores panel");
+            TripController.Snapshot after=controller.snapshot();
+            check(after.state().equals(before.state())&&after.generation()==before.generation()&&after.meters()==before.meters(),"panel toggle leaves trip unchanged");
             check(((TextView)trip.findViewById(R.id.trip_street)).getMaxLines()==Integer.MAX_VALUE,"full screen has unlimited road lines");
         });
         var notices=c.getSystemService(NotificationManager.class).getActiveNotifications();
@@ -52,6 +62,31 @@ final class TripUiChecks {
         TripActivity deferred=(TripActivity)i.waitForMonitorWithTimeout(monitor,5000);check(deferred!=null,"notification opens after action cleanup");
         i.runOnMainSync(()->deferred.findViewById(R.id.trip_end).performClick());state(controller,"FINISHED");
         i.runOnMainSync(()->{deferred.finish();presentation[0].close();});i.removeMonitor(monitor);
+    }
+    /** Simulates SharedPreferences' changed memory cache plus a failed disk acknowledgement. */
+    static void checkPreferenceFailure(Context context) {
+        android.content.SharedPreferences backing=context.getSharedPreferences("trip_overlay_failure_fixture",0);
+        check(backing.edit().clear().commit(),"clear preference-failure fixture");
+        android.content.SharedPreferences failing=(android.content.SharedPreferences)java.lang.reflect.Proxy.newProxyInstance(
+                android.content.SharedPreferences.class.getClassLoader(),new Class<?>[]{android.content.SharedPreferences.class},(proxy,method,args)->{
+            if(!method.getName().equals("edit"))return method.invoke(backing,args);
+            android.content.SharedPreferences.Editor editor=backing.edit();
+            return java.lang.reflect.Proxy.newProxyInstance(android.content.SharedPreferences.Editor.class.getClassLoader(),
+                    new Class<?>[]{android.content.SharedPreferences.Editor.class},(editorProxy,write,values)->{
+                if(write.getName().equals("apply"))throw new AssertionError("completed UI choice must not use asynchronous apply");
+                Object result=write.invoke(editor,values);
+                if(write.getName().equals("commit"))return false;
+                return result instanceof android.content.SharedPreferences.Editor ? editorProxy : result;
+            });
+        });
+        Context wrapper=new android.content.ContextWrapper(context) {
+            @Override public android.content.SharedPreferences getSharedPreferences(String name,int mode) { return failing; }
+        };
+        TripOverlayPreferences preferences=new TripOverlayPreferences(wrapper);
+        check(!preferences.setVisible(false),"failed visibility write reports failure");
+        check(preferences.visible(),"failed visibility write restores prior memory choice");
+        check(!preferences.savePosition(.25f,.75f),"failed position write reports failure");
+        check(preferences.horizontal()==1f&&preferences.vertical()==0f,"failed position write restores prior memory position");
     }
     /** Uses invented names and different font scales without touching the GPS resolver. */
     private static void checkLocationCard(Instrumentation i, Context context) {
@@ -81,6 +116,18 @@ final class TripUiChecks {
             i.waitForIdleSync();
             i.runOnMainSync(() -> {
                 check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.VISIBLE, "overflow has visible full-name action");
+                card[0].setMaximumHeight(Math.round(180 * themed.getResources().getDisplayMetrics().density));
+                layout(card[0], themed, 260);
+                for(int id:new int[]{R.id.trip_overlay_close,R.id.trip_overlay_drag}) {
+                    View control=card[0].findViewById(id);
+                    View row=(View)control.getParent();
+                    check(control.getTop()>=0 && control.getBottom()<=row.getHeight(),"whole control remains inside short-viewport header");
+                    android.widget.Button button=(android.widget.Button)control;
+                    check(button.getWidth()-button.getCompoundPaddingLeft()-button.getCompoundPaddingRight()>=button.getPaint().measureText(button.getText().toString()),"move/hide text fits without horizontal glyph clipping");
+                }
+                android.widget.ScrollView address=(android.widget.ScrollView)card[0].findViewById(R.id.trip_street).getParent().getParent();
+                check(address.canScrollVertically(1),"short viewport scrolls full address and expansion control");
+                card[0].setMaximumHeight(Integer.MAX_VALUE);
                 card[0].render("Miejscowość Testowa", "Testowa"); layout(card[0], themed, 390);
             });
             i.waitForIdleSync();

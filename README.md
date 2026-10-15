@@ -13,18 +13,18 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.3.0-rc3` (code 23).**
-> Adds an early three-second departure event in any direction, stronger offline locality
-> evidence and private rejection diagnostics. [Release notes](docs/RELEASE_1_3_0_RC3.md).
+> **Combined test candidate `1.4.0-rc1` (code 25).**
+> Adds a private Home Dev journey diary, time/speed analysis, replay, named places and
+> directional comparisons. Android gains a movable, dismissible location card.
+> [Release notes](docs/RELEASE_1_4_0_RC1.md).
 > Android, backend, private map UI and deployment tooling now share one source revision.
 > Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
 > Source only: no public APK, map database, private configuration or signing key.
 
-RC3 local safety checks and national schema-2 map validation/Android emulator lookup passed;
-initial [PR #10 checks](https://github.com/pbuchman/dudu-home/pull/10/checks) are green.
-Final PR/main/tag publication gates are enforced separately. [Evidence and limits](docs/VERIFICATION.md)
-distinguish these results from the pending physical-radio acceptance.
+Release checks cover Android, the existing v1 collector and private Routebook analytics.
+PR/main/tag publication gates are enforced separately. [Evidence and limits](docs/VERIFICATION.md)
+distinguish emulator/server verification from physical-radio acceptance.
 
 ![Four-action menu and navigation groups - historical synthetic emulator capture](docs/images/current/home-complete.png)
 
@@ -67,12 +67,17 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   Missing Mop configuration never starts Full Cleaning instead.
 - **Gdzie jestem:** explicitly start, pause, resume or end a trip. Show locality, street and
   session kilometres. Count qualified GPS movement in the background; show a silent card with up to three readable street lines
-  and an expanded full-address notification that open the full screen when tapped. Local OSM data works offline;
+  and an expanded full-address notification that open the full screen when tapped. Move the card
+  with its **Przesuń** handle or hide it with **×**; position and visibility survive restarts.
+  **Pokaż panel w tle** on the trip screen restores it without changing the trip. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
 - **Routebook:** automatically collect GPS independently of the manual trip counter, retain
   unacknowledged points in SQLite and send the newest fix before historical backlog. The
-  private web map shows live/day/range history, observed stops and distance summaries.
+  private web map shows live/day/range history plus a journey diary, movement/stop/unknown
+  time, a synchronized speed chart and replay, named places/visits and directional comparisons.
+  All detailed analysis runs on Home Dev using existing records; the radio collector and
+  ingestion format are unchanged. No fuel/cost estimates or additional GPS telemetry.
   Upload needs separate private provisioning; [architecture and pairing](docs/ROUTEBOOK.md).
 - **Automatic gate calls:** after three continuous seconds of qualified GPS movement in any
   direction, including reversing, following a good fix in the parking area. A new boot or
@@ -115,7 +120,7 @@ does **not** itself call or start cleaning. Manual actions return to the menu. A
 hide after the result unless the menu was already open. Success stays for five seconds.
 Errors stay until user action.
 
-No robot stop, pause, docking, status polling, Python runtime on Android, analytics, Home Assistant
+No robot stop, pause, docking, status polling, Python runtime on Android, usage tracking, Home Assistant
 or Google Home dependency. Roborock requires Internet; gate calls use the paired phone's network.
 
 ## Hardware evidence, not promises

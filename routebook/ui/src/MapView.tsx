@@ -27,12 +27,16 @@ export default function MapView({
   latest,
   selectionKey,
   latestState,
+  historical = null,
+  onObservation,
 }: {
   config: RuntimeConfig;
   parts: Record<string, Geometry>;
   latest: Point | null;
   selectionKey: string;
   latestState: ClockState;
+  historical?: Point | null;
+  onObservation?: (longitude: number, latitude: number) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -40,12 +44,27 @@ export default function MapView({
     config.mapTilerKey ? "loading" : "missing",
   );
   const [retry, setRetry] = useState(0);
-  const data = useMemo(
+  const baseData = useMemo(
     () => mapData(parts, latest, latestState),
     [parts, latest, latestState],
   );
+  const data = useMemo(
+    () =>
+      historical
+        ? {
+            ...baseData,
+            features: [
+              ...baseData.features,
+              ...mapData({}, null, "stale", historical).features,
+            ],
+          }
+        : baseData,
+    [baseData, historical],
+  );
   const dataRef = useRef(data);
   dataRef.current = data;
+  const observationRef = useRef(onObservation);
+  observationRef.current = onObservation;
   useEffect(() => {
     if (!config.mapTilerKey) return;
     let cancelled = false;
@@ -70,6 +89,9 @@ export default function MapView({
             },
           });
           map.current = m;
+          m.on("click", (event) =>
+            observationRef.current?.(event.lngLat.lng, event.lngLat.lat),
+          );
           m.addControl(new lib.NavigationControl(), "top-right");
           timeout = setTimeout(() => {
             if (!cancelled) setState("error");
@@ -131,6 +153,18 @@ export default function MapView({
                 ],
                 "circle-stroke-color": "white",
                 "circle-stroke-width": 3,
+              },
+            });
+            m.addLayer({
+              id: "historical-cursor",
+              type: "circle",
+              source: "track",
+              filter: ["==", ["get", "kind"], "historical"],
+              paint: {
+                "circle-radius": 11,
+                "circle-color": "#7156b8",
+                "circle-stroke-color": "white",
+                "circle-stroke-width": 4,
               },
             });
             setState("ready");

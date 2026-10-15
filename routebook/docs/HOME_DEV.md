@@ -4,6 +4,35 @@ Runtime configuration and data stay outside Git. Linux Docker hosts use deploy/c
 Backend listens on loopback 8791 (ingest) and 8794 (private reads), nginx on 8792 (private
 UI/API/SSE), PostgreSQL on 8793. Check host inventory before assigning these ports.
 
+## Updating an existing paired installation to 1.4
+
+Use the reviewed merged release revision. Do not run pairing/provisioning again and do not
+change public ingest, tailnet routes, device identity, credentials or the raw archive.
+
+1. Record current source-manifest and backend/web image IDs. Preserve the old images under
+   rollback tags before building the replacement images. Check available memory: bounded
+   maximum-size analytics requires at least 1.5 GiB available for the application.
+2. Create an owner-only backup directory (0700) outside the runtime/source tree. Save the
+   current source and configuration (files 0600), a custom-format PostgreSQL dump and a
+   private receipt. Verify dump readability with pg_restore and record checksums. Retain
+   archive identity/count evidence and configuration hashes for the post-update comparison.
+3. Transfer reviewed source with sync-source.py, which preserves unrelated destination
+   files. Verify its source-manifest checksums on the host. Run start-runtime.sh with the
+   authorized deployment flag. Bootstrap adds only metadata/place tables; existing raw
+   point schema and ingest protocol remain compatible.
+4. Verify private HTTPS health, existing v1 history/latest and analytics/detail/place reads,
+   browser navigation and map rendering. Compare preserved archive and configuration
+   evidence. Do not create synthetic points or place labels in the production database.
+5. If health or archive/configuration checks fail, restore the previous source and select
+   the preserved backend/web images, then recreate only those services. The additive
+   metadata tables can remain: the old application ignores them. Do not drop tables or
+   restore the entire database over new incoming points as an automatic rollback.
+
+Keep the backup, source/image receipt, APK and live screenshots private. Physical Android
+installation is a separate operation; the existing radio continues to use v1 ingestion.
+
+## Initial installation
+
 1. From routebook/, run `npm ci`, `npm run build`, `npm test` and deployment template tests.
 2. Transfer reviewed source with `python3 deploy/sync-source.py --host YOUR_SSH_ALIAS`.
    Existing destination files are preserved; no runtime configuration or private evidence is sent.

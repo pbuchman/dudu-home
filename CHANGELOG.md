@@ -1,5 +1,18 @@
 # Change history
 
+## 1.4.0-rc1 (code 25) - 2026-10-15
+
+- Add private Home Dev journey analytics from existing v1 GPS records: observed journeys,
+  movement/stopped/unknown time, completeness, speed timeline and map replay.
+- Add daily/weekly/monthly summaries, durable named places, observed visits and directional
+  comparisons. Keep incomplete evidence and observation gaps explicit.
+- Make the Android location card movable and dismissible, with persistent bounded position
+  and visibility plus an explicit restore control. Counting and action priorities continue.
+- Preserve GPS collection, immutable offline uploads, ingest v1 and raw archive data.
+  No cost estimates or additional radio telemetry; installation is a separate operation.
+- Source-only prerelease; see [release notes](docs/RELEASE_1_4_0_RC1.md) and
+  [verification](docs/VERIFICATION.md) for measured acceptance and outstanding hardware checks.
+
 ## 1.3.0-rc3 (code 23) - 2026-10-13
 
 - Recognize departure after three continuous seconds of good GPS movement in any direction,

@@ -21,13 +21,19 @@ import android.widget.EditText;
 /** Dependency-free checks. Refuses to run on a physical radio. */
 public final class SafetyChecks extends Instrumentation {
     private boolean gallery, national;
-    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
+    private String tripOverlay;
+    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); tripOverlay=arguments.getString("tripOverlay"); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
 
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
             require(Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish"),
                     "Emulator only: refusing to touch physical device settings");
+            if (tripOverlay != null) {
+                TripOverlayChecks.run(this,tripOverlay);
+                result.putString("result", "PASS: focused trip overlay " + tripOverlay + "; synthetic state only, no GPS or external actions");
+                finish(Activity.RESULT_OK, result); return;
+            }
             if (national) {
                 result.putString("result", "PASS: " + com.pbuchman.duduhome.trip.NationalMapChecks.run(this));
                 finish(Activity.RESULT_OK, result); return;

@@ -81,6 +81,7 @@ class Templates(unittest.TestCase):
         nginx=(base/'templates/nginx.conf').read_text()
         self.assertIn('listen 127.0.0.1:8792;',nginx)
         self.assertIn('proxy_buffering off;',nginx)
+        self.assertIn('proxy_set_header Host $http_host;',nginx)
         self.assertIn('location = /v1/ingest { return 404; }',nginx)
         self.assertIn('access_log off;',nginx)
         self.assertNotIn('8791',nginx)
