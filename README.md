@@ -13,10 +13,10 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.4.0-rc1` (code 25).**
-> Adds a private Home Dev journey diary, time/speed analysis, replay, named places and
-> directional comparisons. Android gains a movable, dismissible location card.
-> [Release notes](docs/RELEASE_1_4_0_RC1.md).
+> **Combined test candidate `1.4.0-rc2` (code 26).**
+> Home Dev adds time in the car from archived GPS, including stationary observations.
+> Android adds manual session duration and Start/Pause/Reset controls.
+> [Release notes](docs/RELEASE_1_4_0_RC2.md).
 > Android, backend, private map UI and deployment tooling now share one source revision.
 > Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
@@ -65,8 +65,9 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   the routine's rooms and settings remain managed in the Roborock phone app.
 - **Mopowanie (Full Mop):** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
   Missing Mop configuration never starts Full Cleaning instead.
-- **Gdzie jestem:** explicitly start, pause, resume or end a trip. Show locality, street and
-  session kilometres. Count qualified GPS movement in the background; show a silent card with up to three readable street lines
+- **Gdzie jestem:** Start/Pause continues or pauses the current session; Reset clears its
+  time and kilometres while preserving active/paused state. Show locality, street, distance
+  and session time including observed stops. Count in the background; show a silent card with up to three readable street lines
   and an expanded full-address notification that open the full screen when tapped. Move the card
   with its **Przesuń** handle or hide it with **×**; position and visibility survive restarts.
   **Pokaż panel w tle** on the trip screen restores it without changing the trip. Local OSM data works offline;
@@ -76,6 +77,9 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   unacknowledged points in SQLite and send the newest fix before historical backlog. The
   private web map shows live/day/range history plus a journey diary, movement/stop/unknown
   time, a synchronized speed chart and replay, named places/visits and directional comparisons.
+  Day/range/table and period summaries also show time in the car from continuous GPS
+  records, including long stationary parking. This is separate from journey elapsed time
+  and the manual radio session; absence of observations remains explicit.
   All detailed analysis runs on Home Dev using existing records; the radio collector and
   ingestion format are unchanged. No fuel/cost estimates or additional GPS telemetry.
   Upload needs separate private provisioning; [architecture and pairing](docs/ROUTEBOOK.md).

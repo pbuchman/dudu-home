@@ -1,6 +1,19 @@
 # Development handoff
 
-## Current candidate: 1.4.0-rc1 / code 25
+## Current candidate: 1.4.0-rc2 / code 26
+
+RC2 adds GPS-observed time to Home Dev day/range/table and analytics period summaries,
+including long stationary parking. The separate Android session gains elapsed observed
+time and Start/Pause/Reset, with atomic totals/state and conservative legacy migration.
+Collector/ingest/offline queue and all action rules remain unchanged. See
+RELEASE_1_4_0_RC2.md, WHERE_AM_I.md and routebook/contract/ANALYTICS.md.
+
+The release and Home Dev rollout proceed independently of physical radio installation.
+Use the exact merged revision for the private APK, preserve current archive/configuration
+and retain backup/source/image/signature/hash receipts privately. Recheck free version
+metadata before publication. Verification results are recorded in VERIFICATION.md.
+
+## Previous candidate: 1.4.0-rc1 / code 25
 
 The independent 1.4 integration includes Home Dev Routebook analytics and the movable
 location panel. It preserves the v1 radio collector, upload contract and offline queue.

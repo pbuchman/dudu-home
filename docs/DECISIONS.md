@@ -1,5 +1,23 @@
 # Design decisions
 
+## Recorded time and manual session controls - October 15 RC2
+
+- Home Dev sums the union of observed GPS time intervals independently of journey
+  segmentation. Stationary time, including long parking, counts. Per-segment timestamp
+  pairs up to thirty seconds apart establish continuity; larger gaps and segment
+  boundaries are excluded. No extrapolated leading/trailing time or geometry filtering.
+- Clip unioned intervals to Europe/Warsaw calendar boundaries before period aggregation.
+  Keep immutable raw points and ingest v1 unchanged; late uploads update the result.
+  Add observation counts to analytics periods so no data remains distinct from zero time.
+- The radio keeps a separate manual session. Start/Pauza continues or pauses both totals;
+  Reset confirms a nonzero clear and preserves active/paused state. Remove Resume/End.
+  Preserve old distance and mark unavailable historical duration until the first Reset.
+- Local duration uses fresh observations and monotonic awake time, independently of
+  distance quality filters. Reset, pause, gaps, restart and verified wake break anchors.
+  Persist time/state/distance atomically and reject queued work from older generations.
+- Publish and deploy Home Dev independently of physical radio installation. A GPS-derived
+  interval is evidence of observations, not a direct measurement of ignition or occupancy.
+
 ## Home Dev journey analytics - October 15
 
 - Detailed statistics and their UI belong to the private Routebook backend/web application.

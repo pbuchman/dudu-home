@@ -1,5 +1,18 @@
 # Change history
 
+## 1.4.0-rc2 (code 26) - 2026-10-15
+
+- Show GPS-observed time in the car on Home Dev day/range, daily-table and period summaries,
+  including stationary waits and long parking independently of journey segmentation.
+- Derive time from the union of timestamp intervals, preserve gaps and Warsaw day/DST
+  boundaries, and update results after backfill. Keep absent data distinct from zero.
+- Add manual session duration to Gdzie jestem and simplify controls to Start/Pause/Reset.
+  Preserve existing distance on upgrade, confirm nonzero resets and retain both totals
+  atomically without adding sleep or restart downtime.
+- Preserve the collector, ingest protocol, offline queue, location card and action priorities.
+  Source-only release; private APK and physical-radio acceptance remain separate.
+- See [release notes](docs/RELEASE_1_4_0_RC2.md) and [verification](docs/VERIFICATION.md).
+
 ## 1.4.0-rc1 (code 25) - 2026-10-15
 
 - Add private Home Dev journey analytics from existing v1 GPS records: observed journeys,

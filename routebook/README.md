@@ -24,7 +24,12 @@ fail explicitly. Calculation runs in one bounded worker with a 20-second timeout
 requests return 429 and Retry-After. The UI retries reads a bounded number of times, never
 metadata writes. Worst-case input requires at least 1.5 GiB of available RAM. Ingest and
 SSE continue independently of the calculation. Completeness remains conservative at
-recording/context boundaries. Summary time excludes long boundary parking, shown in visits.
+recording/context boundaries. Journey summary time excludes long boundary parking, shown
+in visits. RC2 adds independent GPS-observed time to day/range/table and analytics period
+summaries, including that parking. The union of same-segment timestamp intervals up to
+30 seconds is clipped to Warsaw calendar days; no time is inferred across larger gaps.
+Analytics observation counts distinguish no data from zero confirmed duration. Existing
+raw points and late uploads supply the metric without an updated radio or provisioning.
 
 Metadata writes require the same private origin and a custom request header. The nginx
 template preserves the original Host including port for this check. Never expose these

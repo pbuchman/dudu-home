@@ -447,6 +447,11 @@ Routebook receives copied fixes after automation and manual trip processing, inc
 returns, without another GPS subscription or action lease. Its durable queue and HTTPS worker
 are independent of SYU IPC; see ROUTEBOOK.md. No calling safety rule changes.
 
-Version 1.4 adds detailed analysis only in the private backend/web application. The Android
+Version 1.4.0-rc1 adds detailed analysis only in the private backend/web application. The Android
 collector, ingestion protocol and persisted pending events are unchanged. Its only Android
 behavior change is the passive location card's drag/hide/restore presentation and UI preferences.
+
+Version 1.4.0-rc2 adds a separate GPS-observed time metric on Home Dev and manual session
+duration with Start/Pause/Reset on Android. Collector, ingestion and offline queue remain
+unchanged. The local timer cannot reserve/rearm actions or infer an ignition event from a
+GPS gap. See WHERE_AM_I.md and RELEASE_1_4_0_RC2.md for continuity and persistence boundaries.
