@@ -1,18 +1,7 @@
-import { Temporal } from '@js-temporal/polyfill';
-import { defaults, HttpError, type Derivation, type Snapshot, type StoredPoint } from './types.js';
-export const timezone='Europe/Warsaw';
-export function date(x: unknown): string {
-  try {if(typeof x!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(x)||Temporal.PlainDate.from(x).toString()!==x)throw Error();return x;}
-  catch {throw new HttpError(422,'invalid_date');}
-}
-export const nextDate=(d:string,days=1)=>Temporal.PlainDate.from(d).add({days}).toString();
-export const localDate=(t:string)=>Temporal.Instant.from(t).toZonedDateTimeISO(timezone).toPlainDate().toString();
-export function dayBounds(d:string) {
-  const start=Temporal.PlainDate.from(date(d)).toZonedDateTime(timezone).epochMilliseconds;
-  const end=Temporal.PlainDate.from(nextDate(d)).toZonedDateTime(timezone).epochMilliseconds;
-  return {start,end,start_at:new Date(start).toISOString(),end_at:new Date(end).toISOString(),seconds:(end-start)/1000};
-}
-export function dates(from:string,to:string) {date(from);date(to);if(from>to)throw new HttpError(422,'invalid_range');const result=[];for(let d=from;d<=to;d=nextDate(d)){result.push(d);if(result.length>366)throw new HttpError(422,'invalid_range');}return result;}
+import { recordedDays, recordedTimeDerivation } from './recorded-time.js';
+import { dates, dayBounds, localDate, nextDate, timezone } from './calendar.js';
+export { date, dates, dayBounds, localDate, nextDate, timezone } from './calendar.js';
+import { defaults, type Derivation, type Snapshot, type StoredPoint } from './types.js';
 export function haversine(a: Pick<StoredPoint,'lat'|'lon'>,b: Pick<StoredPoint,'lat'|'lon'>,r=defaults.earth_radius_m) {
   const rad=Math.PI/180,dl=(b.lat-a.lat)*rad,dn=(b.lon-a.lon)*rad;
   const h=Math.sin(dl/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dn/2)**2;
@@ -58,19 +47,20 @@ export function day(s:Snapshot,d:string,cfg:Derivation=defaults,derived=derive(s
     const i=run.indexOf(pts[0]);segments.push({run_id:run[0].event_id,source_segment_id:run[0].segment_id,points:pts,edge_from:i>0?run[i-1]:null});
   }
   const stops=derived.stops.flatMap(stop=>{const overlap=(Math.min(b.end,Date.parse(stop.end_at))-Math.max(b.start,Date.parse(stop.start_at)))/1000;return overlap>0?[{...stop,overlap_seconds:overlap}]:[];});
-  return {version:1,device_id:s.device_id,revision:s.revision,date:d,timezone,derivation:cfg,meters,point_count,segments,stops};
+  return {version:1,device_id:s.device_id,revision:s.revision,date:d,timezone,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,recorded_seconds:recordedDays(s,d,d)[d],meters,point_count,segments,stops};
 }
 export function range(s:Snapshot,from:string,to:string,cfg:Derivation=defaults) {
-  const requested=dates(from,to),derived=derive(s.points,cfg);
-  const summaries=new Map(requested.map(date=>[date,{date,meters:0,point_count:0,stop_count:0}]));
-  const start=dayBounds(from).start_at,end=dayBounds(to).end_at;
+  const requested=dates(from,to),derived=derive(s.points,cfg),recorded=recordedDays(s,from,to);
+  const summaries=new Map(requested.map(date=>[date,{date,meters:0,point_count:0,stop_count:0,recorded_seconds:recorded[date]}]));
+  const windows=requested.map(date=>({date,...dayBounds(date)}));
+  const start=windows[0].start_at,end=windows.at(-1)!.end_at;let windowIndex=0;
   // Single pass over points, rather than scanning an entire selected range for each day.
-  for(const run of derived.runs)for(const p of run){if(p.measured_at<start||p.measured_at>=end)continue;const d=summaries.get(localDate(p.measured_at))!;d.point_count++;d.meters+=derived.edges.get(p.event_id)??0;}
+  for(const run of derived.runs)for(const p of run){if(p.measured_at<start||p.measured_at>=end)continue;while(windows[windowIndex].end_at<=p.measured_at)windowIndex++;const d=summaries.get(windows[windowIndex].date)!;d.point_count++;d.meters+=derived.edges.get(p.event_id)??0;}
   for(const stop of derived.stops){const first=localDate(stop.start_at)>from?localDate(stop.start_at):from,last=localDate(stop.end_at)<to?localDate(stop.end_at):to;
     for(let d=first;d<=last;d=nextDate(d)){const b=dayBounds(d);if(Math.min(b.end,Date.parse(stop.end_at))>Math.max(b.start,Date.parse(stop.start_at)))summaries.get(d)!.stop_count++;}
   }
-  const days=[...summaries.values()],totals=new Map<string,number>();for(const d of days){const month=d.date.slice(0,7);totals.set(month,(totals.get(month)??0)+d.meters);}
-  return {version:1,device_id:s.device_id,revision:s.revision,timezone,from,to,derivation:cfg,days,months:[...totals].map(([month,meters])=>({month,meters})),meters:days.reduce((n,d)=>n+d.meters,0)};
+  const days=[...summaries.values()],totals=new Map<string,{meters:number;recorded_seconds:number}>();for(const d of days){const month=d.date.slice(0,7),total=totals.get(month)??{meters:0,recorded_seconds:0};total.meters+=d.meters;total.recorded_seconds+=d.recorded_seconds;totals.set(month,total);}
+  return {version:1,device_id:s.device_id,revision:s.revision,timezone,from,to,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,recorded_seconds:days.reduce((n,d)=>n+d.recorded_seconds,0),days,months:[...totals].map(([month,total])=>({month,...total})),meters:days.reduce((n,d)=>n+d.meters,0)};
 }
 /** Conservative invalidation: every observed local day plus neighbours, including long stops whose anchor changes. */
 export function affectedDates(points:StoredPoint[]) {return [...new Set(points.flatMap(p=>{const d=localDate(p.measured_at);return [nextDate(d,-1),d,nextDate(d)];}))].sort();}

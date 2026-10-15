@@ -37,7 +37,7 @@ export async function checkCase(store:Store,c:any,id=fixtureDevice) {
   }
   const s=await store.snapshot(id),q=c.expected_queries;
   if(q?.day)checkDay(s,q.day);for(const d of q?.days??[])checkDay(s,d);
-  if(q?.range){const r=range(s,q.range.from,q.range.to);meters(r.meters,q.range.meters);assert.deepEqual(r.months,q.range.months);}
+  if(q?.range){const r=range(s,q.range.from,q.range.to);meters(r.meters,q.range.meters);assert.deepEqual(r.months.map(({month,meters})=>({month,meters})),q.range.months);}
   if(q?.stored_received_at)for(const [event,time] of Object.entries(q.stored_received_at))assert.equal(s.points.find(p=>p.event_id===event)?.received_at,time);
   for(const b of c.expected_day_bounds??[]){const a=dayBounds(b.date);assert.deepEqual({date:b.date,start_at:a.start_at,end_at:a.end_at,seconds:a.seconds},b);}
   for(const l of c.expected_latest_at??[]){const a=latest(s,l.server_time);assert.equal(a.fresh,l.fresh);assert.equal(a.clock_state,l.clock_state);}

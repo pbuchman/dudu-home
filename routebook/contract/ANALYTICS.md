@@ -24,7 +24,8 @@ Exceeding a safe limit returns 422
 analytics_limit; it never silently truncates the dataset. Context boundaries do not certify
 journey completeness. A journey overlapping the selected range appears once, with full metrics
 including context. Totals/daily/weekly/monthly summaries clip time to the requested date range;
-period time summarizes journey intervals only, excluding >=600-second boundary parking.
+existing elapsed/moving/stopped/unknown time summarizes journey intervals only, excluding
+>=600-second boundary parking. Recorded time below includes observed parking independently.
 Visits expose that observed parking duration separately; never add it to journey time.
 distance retains canonical v1 attribution to the ending point's local date. Zero days are
 included; ISO weeks begin Monday and months/weeks may represent partial selected periods.
@@ -69,3 +70,28 @@ The calculation worker has a 1024 MiB old-generation heap limit; the main proces
 retains the bounded database snapshot and the structured clone. Budget at least 1.5 GiB of
 available RAM for a maximum-size request rather than treating the worker limit as total RSS.
 The detail point cap also bounds browser payloads. These are safety ceilings, not pagination.
+
+## Recorded time and raw observation coverage
+
+AnalyticsResponse additionally includes
+`recorded_time_derivation:{algorithm_version:"routebook-recorded-time-1",gap_seconds:30}`.
+`totals` and every `days[]`, `weeks[]` and `months[]` row include `recorded_seconds:number`
+and `point_count:number`. Counts include every archived record whose measurement lies inside
+the selected half-open Warsaw bounds, including stationary/isolated samples and distinct raw
+records sharing a timestamp. Context records do not count. Weeks/months/totals sum daily
+counts; counts are independent of journey selection and indicate empty observation days.
+
+Recorded time follows CONTRACT.md's per-source-segment timestamp intervals and interval
+union, using the same full repeatable-read source snapshot as other analytics. All archived
+observations are eligible, including stationary parking>=600s, null speeds and geometries
+excluded from distance/speed analysis. Existing `elapsed_seconds`, moving/stopped/unknown
+seconds, journeys, visits and averages retain their journey-only meaning. Do not add the
+new recorded time to journey elapsed or to visits. No per-journey recorded time is exposed.
+The bounded 24-hour analytics context includes the required 30-second boundary context;
+recorded time clips to selected dates and never includes outer context in totals.
+
+Numeric zero means no qualifying interval, while absent/null means unavailable for old
+backend compatibility. A failed calculation retains the existing error response. Existing
+analytics limits, worker concurrency/timeouts and revision-pair rules remain in force.
+The normative TypeScript response uses required numeric fields for the new backend; clients
+supporting older backends must also tolerate missing/null recorded metrics and point counts.

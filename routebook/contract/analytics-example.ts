@@ -6,6 +6,7 @@ export const analyticsExample = {
   "source_revision": 3,
   "metadata_revision": 2,
   "algorithm_version": "routebook-analytics-1",
+  "recorded_time_derivation": {"algorithm_version":"routebook-recorded-time-1","gap_seconds":30},
   "timezone": "Europe/Warsaw",
   "from": "2026-10-05",
   "to": "2026-10-05",
@@ -16,6 +17,8 @@ export const analyticsExample = {
     "max_points": 650000
   },
   "totals": {
+    "recorded_seconds": 1305,
+    "point_count": 262,
     "meters": 1050.7920567910803,
     "moving_meters": 1050.7920567910803,
     "moving_seconds": 105,
@@ -72,6 +75,8 @@ export const analyticsExample = {
   ],
   "days": [
     {
+      "recorded_seconds": 1305,
+      "point_count": 262,
       "meters": 1050.7920567910803,
       "moving_meters": 1050.7920567910803,
       "moving_seconds": 105,
@@ -89,6 +94,8 @@ export const analyticsExample = {
   ],
   "weeks": [
     {
+      "recorded_seconds": 1305,
+      "point_count": 262,
       "meters": 1050.7920567910803,
       "moving_meters": 1050.7920567910803,
       "moving_seconds": 105,
@@ -106,6 +113,8 @@ export const analyticsExample = {
   ],
   "months": [
     {
+      "recorded_seconds": 1305,
+      "point_count": 262,
       "meters": 1050.7920567910803,
       "moving_meters": 1050.7920567910803,
       "moving_seconds": 105,
