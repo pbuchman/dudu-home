@@ -164,7 +164,10 @@ test('acceptance: real PostGIS + API + nginx metadata isolation and immutable in
     await new Promise(r => reserve.listen(0, '127.0.0.1', r)); const port = reserve.address().port; await new Promise(r => reserve.close(r));
     const web = `http://127.0.0.1:${port}`;
     const template = await readFile(resolve(root, 'deploy/templates/nginx.conf'), 'utf8');
+    // Node uses a socket for piped child stderr on Linux. nginx must inherit that fd
+    // directly: reopening /dev/stderr can fail with ENXIO. Production stays unchanged.
     const config = template.replace('pid /tmp/nginx.pid;', `pid ${dir}/nginx.pid;`).replace('include /etc/nginx/mime.types;', 'types { text/html html; text/css css; application/javascript js; application/json json; }')
+      .replace('error_log /dev/stderr warn;', 'error_log stderr warn;')
       .replaceAll('/tmp/client', `${dir}/client`).replaceAll('/tmp/proxy', `${dir}/proxy`).replaceAll('/tmp/fastcgi', `${dir}/fastcgi`).replaceAll('/tmp/uwsgi', `${dir}/uwsgi`).replaceAll('/tmp/scgi', `${dir}/scgi`)
       .replace('listen 127.0.0.1:8792;', `listen 127.0.0.1:${port};`).replaceAll('http://127.0.0.1:8794', priv)
       .replace('/usr/share/nginx/html', resolve(process.env.ROUTEBOOK_ACCEPTANCE_UI_SOURCE ?? root, 'ui/dist')).replace('/run/routebook/routebook-config.json', `${dir}/runtime.json`);
