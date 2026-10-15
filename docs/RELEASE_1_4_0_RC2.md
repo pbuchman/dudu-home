@@ -29,7 +29,8 @@ requires confirmation. The separate Resume and End controls are removed.
 Session state and totals persist together. Sleep, process restart and observation gaps
 cannot add the intervening downtime. Reset invalidates older queued work. Existing
 distance is retained on upgrade; a session without historical duration displays
-**Czas od aktualizacji** until Reset. Sudden power loss may lose the last checkpoint.
+**Czas od aktualizacji** until Reset. Sudden power loss may lose measurements since the
+last completed checkpoint.
 
 Manual session controls never alter the independent Routebook archive. Fresh position
 observations rejected for distance can still confirm local session time, so manual

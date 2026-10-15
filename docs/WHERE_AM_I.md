@@ -94,8 +94,9 @@ segments. Queued fixes carry an input epoch; stale work and asynchronous place r
 restore pre-reset time, distance or address. Never join positions across missing data.
 `trip-state.json` in no-backup storage atomically contains state, generation, total meters,
 `time_ms` and `partial_time`, not a track. The store syncs the file and verifies the committed
-contents before acknowledging transitions. Checkpoints retain the existing five-second period;
-sudden power loss can lose at most the latest checkpoint interval under normal healthy storage.
+contents before acknowledging transitions. The periodic worker attempts a checkpoint after
+at least five seconds since the previous save. Scheduling and storage latency can extend
+that interval; sudden power loss can lose measurements since the last completed save.
 A failed transition retains the prior totals/activity and reports an error; counting is disabled.
 
 Legacy ACTIVE stays active; legacy PAUSED, FINISHED and OFF become paused with their metres
