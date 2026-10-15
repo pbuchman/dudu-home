@@ -106,7 +106,7 @@ def inspect(name, data, current_style=False):
     short_data += b"\0" + decoded_unicode(short_data)
     # Standard browser dependency names can overlap a short private label.
     # Remove only those exact technical tokens; standalone labels still fail.
-    if path.suffix.lower() in {'.json', '.tsx'}:
+    if path.suffix.lower() in {'.json', '.ts', '.tsx'}:
         browser_token = b'd' + b'om'
         short_data = re.sub(rb'(?:react|happy)-' + browser_token, b'browser-module', short_data, flags=re.I)
         short_data = re.sub(b'"' + browser_token.upper() + rb'(?:\.Iterable)?"', b'"browser-library"', short_data)
