@@ -9,6 +9,8 @@ with tempfile.TemporaryDirectory(prefix='routebook-build-') as tmp:
     target=Path(tmp)
     for name in ['package.json','package-lock.json','tsconfig.json']:
         shutil.copy2(root/name,target/name)
+    (target/'contract').mkdir()
+    shutil.copy2(root/'contract/analytics.d.ts',target/'contract/analytics.d.ts')
     for area in ['backend','ui']:
         (target/area).mkdir()
         for name in ['package.json','tsconfig.json','index.html','vite.config.ts']:

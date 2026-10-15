@@ -1,6 +1,15 @@
 # Dudu Home - wygląd i materiały
 
-## Current four-tile layout and trip presentation
+## 1.4 location card and Home Dev analytics
+
+The card initially uses the top-right position, then follows the user's saved relative
+placement within safe screen bounds. A separate drag handle and close control remain
+visible above a scrollable address in short windows. The trip screen restores a hidden
+card; visibility does not control recording. The four-tile menu remains unchanged.
+Detailed charts, journey replay, places and comparisons belong to the Routebook web UI.
+Their desktop/mobile acceptance uses synthetic data and keeps captures outside Git.
+
+## Historical four-tile layout and trip presentation
 
 The 1.2 candidate adds a fourth tile using the existing pin illustration and mint tile styling.
 All four actions share equal width in the landscape row; narrow screens retain the existing

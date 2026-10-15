@@ -10,8 +10,18 @@ remains independent.
 Start creates a new trip at zero. Pause preserves the total and stops counting; Resume begins
 a new GPS segment. End retains the last total; the next Start resets it. Backgrounding the
 app does not pause. The full screen shows locality, street and kilometres (one decimal).
-The top-right card shows locality at 24 sp above the primary street at 32 sp. Street names
-wrap naturally on word boundaries, using up to three lines and the required card height;
+The card starts at the top right and shows locality at 24 sp above the primary street at 32 sp.
+Its **Przesuń** handle moves the card; releasing a drag never opens the trip. The independent
+**×** button hides only the card. **Pokaż panel w tle** / **Ukryj panel w tle** on the passive
+trip screen changes that preference, including before a trip starts. Hiding stays in effect
+until explicitly restored there, across service/process restarts and later trips. Counting,
+shared GPS monitoring, Routebook collection and the ongoing notification continue unchanged.
+The private UI preferences contain visibility and a normalized position, with no location data.
+Close/toggle and drag release synchronously commit that small file before completing the UI
+change; individual movement events never write. A failed save keeps/restores the prior choice
+and shows an error instead of claiming the new choice will survive restart.
+
+Street names wrap naturally on word boundaries, using up to three lines and the required card height;
 text does not shrink or scroll automatically. If the measured layout overflows, an ellipsis
 and visible **Pełna nazwa** button open the passive full screen. Tapping the card does the
 same. The accessibility label retains the entire address. The full screen keeps unlimited
@@ -43,7 +53,10 @@ the screen. A notification tap routes through MainActivity and waits for a safe 
 before opening the trip. Merely changing a name never launches an Activity.
 
 The overlay is at most 390 dp wide, bounded by the available window width minus 32 dp,
-top/end with 16 dp margins. Its height wraps its content. It is non-focusable,
+with 16 dp margins inside current system bars/cutout bounds. Its height wraps its content up
+to the available safe height; a short viewport scrolls the address while move/hide controls
+stay at the top. The saved relative position adapts to width, height, inset and name changes,
+keeping the whole card reachable, and survives temporary automation suppression. It is non-focusable,
 receives touches within its own window, and has no full-screen transparent input surface.
 The automation banner receives cancellation touches within its own bounded window. System apps may suppress overlays;
 this feature does not bypass such restrictions.
@@ -138,6 +151,14 @@ required by this version. Public Nominatim is deliberately excluded because of i
 [vehicle-tracking and periodic-request restrictions](https://operations.osmfoundation.org/policies/nominatim/).
 
 ## Verification and diagnosis
+
+Focused emulator-only overlay checks use the existing SafetyChecks runner with
+`-e tripOverlay seed`, then a force-stop and `-e tripOverlay restore`; `-e tripOverlay visible`
+checks the restored choice after another force-stop. Keep GPS permission disabled. The checks
+seed an invented nonzero trip total, exercise drag/no-open, hide/restore and automation
+suppression, verify process identity changes and safe card/control bounds, and write synthetic
+`trip-overlay-moved-<phase>.png` captures to app external files. Resize the emulator between
+phases to verify saved-position adaptation. These modes never dispatch actions or supply GPS.
 
 Run `bash scripts/check-trip.sh`, `python3 scripts/test-radio-update.py`, the normal build/lint
 and emulator suite. Installing osmium also enables the synthetic parser test. Instrumentation

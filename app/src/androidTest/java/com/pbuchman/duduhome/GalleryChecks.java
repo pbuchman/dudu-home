@@ -146,7 +146,9 @@ final class GalleryChecks {
             View city=overlay.findViewById(R.id.trip_locality);
             int minimum=Math.round(76*c.getResources().getDisplayMetrics().density);
             ProgressChecks.check(button.getVisibility()==View.VISIBLE && button.getHeight()>=minimum,"overflow action has full touch height in attached window");
-            ProgressChecks.check(city.getTop()>=overlay.getPaddingTop(),"locality remains inside attached card");
+            android.graphics.Rect cityBounds=new android.graphics.Rect(0,0,city.getWidth(),city.getHeight());
+            ((android.view.ViewGroup)overlay).offsetDescendantRectToMyCoords(city,cityBounds);
+            ProgressChecks.check(cityBounds.top>=overlay.getPaddingTop(),"locality remains inside attached card");
             ProgressChecks.check(button.getBottom()+overlay.getPaddingBottom()<=overlay.getHeight(),"entire overflow button fits attached card");
             android.graphics.Rect visible=new android.graphics.Rect();
             ProgressChecks.check(button.getGlobalVisibleRect(visible)&&visible.height()==button.getHeight(),"overflow action entirely visible on screen");

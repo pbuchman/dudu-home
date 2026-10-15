@@ -17,13 +17,21 @@ public final class TripActivity extends Activity {
     public static boolean visible;
     private TripController controller;
     private TextView locality, street, distance, status;
-    private Button primary, end;
+    private Button primary, end, overlayToggle;
+    private TripOverlayPreferences overlayPreferences;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable tick = new Runnable() { public void run() { render(controller.snapshot()); handler.postDelayed(this, 500); } };
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_trip);
         controller=TripController.get(this);
+        overlayPreferences=new TripOverlayPreferences(this);
+        overlayToggle=findViewById(R.id.trip_overlay_toggle);
+        overlayToggle.setOnClickListener(v -> {
+            if(!overlayPreferences.setVisible(!overlayPreferences.visible()))
+                Toast.makeText(this,R.string.trip_overlay_save_error,Toast.LENGTH_LONG).show();
+            render(controller.snapshot());
+        });
         locality=findViewById(R.id.trip_locality); street=findViewById(R.id.trip_street);
         distance=findViewById(R.id.trip_distance); status=findViewById(R.id.trip_status);
         primary=findViewById(R.id.trip_primary); end=findViewById(R.id.trip_end);
@@ -39,6 +47,7 @@ public final class TripActivity extends Activity {
     }
     /** Shared renderer; instrumentation supplies synthetic snapshots without starting executors. */
     public void render(TripController.Snapshot state) {
+        overlayToggle.setText(overlayPreferences.visible() ? R.string.trip_overlay_hide : R.string.trip_overlay_show);
         locality.setText(state.title()); street.setText(state.subtitle());
         distance.setText(String.format(Locale.forLanguageTag("pl"), "%.1f km", state.meters()/1000));
         primary.setText(state.active() ? "Pauza" : state.state().equals("PAUSED") ? "Wznów" : "Rozpocznij");

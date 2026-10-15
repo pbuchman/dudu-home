@@ -1,6 +1,35 @@
-# Handoff - local Full Cleaning implementation
+# Development handoff
 
-## Current candidate: 1.3.0-rc3 / code 23
+## Current candidate: 1.4.0-rc1 / code 25
+
+The independent 1.4 integration includes Home Dev Routebook analytics and the movable
+location panel. It preserves the v1 radio collector, upload contract and offline queue.
+The separate code-24 street-stability candidate is not included or overwritten. Release
+and Home Dev deployment do not depend on the separate physical-radio update thread.
+See RELEASE_1_4_0_RC1.md, VERIFICATION.md and the private deployment runbook under
+routebook/docs/HOME_DEV.md. Build the private APK from the exact merged source revision;
+retain its source/version/signature/hash receipt outside Git. No APK installation is part
+of this delivery. Existing private provisioning and archive remain authoritative.
+
+The local panel and previous release records below are historical context.
+
+## Historical local trip-panel change, October 15
+
+The isolated working tree based on `a872ecb` adds a **Przesuń** handle, **×** dismissal and
+**Pokaż panel w tle** restoration on the passive trip screen. Position and visibility are
+private UI preferences committed on completed interactions; hiding never pauses the trip,
+shared GPS monitor or Routebook. Safe display bounds and a scrollable address preserve
+reachable controls with long names and short windows. See WHERE_AM_I.md and VERIFICATION.md.
+
+This patch keeps the base version metadata and is not a release/deployment. The October 14
+street-stability work is a separate uncommitted candidate, not included or overwritten here.
+This panel patch was subsequently integrated into 1.4 without the street-stability candidate.
+At the time of this local patch, statistics were proposals; 1.4 implements them on Home Dev
+from the unchanged raw archive.
+Build/lint and focused emulator restart/geometry checks passed; physical DUDU acceptance is
+pending. Existing operational and private-configuration requirements still apply.
+
+## Historical candidate: 1.3.0-rc3 / code 23
 
 RC3 adds the three-second departure event in any direction, including reversing, from fresh
 qualified parking evidence; an initial five-second stop is unnecessary. Its independent
@@ -38,7 +67,7 @@ The owner authorized source-only PR, green Actions, merge and prerelease. Keep a
 configuration, APKs, maps, keys, raw diagnostics and artifact receipts outside Git/releases.
 Existing gallery is historical, not a new capture. See RELEASE_1_3_0_RC3.md.
 
-## Current integration baseline
+## Historical RC3 integration baseline
 
 Build the local code-23 APK from the exact merged main revision after the RC3 PR merges;
 record source/version/signature/hash in the private manifest. RC2/code 22 is the preceding

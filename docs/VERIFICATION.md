@@ -1,5 +1,67 @@
 # Verification ledger
 
+## Integrated 1.4.0-rc1 / code 25, 2026-10-15
+
+- Home Dev owns detailed analytics; Android production changes are confined to location
+  card UI/preferences/resources and version metadata. GPS collection, v1 payloads,
+  durable queue, gate/robot/media execution and canonical map derivation are unchanged.
+- Versioned Android debug/instrumentation builds and lint passed. Full SafetyChecks and
+  first-launch/no-dial passed on a dedicated Android emulator. Focused panel tests passed
+  through force-stop/restart, hidden/visible restoration, automation suppression, bounds
+  and four viewports; synthetic captures were visually inspected. No physical radio was used.
+- Routebook build and all nine shared contract fixtures passed. All 56 backend cases were
+  exercised, including the separately enabled nginx proxy case, on real disposable PostGIS.
+  Coverage includes upgrade from v1-only schema, metadata durability/conflicts, immutable
+  raw points, backfill revisions, worker limits/responsiveness/shutdown and process/DB restart.
+- All 20 UI unit and 20 browser tests passed. Independent acceptance passed 10/10 without
+  skips against compiled API, real PostGIS and nginx, with desktop/mobile Chromium. It
+  covers stop/gap boundaries, quality-qualified speed, DST/midnight, comparison direction,
+  metadata CRUD, stale-detail rejection, SSE refresh and shared chart/map/replay cursor.
+  Concurrent analytics reads exercise the explicit busy response and bounded GET retries.
+- The existing Android-to-HTTPS-to-PostGIS-to-browser acceptance passed all 32 checks:
+  commit-visible ACKs, lost ACK/restart, immutable retry IDs, bounded backfill, partial and
+  invalid ACK recovery, public/private isolation and real SSE refresh. The app APK hash
+  remained unchanged. Map styles in automated tests are synthetic; provider acceptance
+  and actual radio delivery are separate from those results.
+- Pure Routebook checks passed 84 assertions. Trip, detector/progress, radio-update (8),
+  private-tools (8), navigation (6), public-tree (1), fresh-installer (5), diagnostics (4),
+  deployment templates (5) and deployment-plan (12) checks passed. Two optional local OSM
+  parser cases were skipped without pyosmium; CI installs its pinned dependency.
+- Public-tree/private-denylist and final PR/main/tag gates are required before publication.
+  Exact CI links, merged revision and post-backup Home Dev deployment outcome belong on
+  the release page and private artifact receipt, avoiding claims based on a pre-merge build.
+- The signed APK remains private. Radio installation, real touch, GNSS, driving and vendor
+  sleep/wake acceptance remain with the separate radio-update thread. This release does
+  not incorporate the separate uncommitted code-24 street-stability candidate.
+
+## Historical local movable trip panel, 2026-10-15
+
+- Isolated change based on `a872ecb`; the separate uncommitted street-stability candidate
+  was preserved. This is not a new release or a radio installation.
+- `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` passed. Production edits are
+  confined to trip presentation/preferences/resources; GPS, Routebook and action execution
+  are unchanged. Analytics extensions were assessed as proposals, not implemented.
+- The complete emulator SafetyChecks and first-launch/no-dial script passed again on the
+  final APK at 2000 x 1200. The script was pinned to the dedicated emulator and its display
+  rotation; existing emulators and physical devices were not selected for these checks.
+- Focused emulator checks passed: initial top-right placement, interior left/down dragging,
+  edge clamping, no Activity launch after dragging, dismissal, explicit restoration,
+  automation suppression, long-name reflow and unchanged active state/generation/nonzero total.
+- Seed, immediate force-stop, restore, immediate force-stop and visible phases passed with
+  distinct process IDs. Saved position and visibility survived. Synthetic captures were
+  visually inspected at 2000 x 1200, 480 x 1024, 720 x 1280 and 1024 x 480, density 240.
+  The short landscape viewport scrolls the address while both header controls remain visible.
+- The tests exposed and verified fixes for header baseline clipping, inherited close-button
+  padding and asynchronous preference loss at process exit. Final interaction writes commit
+  before acknowledging success; injected failed commits retain the prior UI choice and report
+  failure. No per-move disk writes were added.
+- Pure trip, detector/progress and Routebook checks (84 assertions) passed. Radio-update (8)
+  and public-tree tests passed. Two optional OSM parser cases were skipped without pyosmium.
+- Routebook build, 19 backend tests, 13 UI tests and 9 shared contract fixtures passed;
+  two PostgreSQL/PostGIS process/integration cases were skipped without a dedicated test DB.
+- Real DUDU touch, GNSS, sleep/wake and installation are unverified for this local change.
+  All new test locations and state are synthetic. Captures/APKs remain local build artifacts.
+
 ## RC3 local validation: 1.3.0-rc3 / code 23, 2026-10-13
 
 - Scope: early three-second any-direction departure, independent persisted cycle opportunity,

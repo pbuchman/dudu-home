@@ -63,6 +63,16 @@ jobs:
       - run: python3 deploy/test-templates.py
       - run: node --test deploy/plan.test.mjs
       - run: npx playwright install --with-deps chromium
+      - name: Install local analytics proxy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx
+      - name: Analytics acceptance with PostGIS, nginx and Chromium
+        run: node --test tests/analytics/acceptance.test.mjs
+        env:
+          ROUTEBOOK_ANALYTICS_TEST_DB: ${{ env.ROUTEBOOK_TEST_DB_URL }}
+          ROUTEBOOK_ANALYTICS_BROWSER: '1'
+          ROUTEBOOK_ANALYTICS_EVIDENCE: ${{ runner.temp }}/routebook-analytics-qa
       - run: npm run test:browser --workspace ui
         env:
           ROUTEBOOK_FIXTURES_PATH: ${{ github.workspace }}/routebook/contract/fixtures.json

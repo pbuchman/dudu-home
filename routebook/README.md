@@ -5,6 +5,31 @@ Dudu Home route archive. This directory and the Android application are versione
 The normative v1 contract and fictitious equatorial fixtures are in `contract/`.
 No deployment or radio installation is implied by local build/tests.
 
+## Private journey analytics (1.4)
+
+The private web Analizy tab adds day/week/month travel summaries, an observed journey diary,
+speed timeline/map replay, visits, durable named places and directional comparisons.
+Existing ingestion v1, raw points and Android collection remain unchanged. There are no
+cost estimates or new telemetry requirements. See [analytics API](contract/ANALYTICS.md)
+and [UI behavior](ui/README.md). Names remain private backend metadata.
+
+Bootstrap applies an additive idempotent metadata schema after the original v1 schema.
+Back up the production database/configuration and preserve the existing device binding
+before updating. Older backend builds can ignore these extra tables; do not drop them on
+rollback. The production runtime must include both SQL files and the compiled worker.
+
+Analytics accepts at most 31 selected calendar days plus 24 hours of context on each side,
+650000 input points and 100000 full points in a selected detail response. Larger requests
+fail explicitly. Calculation runs in one bounded worker with a 20-second timeout; busy
+requests return 429 and Retry-After. The UI retries reads a bounded number of times, never
+metadata writes. Worst-case input requires at least 1.5 GiB of available RAM. Ingest and
+SSE continue independently of the calculation. Completeness remains conservative at
+recording/context boundaries. Summary time excludes long boundary parking, shown in visits.
+
+Metadata writes require the same private origin and a custom request header. The nginx
+template preserves the original Host including port for this check. Never expose these
+endpoints through the public ingest listener or include an ingest token in the browser.
+
 ## Install and build
 
 Node.js >=22, npm, PostgreSQL with PostGIS. Backend dependencies: Fastify 5.12.5,

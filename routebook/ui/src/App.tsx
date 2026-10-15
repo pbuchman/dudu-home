@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { Adapter, RuntimeConfig } from "./types";
 import { FixtureAdapter } from "./fixtures";
 import { clockLabel, dates, localDate, time } from "./model";
 import { useRoutebook, type Selection } from "./use-routebook";
 import MapView from "./MapView";
 import { Summary } from "./Summary";
+const Analytics = lazy(() => import("./Analytics"));
 export default function App({
   adapter,
   config,
@@ -12,6 +13,7 @@ export default function App({
   adapter: Adapter;
   config: RuntimeConfig;
 }) {
+  const [analytics, setAnalytics] = useState(false);
   const [activeAdapter, setActiveAdapter] = useState(adapter);
   const demo = activeAdapter instanceof FixtureAdapter ? activeAdapter : null;
   const [selection, setSelection] = useState<Selection>({
@@ -28,6 +30,7 @@ export default function App({
   const [scenario, setScenario] = useState("stop_exactly_180_seconds");
   const data = useRoutebook(activeAdapter, selection);
   function selectMode(mode: Selection["mode"]) {
+    setAnalytics(false);
     setSelection((s) => ({
       ...s,
       mode,
@@ -66,14 +69,17 @@ export default function App({
           {(["day", "live", "range"] as const).map((mode, i) => (
             <button
               key={mode}
-              aria-pressed={selection.mode === mode}
+              aria-pressed={!analytics && selection.mode === mode}
               onClick={() => selectMode(mode)}
             >
               {["Dzień", "Na żywo", "Zakres"][i]}
             </button>
           ))}
+          <button aria-pressed={analytics} onClick={() => setAnalytics(true)}>
+            Analizy
+          </button>
         </div>
-        {selection.mode === "range" ? (
+        {analytics ? null : selection.mode === "range" ? (
           <form className="date-form" onSubmit={rangeSubmit}>
             <label>
               Od
@@ -116,7 +122,7 @@ export default function App({
           Odśwież
         </button>
       </nav>
-      {validation ? (
+      {validation && !analytics ? (
         <p className="banner warning" role="alert">
           {validation}
         </p>
@@ -174,98 +180,108 @@ export default function App({
           </div>
         </details>
       ) : null}
-      {data.error ? (
+      {data.error && !analytics ? (
         <div className="banner warning" role="alert">
           {data.error} <button onClick={data.refetch}>Ponów pobranie</button>
         </div>
       ) : null}
-      <main className="workspace">
-        <Summary
-          day={data.day}
-          range={data.range}
-          parts={data.parts}
-          loading={data.loading}
-        />
-        <section className="map-column">
-          <div className="position-strip">
-            <span className={`status-dot ${data.state}`} />
-            <strong>{clockLabel[data.state]}</strong>
-            {data.latest?.point ? (
-              <span>
-                Pomiar: {localDate(data.latest.point.measured_at)} ·{" "}
-                {time(data.latest.point.measured_at)}
-              </span>
-            ) : null}
-            <span className="connection">
-              {data.connection === "connected"
-                ? "Połączono"
-                : data.connection === "offline"
-                  ? "Offline · ponawianie połączenia"
-                  : "Łączenie…"}
-            </span>
-          </div>
-          {data.state === "future_clock" ? (
-            <p className="notice warning" role="alert">
-              Czas pomiaru jest w przyszłości. Pozycja nie jest jeszcze
-              wiarygodnym pomiarem na żywo.
-            </p>
-          ) : null}
-          {selection.mode === "range" ? (
-            <div className="range-progress" aria-live="polite">
-              <span>
-                Mapa uproszczona · {progress?.done ?? 0}/{progress?.total ?? 0}{" "}
-                dni
-                {progress?.cancelled
-                  ? " · anulowano"
-                  : progress?.complete
-                    ? " · pobrano wszystkie dni"
-                    : " · mapa częściowa"}
-              </span>
-              {data.loading ? (
-                <button onClick={data.cancel}>Anuluj pobieranie</button>
-              ) : null}
-              {progress?.failed.length ? (
-                <span className="warning">
-                  Nie pobrano: {progress.failed.join(", ")}
+      {analytics ? (
+        <Suspense fallback={<p className="notice">Ładowanie analiz…</p>}>
+          <Analytics
+            config={config}
+            date={selection.date}
+            invalidation={`${data.latest?.revision ?? -1}:${data.refresh}`}
+          />
+        </Suspense>
+      ) : (
+        <main className="workspace">
+          <Summary
+            day={data.day}
+            range={data.range}
+            parts={data.parts}
+            loading={data.loading}
+          />
+          <section className="map-column">
+            <div className="position-strip">
+              <span className={`status-dot ${data.state}`} />
+              <strong>{clockLabel[data.state]}</strong>
+              {data.latest?.point ? (
+                <span>
+                  Pomiar: {localDate(data.latest.point.measured_at)} ·{" "}
+                  {time(data.latest.point.measured_at)}
                 </span>
               ) : null}
-            </div>
-          ) : null}
-          <MapView
-            config={config}
-            latestState={data.state}
-            parts={data.parts}
-            latest={
-              (selection.mode === "live" ||
-                (selection.mode === "day" &&
-                  data.latest?.point &&
-                  localDate(data.latest.point.measured_at) ===
-                    selection.date)) &&
-              data.state !== "future_clock"
-                ? (data.latest?.point ?? null)
-                : null
-            }
-            selectionKey={JSON.stringify(selection)}
-          />
-          <div className="map-footer">
-            <div className="legend">
-              <span>
-                <i className="route-key" />
-                Trasa
-              </span>
-              <span>
-                <i className="stop-key" />
-                Postój
-              </span>
-              <span>
-                <i className="gap-key" />
-                Przerwa GPS
+              <span className="connection">
+                {data.connection === "connected"
+                  ? "Połączono"
+                  : data.connection === "offline"
+                    ? "Offline · ponawianie połączenia"
+                    : "Łączenie…"}
               </span>
             </div>
-            <span>Odległość szacowana z GPS · Europe/Warsaw</span>
-          </div>
-        </section>
-      </main>
+            {data.state === "future_clock" ? (
+              <p className="notice warning" role="alert">
+                Czas pomiaru jest w przyszłości. Pozycja nie jest jeszcze
+                wiarygodnym pomiarem na żywo.
+              </p>
+            ) : null}
+            {selection.mode === "range" ? (
+              <div className="range-progress" aria-live="polite">
+                <span>
+                  Mapa uproszczona · {progress?.done ?? 0}/
+                  {progress?.total ?? 0} dni
+                  {progress?.cancelled
+                    ? " · anulowano"
+                    : progress?.complete
+                      ? " · pobrano wszystkie dni"
+                      : " · mapa częściowa"}
+                </span>
+                {data.loading ? (
+                  <button onClick={data.cancel}>Anuluj pobieranie</button>
+                ) : null}
+                {progress?.failed.length ? (
+                  <span className="warning">
+                    Nie pobrano: {progress.failed.join(", ")}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            <MapView
+              config={config}
+              latestState={data.state}
+              parts={data.parts}
+              latest={
+                (selection.mode === "live" ||
+                  (selection.mode === "day" &&
+                    data.latest?.point &&
+                    localDate(data.latest.point.measured_at) ===
+                      selection.date)) &&
+                data.state !== "future_clock"
+                  ? (data.latest?.point ?? null)
+                  : null
+              }
+              selectionKey={JSON.stringify(selection)}
+            />
+            <div className="map-footer">
+              <div className="legend">
+                <span>
+                  <i className="route-key" />
+                  Trasa
+                </span>
+                <span>
+                  <i className="stop-key" />
+                  Postój
+                </span>
+                <span>
+                  <i className="gap-key" />
+                  Przerwa GPS
+                </span>
+              </div>
+              <span>Odległość szacowana z GPS · Europe/Warsaw</span>
+            </div>
+          </section>
+        </main>
+      )}
     </>
   );
 }

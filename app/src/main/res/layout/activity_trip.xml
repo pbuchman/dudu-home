@@ -10,6 +10,11 @@
             <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
                 android:gravity="end" android:text="@string/trip_title" android:textSize="22sp" android:textColor="@color/text_secondary" />
         </LinearLayout>
+        <Button android:id="@+id/trip_overlay_toggle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:minHeight="56dp" android:layout_marginTop="24dp" android:text="@string/trip_overlay_show" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center" android:layout_marginTop="8dp" android:text="@string/trip_overlay_hint"
+            android:textSize="16sp" android:textColor="@color/text_secondary" />
         <ImageView android:layout_width="96dp" android:layout_height="96dp" android:layout_marginTop="24dp"
             android:src="@drawable/art_navigation_pin" android:importantForAccessibility="no" />
         <TextView android:id="@+id/trip_locality" android:layout_width="match_parent" android:layout_height="wrap_content"

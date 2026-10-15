@@ -1,6 +1,18 @@
-# Release readiness - 2026-10-13
+# Release readiness - 2026-10-15
 
-## Current: 1.3.0-rc3 / code 23
+## Current: 1.4.0-rc1 / code 25
+
+Detailed Routebook analytics run on Home Dev; Android changes only the location panel.
+See [scope and delivery](RELEASE_1_4_0_RC1.md), [analytics contract](../routebook/contract/ANALYTICS.md)
+and VERIFICATION.md. Existing radios retain ingestion v1 and their current provisioning.
+Versioned Android build/lint and synthetic emulator panel/safety checks passed locally.
+Combined backend/PostGIS, UI/browser, analytics acceptance and actual Android HTTPS
+integration checks passed. Final privacy and PR/main/tag gates are enforced before release.
+Home Dev deployment requires a verified private backup and preserved archive/configuration.
+Radio installation belongs to the separate update thread; this candidate does not certify
+new physical panel interaction, driving or vendor wake behavior.
+
+## Historical: 1.3.0-rc3 / code 23
 
 The candidate adds early three-second movement in any direction, independent persisted
 parking opportunities, schema-2 locality evidence and private rejection diagnostics.

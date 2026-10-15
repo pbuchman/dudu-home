@@ -159,6 +159,7 @@ export function useRoutebook(adapter: Adapter, selection: Selection) {
   };
   return {
     latest,
+    refresh,
     day,
     range,
     parts,

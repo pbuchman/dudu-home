@@ -1,5 +1,32 @@
 # Design decisions
 
+## Home Dev journey analytics - October 15
+
+- Detailed statistics and their UI belong to the private Routebook backend/web application.
+  Android changes only the existing location card presentation; GPS collection, queue and
+  ingest v1 remain unchanged. No cost estimates, extra telemetry or map matching.
+- Derive journeys from complete stored samples, preserving raw records and canonical v1
+  map responses. Technical GPS segments are not journeys. Confirmed parking or gaps of
+  ten minutes separate journeys; shorter observation gaps remain unknown elapsed time.
+- Period summaries describe journey time; long boundary parking appears separately as
+  observed visits. Named places are durable private metadata with independent revision.
+  Backfill may replace derived journeys, so user names attach to places, not journey IDs.
+- Publish one combined source revision and deploy Home Dev independently of the radio-update
+  thread. Public release is source-only; private APK and physical acceptance stay separate.
+
+## Movable and dismissible location card - October 15
+
+- Give the passive location card a dedicated drag handle and independent hide button.
+  A drag release cannot open the full screen. Keep address tapping and Pełna nazwa passive.
+- Persist visibility and relative bounded position in private UI preferences. Start at the
+  top right; explicitly restore a hidden card from Gdzie jestem. Neither control alters
+  trip state/totals, the shared GPS monitor, Routebook or action priorities.
+- Recompute safe system-bar/cutout bounds after resize, inset or content-height changes.
+  Keep move/hide controls above a scrollable address when the available height is short.
+  Temporary automation suppression preserves the user's visibility/position preference.
+- Add no statistics collection or analytics in this change. Radio touch and driving/wake
+  acceptance remain separate from build/static and synthetic emulator checks.
+
 ## Early departure, locality evidence and diagnostics - October 13
 
 - The owner chose three seconds of GPS movement in any direction, including reversing,

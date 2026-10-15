@@ -9,6 +9,7 @@ export function mapData(
   parts: Record<string, Geometry>,
   latest: Point | null,
   state: ClockState = "stale",
+  historical: Point | null = null,
 ): FeatureCollection {
   const features: Feature<GeoGeometry>[] = [];
   const line = (points: Point[], kind: string, id: string) => {
@@ -50,6 +51,15 @@ export function mapData(
       type: "Feature",
       properties: { kind: "latest", state },
       geometry: { type: "Point", coordinates: [latest.lon, latest.lat] },
+    });
+  if (historical)
+    features.push({
+      type: "Feature",
+      properties: { kind: "historical" },
+      geometry: {
+        type: "Point",
+        coordinates: [historical.lon, historical.lat],
+      },
     });
   return { type: "FeatureCollection", features };
 }

@@ -1,5 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync } from "node:fs";
+const evidence =
+  process.env.ROUTEBOOK_UI_EVIDENCE_DIR ?? "/tmp/dudu-routebook-14-ui";
+mkdirSync(evidence, { recursive: true });
 import { FixtureAdapter, type FixtureFile } from "../src/fixtures";
 import type { Latest, LiveEvent } from "../src/types";
 const fixturePath = process.env.ROUTEBOOK_FIXTURES_PATH;
@@ -178,7 +181,7 @@ test("desktop truthful stop, missing map, clean console, selected date survives 
   await expect(page.locator(".metrics")).toContainText("0,11");
   await expect(page.locator(".timeline-row.stop")).toContainText("3 min");
   await expect(page.getByText("Brak konfiguracji dostawcy.")).toBeVisible();
-  await page.screenshot({ path: "output/desktop.png", fullPage: true });
+  await page.screenshot({ path: `${evidence}/desktop.png`, fullPage: true });
   await page.getByLabel("Wybrany dzień").fill("2026-10-04");
   await page.getByText("Scenariusze demonstracyjne", { exact: true }).click();
   await page.getByRole("button", { name: "Aktualizacja SSE" }).click();
@@ -206,7 +209,7 @@ test("mobile gap means missing observations, no stop, no overflow", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: "output/mobile.png", fullPage: true });
+  await page.screenshot({ path: `${evidence}/mobile.png`, fullPage: true });
 });
 test("future clock and stale change with elapsed time without SSE", async ({
   page,
@@ -222,7 +225,10 @@ test("future clock and stale change with elapsed time without SSE", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Na żywo", exact: true }).click();
   await expect(page.locator(".position-strip")).not.toContainText("Na żywo");
-  await page.screenshot({ path: "output/future-clock.png", fullPage: true });
+  await page.screenshot({
+    path: `${evidence}/future-clock.png`,
+    fullPage: true,
+  });
   await page.clock.fastForward(61000);
   await expect(page.locator(".position-strip")).toContainText("Na żywo");
   await page.clock.fastForward(31000);
@@ -243,7 +249,7 @@ test("range summary includes zero days and partial month; map progress completes
   ).toBeVisible();
   await page.getByText("Dane dzienne (2)", { exact: true }).click();
   await expect(page.locator("tbody tr")).toHaveCount(2);
-  await page.screenshot({ path: "output/range.png", fullPage: true });
+  await page.screenshot({ path: `${evidence}/range.png`, fullPage: true });
   await page.getByLabel("Od", { exact: true }).fill("2026-10-06");
   await page.getByRole("button", { name: "Pokaż zakres" }).click();
   await expect(page.getByRole("alert")).toContainText("poprawny zakres");
@@ -321,7 +327,7 @@ test("API unavailable surfaces actionable error and summaries survive provider f
   await expect(
     page.getByRole("button", { name: "Ponów pobranie" }),
   ).toBeVisible();
-  await page.screenshot({ path: "output/api-error.png", fullPage: true });
+  await page.screenshot({ path: `${evidence}/api-error.png`, fullPage: true });
 });
 test("actual MapLibre renders synthetic geometry with mocked style; no provider runtime claim", async ({
   page,
@@ -347,8 +353,8 @@ test("actual MapLibre renders synthetic geometry with mocked style; no provider 
   await page.waitForTimeout(600);
   await page.screenshot({
     path: process.env.ROUTEBOOK_TEST_URL
-      ? "output/maplibre-production-synthetic.png"
-      : "output/maplibre-synthetic.png",
+      ? `${evidence}/maplibre-production-synthetic.png`
+      : `${evidence}/maplibre-synthetic.png`,
     fullPage: true,
   });
   expect(errors).toEqual([]);
@@ -380,7 +386,10 @@ test("map provider failure preserves API summary", async ({ page }) => {
   await expect(
     page.getByText("Dostawca mapy jest niedostępny.", { exact: false }),
   ).toBeVisible();
-  await page.screenshot({ path: "output/provider-error.png", fullPage: true });
+  await page.screenshot({
+    path: `${evidence}/provider-error.png`,
+    fullPage: true,
+  });
 });
 
 test("all normative UI fixture scenes render their accepted observations", async ({
@@ -416,7 +425,10 @@ test("range day failures are labelled partial while range totals remain availabl
     "Nie pobrano: 2026-10-04, 2026-10-05",
   );
   await expect(page.locator(".metrics")).toContainText("0,11");
-  await page.screenshot({ path: "output/range-partial.png", fullPage: true });
+  await page.screenshot({
+    path: `${evidence}/range-partial.png`,
+    fullPage: true,
+  });
 });
 test("changing selection aborts old range without accepting delayed results", async ({
   page,

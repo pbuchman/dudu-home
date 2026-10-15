@@ -1,8 +1,16 @@
 # Routebook Android and server integration
 
-Candidate `1.3.0-rc1`, code 21. Android, backend, map UI and deployment tools share this
+Candidate `1.4.0-rc1`, code 25. Android, backend, map UI and deployment tools share this
 repository. Contract and normative fixtures: `routebook/contract/`. See
 [server setup](../routebook/README.md) and [combined handoff](INTEGRATED_RELEASE.md).
+
+Detailed journey statistics, speed/chart replay, visits, named places and directional
+comparisons run only in the private Home Dev application. The additive
+[analytics contract](../routebook/contract/ANALYTICS.md) consumes the existing stored
+measurements. Collector, SQLite schema, pending payloads, device identity and ingestion v1
+below are unchanged; an existing radio needs no update or reprovisioning for web analytics.
+The new Android build changes only location-card presentation. Fuel/cost estimates and
+additional GPS telemetry are outside this release.
 
 The existing HomeMonitorService GPS subscription offers copied primitive measurements to
 Routebook in `finally` after home automation and manual trip processing. Disk work runs on

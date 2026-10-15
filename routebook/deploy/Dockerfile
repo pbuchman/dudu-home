@@ -3,6 +3,7 @@ WORKDIR /build
 COPY package.json package-lock.json tsconfig.json ./
 COPY backend/ backend/
 COPY ui/ ui/
+COPY contract/ contract/
 RUN npm ci && npm run build:backend && npm run build:ui
 
 FROM node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94 AS backend

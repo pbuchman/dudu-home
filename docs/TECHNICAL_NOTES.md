@@ -446,3 +446,7 @@ Nie zastępują testu poleceń telefonicznych na konkretnym firmware DUDU7.
 Routebook receives copied fixes after automation and manual trip processing, including early
 returns, without another GPS subscription or action lease. Its durable queue and HTTPS worker
 are independent of SYU IPC; see ROUTEBOOK.md. No calling safety rule changes.
+
+Version 1.4 adds detailed analysis only in the private backend/web application. The Android
+collector, ingestion protocol and persisted pending events are unchanged. Its only Android
+behavior change is the passive location card's drag/hide/restore presentation and UI preferences.
