@@ -1,5 +1,45 @@
 # Verification ledger
 
+## Integrated 1.4.0-rc2 / code 26, 2026-10-15
+
+- Recorded time is derived from the raw GPS archive, including stationary recording and
+  parking between journeys. Day/range/analytics values use the same interval-union rules.
+  Android manual session controls remain independent of Routebook collection and upload.
+- Android debug/instrumentation builds and lint passed. Focused session checks cover old
+  state migration, receive/awake clocks, stationary fixes, gaps, persistence, failed writes
+  and reset races with queued fixes and resolver results. Full emulator SafetyChecks and
+  first-launch/no-dial passed on the final code-26 APK; the session screen was inspected.
+- Initial emulator runs exposed asynchronous notification and Activity/service test
+  synchronization assumptions. Tests now await actual state with bounded diagnostics and
+  retain the original assertions. Those diagnostics identified a SystemUI ANR stealing
+  focus; the full suite passed after a cold start of the dedicated emulator. Production
+  automation timing and safety rules were not relaxed.
+- Backend/PostGIS finished with 71 passes and one optional Docker/nginx skip. Coverage
+  includes interval overlap, duplicate timestamps,
+  exactly 30 seconds versus 30.001 seconds, long stationary recording, both Warsaw DST
+  changes, midnight, late uploads and repeatable-read consistency. Real nginx isolation
+  and browser acceptance passed separately. All nine shared ingest fixtures and 84
+  Java protocol assertions remain unchanged and pass.
+- All 25 UI unit tests and 28 Chromium tests passed. Real PostGIS/nginx/Chromium acceptance
+  passed 10/10 without skips, including 1,940 seconds of continuous recording displayed as
+  32 min 20 s while journey elapsed time is only 2 min 20 s. Desktop/mobile screenshots,
+  absent/null/zero states, loading/errors, late-data refresh and stale-response rejection
+  were verified. Expected analytics busy responses recovered through bounded retries.
+- A 366-day, 543,245-point HTTP range returned in 5.33 seconds in the final full independent
+  suite; a dense 17,280-point day took 150 ms. The initial heavily loaded run exceeded the
+  unchanged 20-second test budget, so its timing was not treated as a passing result.
+- Actual Android-to-HTTPS-to-PostGIS-to-browser acceptance passed all 32 checks with an
+  unchanged application APK. Existing queue recovery, commit-visible ACKs, old-client
+  payloads, backfill and private/public separation remain covered. Deployment template,
+  installer, detector/progress and source/history privacy checks also passed.
+- The privacy scanner's exact browser-module exception now includes TypeScript test files;
+  regression tests still reject standalone private labels and historical leaks. Private
+  configuration denylist and manual generic-vocabulary review passed before publication.
+- PR, merged-main and tag checks remain separate release gates; their final links and the
+  merged APK provenance belong on the release page and private receipt. Home Dev deployment
+  requires a verified backup and archive/configuration preservation checks. APK installation,
+  real GNSS, driving, touch and vendor sleep/wake on the physical radio remain separate.
+
 ## Integrated 1.4.0-rc1 / code 25, 2026-10-15
 
 - Home Dev owns detailed analytics; Android production changes are confined to location

@@ -1,0 +1,37 @@
+{
+  "synthetic": true,
+  "response_projection_only": true,
+  "recorded_time_derivation": {"algorithm_version":"routebook-recorded-time-1","gap_seconds":30},
+  "stationary_and_gap": {
+    "description": "20 min driving, 15 min stationary GPS, 10 min driving; later an hour without samples; 10 min observed the next day",
+    "day": {"date":"2026-10-14","recorded_seconds":2700,"point_count":91},
+    "range": {
+      "from":"2026-10-14","to":"2026-10-15","recorded_seconds":3300,
+      "days":[{"date":"2026-10-14","recorded_seconds":2700,"point_count":91},{"date":"2026-10-15","recorded_seconds":600,"point_count":21}],
+      "months":[{"month":"2026-10","recorded_seconds":3300}]
+    },
+    "analytics": {
+      "totals":{"recorded_seconds":3300,"point_count":112},
+      "days":[{"period":"2026-10-14","recorded_seconds":2700,"point_count":91},{"period":"2026-10-15","recorded_seconds":600,"point_count":21}],
+      "weeks":[{"period":"2026-10-12","recorded_seconds":3300,"point_count":112}],
+      "months":[{"period":"2026-10","recorded_seconds":3300,"point_count":112}]
+    }
+  },
+  "gap_boundary": [
+    {"consecutive_seconds":[0,30],"recorded_seconds":30},
+    {"consecutive_seconds":[0,30.001],"recorded_seconds":0},
+    {"consecutive_seconds":[0,30,3630,3660],"recorded_seconds":60}
+  ],
+  "midnight": {
+    "same_segment_measured_at":["2026-10-31T22:59:50.000Z","2026-10-31T23:00:10.000Z"],
+    "days":[{"date":"2026-10-31","recorded_seconds":10},{"date":"2026-11-01","recorded_seconds":10}],
+    "recorded_seconds":20
+  },
+  "late_backfill": {
+    "before":{"revision":1,"same_segment_seconds":[0,60],"recorded_seconds":0},
+    "after":{"revision":2,"same_segment_seconds":[0,30,60],"recorded_seconds":60}
+  },
+  "empty":{"point_count":0,"recorded_seconds":0,"ui":"Brak danych"},
+  "isolated":{"point_count":1,"recorded_seconds":0},
+  "older_backend":{"recorded_seconds":null,"meaning":"unavailable, never zero"}
+}

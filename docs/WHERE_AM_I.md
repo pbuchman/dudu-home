@@ -7,9 +7,15 @@ remains independent.
 
 ## User contract
 
-Start creates a new trip at zero. Pause preserves the total and stops counting; Resume begins
-a new GPS segment. End retains the last total; the next Start resets it. Backgrounding the
-app does not pause. The full screen shows locality, street and kilometres (one decimal).
+**Start** begins or continues the manual session, preserving its totals. **Pauza** holds both
+counters. **Reset** zeros time and distance together while retaining the active/paused state;
+nonzero totals require confirmation **Wyzerować czas i dystans?**, and **Anuluj** is inert.
+There are no separate Resume or End controls. A change appears only after durable storage
+succeeds; a storage error remains visible and disables counting and controls until restart.
+Backgrounding or turning the screen off does not pause. The full screen shows locality,
+street, kilometres (one decimal) and **Czas sesji** as HH:MM:SS (hours may exceed 24).
+The time counter is on this main screen only; the existing location card remains address-only.
+Automatic Routebook recording, offline queue and ingest remain independent of all session controls.
 The card starts at the top right and shows locality at 24 sp above the primary street at 32 sp.
 Its **Przesuń** handle moves the card; releasing a drag never opens the trip. The independent
 **×** button hides only the card. **Pokaż panel w tle** / **Ukryj panel w tle** on the passive
@@ -44,7 +50,7 @@ city/town/village point without containment/address evidence stays **Okolice …
 The existing location foreground service supplies one immutable copy of each GPS fix after
 home action processing, including the media gate's early-return path. Trip work never takes
 `HomeActions`' execution lease, changes gate conditions, reserves cleaning, consumes media
-opportunities, or launches Maps. A trip pause/end does not stop the shared monitor.
+opportunities, or launches Maps. A session pause/reset does not stop the shared monitor.
 
 The separate TripActivity is passive: unlike the existing manual menu it does not register
 as protected manual UI. Gate/cleaning can cover it and media startup can proceed. The
@@ -73,11 +79,30 @@ below 0.7 m/s suppresses stationary drift; movement with reported speed requires
 Without speed, displacement must exceed max(5 m, average endpoint accuracy). This is a driving
 estimate, not a calibrated odometer; slow movement and poor GPS can be undercounted.
 
-Pause, GPS loss, service shutdown, verified wake and restart begin a fresh segment. Never join
-positions across missing data. `trip-state.json` in no-backup storage contains only state,
-generation and total meters, not a track. Atomic checkpoints run every 5 s and at transitions;
-pause/end are reflected after durable save. Sudden power loss can lose the last checkpoint
-interval. Storage failure stops counting and reports an error instead of claiming a saved total.
+`TripTime` independently accepts fresh, increasing non-mock GPS observations with valid
+coordinates and finite nonnegative accuracy. Stationary and poor-accuracy observations may
+add time even when the distance filters reject them. Each adjacent observation must be at
+most 30 seconds apart; exactly 30 seconds qualifies. No time is extrapolated before the first
+or after the last observation. Receive elapsed-realtime and uptime clocks are captured before
+queueing; interval time uses the smaller received/awake monotonic delta, while the GPS measurement
+delta validates ordering and continuity. Receive jitter is not repeatedly discarded. Deep-sleep
+clock divergence breaks continuity, and suspended time is never included. System wall time
+is not an input. The result measures observed session time, not ignition or driver presence.
+
+Pause, Reset, GPS loss, service shutdown, verified wake and process restart begin fresh
+segments. Queued fixes carry an input epoch; stale work and asynchronous place results cannot
+restore pre-reset time, distance or address. Never join positions across missing data.
+`trip-state.json` in no-backup storage atomically contains state, generation, total meters,
+`time_ms` and `partial_time`, not a track. The store syncs the file and verifies the committed
+contents before acknowledging transitions. The periodic worker attempts a checkpoint after
+at least five seconds since the previous save. Scheduling and storage latency can extend
+that interval; sudden power loss can lose measurements since the last completed save.
+A failed transition retains the prior totals/activity and reports an error; counting is disabled.
+
+Legacy ACTIVE stays active; legacy PAUSED, FINISHED and OFF become paused with their metres
+preserved. Unknown historic time starts at zero and remains labelled **Czas od aktualizacji**
+until Reset; no file timestamp is used to invent a duration. Missing state starts paused at
+zero without this partial-history label. All restarted sessions require a new GPS anchor.
 
 ## Offline data
 
@@ -159,6 +184,20 @@ seed an invented nonzero trip total, exercise drag/no-open, hide/restore and aut
 suppression, verify process identity changes and safe card/control bounds, and write synthetic
 `trip-overlay-moved-<phase>.png` captures to app external files. Resize the emulator between
 phases to verify saved-position adaptation. These modes never dispatch actions or supply GPS.
+
+The pure trip suite covers eleven minutes of stationary poor-accuracy observations, exact
+30-second and excessive gaps, stale/mock/order rejection, awake/sleep clocks, restart and
+100-hour formatting. Emulator instrumentation adds schema migration, atomic state/time/distance,
+queued reset work, stale resolver results, injected storage failures and Reset confirmation/cancel.
+The radio installer smoke check only opens/scrolls the passive screen, checks Start/Pauza, Reset and
+time text, and returns. It never touches a session control or changes the user's totals/state.
+
+Focused persistence regression (emulator serial only):
+
+```sh
+adb -s emulator-5554 shell am instrument -w -e tripSession true \
+  com.pbuchman.duduhome.test/com.pbuchman.duduhome.SafetyChecks
+```
 
 Run `bash scripts/check-trip.sh`, `python3 scripts/test-radio-update.py`, the normal build/lint
 and emulator suite. Installing osmium also enables the synthetic parser test. Instrumentation

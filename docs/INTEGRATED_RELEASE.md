@@ -1,10 +1,12 @@
-# Combined main candidate: 1.4.0-rc1 / code 25
+# Combined main candidate: 1.4.0-rc2 / code 26
 
 ## Current change and independent delivery
 
-The 1.4 candidate adds private Home Dev journey analytics and persistent movable/dismissible
-Android location presentation. Collection, immutable offline records and ingestion v1 stay
-unchanged. [Current release notes](RELEASE_1_4_0_RC1.md) define scope and acceptance.
+The RC2 candidate adds GPS-observed time to private Home Dev summaries and manual time
+with Start/Pause/Reset on the passive Android trip screen. It retains the RC1 journey
+analytics and movable/dismissible location card. Collection, immutable offline records
+and ingestion v1 stay unchanged. [Current release notes](RELEASE_1_4_0_RC2.md) define
+scope and acceptance.
 One tested merged commit identifies source, private APK and server/UI. Publish source only,
 then deploy the existing Home Dev service with backup and preserved archive/provisioning.
 Radio installation remains in a separate workstream; the historical installation procedure

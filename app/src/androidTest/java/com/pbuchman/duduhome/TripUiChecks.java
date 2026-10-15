@@ -23,6 +23,11 @@ final class TripUiChecks {
         checkLocationCard(i, c);
         TripController controller=TripController.get(c);
         controller.command("START");state(controller,"ACTIVE");
+        android.location.Location stationary=new android.location.Location("gps");
+        stationary.setLatitude(0);stationary.setLongitude(0);stationary.setAccuracy(200);
+        stationary.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());controller.offer(stationary);
+        SystemClock.sleep(1100);stationary.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());controller.offer(stationary);SystemClock.sleep(200);
+        check(controller.snapshot().millis()>900,"stationary GPS duration available for reset UI");
         i.runOnMainSync(()->ProgressBus.reset(c,DetectionProgress.Reason.RESET));SystemClock.sleep(2200);
         c.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));SystemClock.sleep(500);
         TripPresentation[] presentation={null};
@@ -53,6 +58,7 @@ final class TripUiChecks {
         }
         check(open!=null,"ongoing trip notification has content intent");
         i.runOnMainSync(()->trip.findViewById(R.id.trip_primary).performClick());state(controller,"PAUSED");
+        SystemClock.sleep(600);ProgressChecks.capture(i,"trip-session-time.png");
         i.runOnMainSync(trip::finish);SystemClock.sleep(300);
         monitor=i.addMonitor(TripActivity.class.getName(),null,false);
         i.runOnMainSync(()->check(HomeActions.begin(),"synthetic protected action"));
@@ -60,8 +66,31 @@ final class TripUiChecks {
         check(!TripActivity.visible,"notification cannot cover protected action");
         i.runOnMainSync(HomeActions::end);
         TripActivity deferred=(TripActivity)i.waitForMonitorWithTimeout(monitor,5000);check(deferred!=null,"notification opens after action cleanup");
-        i.runOnMainSync(()->deferred.findViewById(R.id.trip_end).performClick());state(controller,"FINISHED");
-        i.runOnMainSync(()->{deferred.finish();presentation[0].close();});i.removeMonitor(monitor);
+        i.runOnMainSync(()->{
+            check(((TextView)deferred.findViewById(R.id.trip_primary)).getText().toString().equals("Start"),"paused primary is Start");
+            check(((TextView)deferred.findViewById(R.id.trip_reset)).getText().toString().equals("Reset"),"reset replaces end");
+            check(((TextView)deferred.findViewById(R.id.trip_time)).getText().toString().matches("[0-9]{2,}:[0-9]{2}:[0-9]{2}"),"session duration rendered");
+        });
+        long retainedTime=controller.snapshot().millis();double retainedMeters=controller.snapshot().meters();long retainedGeneration=controller.snapshot().generation();
+        i.runOnMainSync(()->{
+            deferred.findViewById(R.id.trip_reset).performClick();
+            AlertDialog dialog=(AlertDialog)ProgressChecks.field(deferred,"resetDialog");
+            check(dialog!=null && dialog.isShowing(),"nonzero reset requires confirmation");
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        });SystemClock.sleep(200);
+        check(controller.snapshot().millis()==retainedTime && controller.snapshot().meters()==retainedMeters
+                && controller.snapshot().generation()==retainedGeneration,"cancel reset is inert");
+        i.runOnMainSync(()->{
+            deferred.findViewById(R.id.trip_reset).performClick();
+            ((AlertDialog)ProgressChecks.field(deferred,"resetDialog")).getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        });SystemClock.sleep(200);
+        check(controller.snapshot().millis()==0 && controller.snapshot().meters()==0 && !controller.snapshot().active(),"confirmed paused reset zeros both");
+        i.runOnMainSync(()->{
+            deferred.render(new TripController.Snapshot("PAUSED",1,0,0,PlaceResult.unknown(false),"",true,100L*3600000+61000,true));
+            check(((TextView)deferred.findViewById(R.id.trip_time)).getText().toString().equals("100:01:01"),"long session format on main screen");
+            check(((TextView)deferred.findViewById(R.id.trip_time_label)).getText().toString().equals("Czas od aktualizacji"),"legacy partial time label");
+            deferred.finish();presentation[0].close();
+        });i.removeMonitor(monitor);
     }
     /** Simulates SharedPreferences' changed memory cache plus a failed disk acknowledgement. */
     static void checkPreferenceFailure(Context context) {

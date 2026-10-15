@@ -180,6 +180,54 @@ button.primary:hover {
   font-size: 18px;
   margin: 28px 0 20px;
 }
+.recorded-metric {
+  margin: 0 0 26px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.recorded-metric dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.recorded-metric dd {
+  margin: 5px 0;
+  font-size: 23px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.recorded-metric dd.recorded-explanation, .analytics-metrics dd.recorded-explanation, .month-recorded {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+}
+.month-recorded {
+  margin: 6px 0;
+}
+.month-recorded strong {
+  color: #192231;
+  font-variant-numeric: tabular-nums;
+}
+.monthly .table-scroll {
+  max-width: 100%;
+}
+.monthly table {
+  min-width: 280px;
+}
+caption {
+  text-align: left;
+  color: var(--muted);
+  padding: 12px 0 6px;
+}
+.recorded-periods table {
+  font-size: 13px;
+}
+.recorded-periods summary {
+  color: var(--teal);
+  min-height: 44px;
+}
 .timeline-row {
   position: relative;
   border-left: 1px solid #cad1db;

@@ -331,11 +331,11 @@ test("empty period displays missing statistics and allows place creation", async
   page,
 }) => {
   await harness(page, { empty: true });
-  await expect(page.locator(".period-card .analytics-metrics")).toContainText(
+  await expect(page.locator(".period-card .analytics-metrics:not(.recorded-metric)")).toContainText(
     "Brak danych",
   );
   await expect(
-    page.locator(".period-card .analytics-metrics"),
+    page.locator(".period-card .analytics-metrics:not(.recorded-metric)"),
   ).not.toContainText("0,00");
   await expect(
     page.getByText("Brak podróży w tym okresie.", { exact: false }),

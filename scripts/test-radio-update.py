@@ -30,6 +30,20 @@ def map_fixture(path,schema=2):
     return manifest
 
 class PreflightTests(unittest.TestCase):
+    def test_session_smoke_is_passive_for_active_and_paused(self):
+        for state in ('Start','Pauza'):
+            with self.subTest(state=state):
+                def node(adb,name,seconds=15):
+                    return {'resource-id':radio.PACKAGE+':id/'+name,'text':{'trip_primary':state,'trip_reset':'Reset','trip_time':'100:01:01'}.get(name,'')}
+                with patch.object(radio,'ui_resource',side_effect=node),patch.object(radio,'ui_tree',return_value=radio.ET.fromstring('<hierarchy><node scrollable="true" bounds="[0,0][1000,600]"/></hierarchy>')),patch.object(radio,'tap_node') as tap,patch.object(radio,'run') as run:
+                    result=radio.smoke_trip(['adb'])
+                    self.assertIn('preserved',result)
+                    self.assertEqual([call.args[1]['resource-id'].split('/')[-1] for call in tap.call_args_list],['where_am_i_button'])
+                    self.assertEqual([call.args[1] for call in run.call_args_list],[['shell','input','swipe','500','450','500','150','300'],['shell','input','keyevent','KEYCODE_BACK']])
+    def test_session_smoke_rejects_old_controls_without_modifying_session(self):
+        with patch.object(radio,'ui_resource',return_value={'text':'Wznów'}),patch.object(radio,'ui_tree',return_value=radio.ET.fromstring('<hierarchy/>')),patch.object(radio,'tap_node') as tap:
+            with self.assertRaises(radio.Blocked):radio.smoke_trip(['adb'])
+            self.assertEqual(tap.call_count,1)
     def test_idle_requires_all_evidence(self):
         ui='<hierarchy><node resource-id="com.pbuchman.duduhome:id/menu_content"/></hierarchy>'
         self.assertTrue(radio.idle_evidence('Actual mode: MODE_NORMAL','mResumedActivity: example/.Main',ui,'action_busy=false'))

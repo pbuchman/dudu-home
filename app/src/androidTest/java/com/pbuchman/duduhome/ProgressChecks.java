@@ -29,28 +29,69 @@ final class ProgressChecks {
         }
         b.recycle();
     }
+    /** Keep failed assertions on the instrumentation thread instead of crashing the app. */
+    static void main(Instrumentation i, Runnable work) {
+        var failure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+        i.runOnMainSync(() -> { try { work.run(); } catch (Throwable problem) { failure.set(problem); } });
+        if (failure.get() != null) throw new AssertionError(failure.get());
+    }
+    private static void awaitMain(Instrumentation i, java.util.function.BooleanSupplier condition,
+            java.util.function.Supplier<String> diagnostic, String label) {
+        long deadline = SystemClock.uptimeMillis() + 5000;
+        var ready = new java.util.concurrent.atomic.AtomicBoolean();
+        var last = new java.util.concurrent.atomic.AtomicReference<String>();
+        do {
+            main(i, () -> { ready.set(condition.getAsBoolean()); if (!ready.get()) last.set(diagnostic.get()); });
+            if (ready.get()) return;
+            SystemClock.sleep(25);
+        } while (SystemClock.uptimeMillis() < deadline);
+        throw new AssertionError(label + ": " + last.get());
+    }
+    private static void stopMonitorAndAwait(Instrumentation i, Context context) {
+        context.stopService(new Intent(context, HomeMonitorService.class));
+        long deadline = SystemClock.uptimeMillis() + 5000;
+        do {
+            i.waitForIdleSync();
+            boolean running = context.getSystemService(android.app.ActivityManager.class).getRunningServices(Integer.MAX_VALUE)
+                    .stream().anyMatch(info -> info.service.getClassName().equals(HomeMonitorService.class.getName()));
+            if (!running) return;
+            SystemClock.sleep(25);
+        } while (SystemClock.uptimeMillis() < deadline);
+        throw new AssertionError("isolated progress presenter requires stopped monitor");
+    }
+    private static String presentationState(MainActivity activity, Context context) {
+        var host = activity.progressHost(); var progress = ProgressBus.visible();
+        return "host=" + (host != null) + " children=" + (host == null ? -1 : host.getChildCount())
+                + " focus=" + activity.hasWindowFocus() + " owner=" + (HomeActions.visibleActivity() == activity)
+                + " allowed=" + HomeActions.allowsExternalLaunch() + " busy=" + HomeActions.busy()
+                + " monitor_ready=" + HomeMonitorService.ready(context) + " progress=" + (progress == null ? "none" : progress.phase());
+    }
     static void run(Instrumentation i) throws Exception {
         Context c=i.getTargetContext();
-        c.stopService(new Intent(c,HomeMonitorService.class));
-        SystemClock.sleep(300);
+        stopMonitorAndAwait(i, c);
         var prefs=c.getSharedPreferences("gate_settings",0);
         check(prefs.edit().putString("gate_number","000000000").remove("configured_at")
                 .remove("last_dial_started_at").commit(),"synthetic settings");
         MainActivity activity=(MainActivity)i.startActivitySync(new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         i.waitForIdleSync();
         // The regular monitor owns production presentation. This test owns one isolated presenter.
-        c.stopService(new Intent(c,HomeMonitorService.class));SystemClock.sleep(300);
+        stopMonitorAndAwait(i, c);
+        awaitMain(i, () -> activity.progressHost() != null && HomeActions.visibleActivity() == activity
+                && HomeActions.allowsExternalLaunch() && !HomeActions.busy(),
+                () -> presentationState(activity, c), "focused menu ready for isolated progress");
         ProgressOverlay[] panel={null};long[] epoch={0};
         Runnable broken=()->{throw new IllegalStateException("synthetic observer failure");};
-        i.runOnMainSync(()->{
+        main(i,()->{
             epoch[0]=ProgressBus.reset(c,Reason.RESET);
             ProgressBus.subscribe(broken);
             panel[0]=new ProgressOverlay(c);
             ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.DEPARTURE,1,
                     Phase.CANDIDATE,.6,SystemClock.elapsedRealtime()+15000,Reason.NONE)));
         });
-        SystemClock.sleep(400);
-        i.runOnMainSync(()->{
+        awaitMain(i, () -> activity.progressHost() != null && activity.progressHost().getChildCount() == 1
+                && field(panel[0], "inline") != null,
+                () -> presentationState(activity, c), "one inline banner becomes ready");
+        main(i,()->{
             check(activity.progressHost()!=null&&activity.progressHost().getChildCount()==1,"one inline banner");
             check(field(panel[0],"overlay")==null,"no duplicate overlay");
             check(HomeActions.allowsExternalLaunch(),"inline banner does not block actions");
@@ -60,22 +101,22 @@ final class ProgressChecks {
         });
         capture(i,"progress-menu.png");
         prefs.edit().putLong("configured_at",System.currentTimeMillis()).commit();
-        i.runOnMainSync(()->{
+        main(i,()->{
             activity.findViewById(R.id.open_gate_button).performClick();
             check(field(panel[0],"inline")==null&&field(panel[0],"overlay")==null,"manual action takes presentation priority");
             check(!prefs.contains("last_dial_started_at"),"manual cooldown cannot dial");
         });
         SystemClock.sleep(2800);
         prefs.edit().remove("configured_at").commit();
-        i.runOnMainSync(()->{
+        main(i,()->{
             check(activity.progressHost()!=null,"manual result returns to menu");
             ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.DEPARTURE,2,
                     Phase.CANDIDATE,.6,SystemClock.elapsedRealtime()+15000,Reason.NONE)));
         });
-        i.runOnMainSync(activity::finish);
+        main(i,activity::finish);
         c.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         SystemClock.sleep(700);
-        i.runOnMainSync(()->{
+        main(i,()->{
             View view=(View)field(panel[0],"overlay");check(view!=null&&view.isAttachedToWindow(),"overlay attached above external app");
             check(field(panel[0],"inline")==null,"inline removed");
             WindowManager.LayoutParams p=(WindowManager.LayoutParams)view.getLayoutParams();
@@ -88,7 +129,7 @@ final class ProgressChecks {
             check(HomeActions.allowsExternalLaunch(),"overlay cannot change action eligibility");
         });
         capture(i,"progress-overlay.png");
-        i.runOnMainSync(()-> {
+        main(i,()-> {
             epoch[0]=ProgressBus.reset(c,Reason.RESET);
             ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.RETURN,3,
                     Phase.CANDIDATE,.08,SystemClock.elapsedRealtime()+15000,Reason.NONE,Stage.APPROACHING_JUNCTION)));
@@ -97,7 +138,7 @@ final class ProgressChecks {
                     .equals(c.getString(R.string.progress_return_checking_route)),"early route copy");
         });
         capture(i,"progress-return-early.png");
-        i.runOnMainSync(()-> {
+        main(i,()-> {
             ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.RETURN,3,
                     Phase.CANDIDATE,.68,SystemClock.elapsedRealtime()+15000,Reason.NONE,Stage.APPROACHING_GATE)));
             var view=(View)field(panel[0],"overlay");
@@ -106,7 +147,7 @@ final class ProgressChecks {
             check(((ProgressBar)view.findViewById(R.id.banner_progress)).getProgress()==680,"inbound fill");
         });
         capture(i,"progress-return-inbound.png");
-        i.runOnMainSync(()->{
+        main(i,()->{
             epoch[0]=ProgressBus.reset(c,Reason.GPS_UNRELIABLE);
             ProgressBus.offer(c,epoch[0]-1,ProgressBus.HOME,List.of(new DetectionProgress(Kind.DEPARTURE,1,
                     Phase.CONFIRMED,1,SystemClock.elapsedRealtime()+15000,Reason.NONE)));
@@ -114,7 +155,7 @@ final class ProgressChecks {
         });
         capture(i,"progress-cancelled.png");
         SystemClock.sleep(2100);
-        i.runOnMainSync(()->{
+        main(i,()->{
             check(ProgressBus.visible()==null,"cancelled banner expires");
             check(field(panel[0],"overlay")==null,"window removed after cancellation");
             ProgressBus.unsubscribe(broken);
@@ -122,10 +163,10 @@ final class ProgressChecks {
         // Suppress actual Activity delivery; the real token/timeout path must terminate without dial.
         Intent[] captured={null};
         Context sink=new ContextWrapper(c){@Override public void startActivity(Intent intent){captured[0]=intent;}};
-        i.runOnMainSync(()->HomeActions.dispatch(sink,HomeEvent.RETURN_APPROACH));
+        main(i,()->HomeActions.dispatch(sink,HomeEvent.RETURN_APPROACH));
         check(captured[0]!=null,"request dispatched to test sink");
         SystemClock.sleep(5300);
-        i.runOnMainSync(()->{
+        main(i,()->{
             check(HomeActions.consumeRequest(c,captured[0])==null,"expired intent cannot execute");
             check(ProgressBus.snapshot().stream().anyMatch(s->s.kind()==Kind.RETURN&&s.phase()==Phase.SKIPPED
                     &&s.reason()==Reason.UI_UNAVAILABLE),"nondelivery has correlated outcome");
@@ -147,14 +188,14 @@ final class ProgressChecks {
         });
         // Screenshot of the existing execution view only. No Bluetooth or HTTP worker is started.
         MainActivity preview=(MainActivity)i.startActivitySync(new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        i.runOnMainSync(()->{
+        main(i,()->{
             preview.findViewById(R.id.menu_content).setVisibility(View.GONE);
             preview.findViewById(R.id.call_status_content).setVisibility(View.VISIBLE);
             ((android.widget.TextView)preview.findViewById(R.id.status_title)).setText("Dzwonię do bramy");
             ((android.widget.TextView)preview.findViewById(R.id.status_description)).setText("Połączenie przez telefon Bluetooth");
         });
         capture(i,"progress-action.png");
-        i.runOnMainSync(preview::finish);
+        main(i,preview::finish);
         String category="PROGRESS_TEST_"+"A".repeat(170);
         for(int n=0;n<1800;n++) { Diagnostics.record(c,category); if(n%32==0)check(Diagnostics.awaitWrites(),"journal drain"); }
         check(Diagnostics.awaitWrites(),"journal final drain");

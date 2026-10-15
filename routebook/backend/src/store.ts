@@ -1,3 +1,4 @@
+import { recordedTimeSql } from './recorded-time.js';
 import pg from 'pg';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -55,6 +56,7 @@ export class PgStore implements Store,AnalyticsStore {
   async snapshot(deviceId:string,bounds?:{start_at:string;end_at:string}):Promise<Snapshot> {return this.readSnapshot(deviceId,bounds??'all');}
   private async readSnapshot(deviceId:string,scope:'latest'|'all'|{start_at:string;end_at:string}):Promise<Snapshot> {
     const c=await this.pool.connect();try {await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      await c.query("SET LOCAL statement_timeout = '8s'");
       const device=await c.query('SELECT revision FROM routebook_devices WHERE device_id=$1',[deviceId]);if(!device.rowCount)throw new HttpError(404,'unknown_device');
       let points:StoredPoint[];
       if(scope==='latest') {
@@ -83,7 +85,11 @@ export class PgStore implements Store,AnalyticsStore {
           }
         }
       }
-      await c.query('COMMIT');return {device_id:deviceId,revision:Number(device.rows[0].revision),points};
+      // Use the same repeatable-read revision as distance/geometry; read only +/-30s
+      // raw context per segment rather than relying on geometry's adjacent-run context.
+      const recorded = typeof scope === 'object' ? await c.query(recordedTimeSql,[deviceId,scope.start_at,scope.end_at]) : null;
+      const recorded_days = recorded ? Object.fromEntries(recorded.rows.map(row=>[row.date,row.recorded_seconds])) : undefined;
+      await c.query('COMMIT');return {device_id:deviceId,revision:Number(device.rows[0].revision),points,...(recorded_days===undefined?{}:{recorded_days})};
     }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
   }
   async ingest(e:Envelope,receivedAt:string) {

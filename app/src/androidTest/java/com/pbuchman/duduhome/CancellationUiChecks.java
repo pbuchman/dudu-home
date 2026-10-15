@@ -15,32 +15,33 @@ import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 final class CancellationUiChecks {
     static void run(Instrumentation i) {
         Context context = i.getTargetContext();
-        i.runOnMainSync(() -> ProgressBus.reset(context, Reason.RESET));
+        ProgressChecks.main(i,() -> ProgressBus.reset(context, Reason.RESET));
         android.os.SystemClock.sleep(2200); // Allow prior fixtures' terminal messages to expire.
-        i.runOnMainSync(() -> {
-            long first = ProgressBus.requestManual(context, Kind.CLEANING);
-            View banner = AutomationBanner.create(context);
-            AutomationBanner.render(banner, ProgressBus.visible());
-            int width = Math.round(390 * context.getResources().getDisplayMetrics().density);
-            banner.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-            banner.layout(0, 0, width, banner.getMeasuredHeight());
-            Button button = banner.findViewById(R.id.banner_cancel_attempt);
-            int minimum = Math.round(76 * context.getResources().getDisplayMetrics().density);
-            check(button.getVisibility() == View.VISIBLE && button.getHeight() >= minimum && button.getWidth() >= minimum, "cancel target is readable and at least 76 dp");
-            button.performClick();
-            check(!button.isEnabled() && ProgressBus.cancelled(first), "click disables and cancels synchronously");
-            AutomationBanner.render(banner, ProgressBus.snapshot().stream().filter(s -> s.id() == first).findFirst().orElseThrow());
-            check(banner.findViewById(R.id.banner_cancel_attempt).getVisibility() == View.GONE, "terminal cancellation hides action");
+        ProgressOverlay[] presenter = {null};
+        try {
+            ProgressChecks.main(i,() -> {
+                long first = ProgressBus.requestManual(context, Kind.CLEANING);
+                View banner = AutomationBanner.create(context);
+                AutomationBanner.render(banner, ProgressBus.visible());
+                int width = Math.round(390 * context.getResources().getDisplayMetrics().density);
+                banner.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                banner.layout(0, 0, width, banner.getMeasuredHeight());
+                Button button = banner.findViewById(R.id.banner_cancel_attempt);
+                int minimum = Math.round(76 * context.getResources().getDisplayMetrics().density);
+                check(button.getVisibility() == View.VISIBLE && button.getHeight() >= minimum && button.getWidth() >= minimum, "cancel target is readable and at least 76 dp");
+                button.performClick();
+                check(!button.isEnabled() && ProgressBus.cancelled(first), "click disables and cancels synchronously");
+                AutomationBanner.render(banner, ProgressBus.snapshot().stream().filter(s -> s.id() == first).findFirst().orElseThrow());
+                check(banner.findViewById(R.id.banner_cancel_attempt).getVisibility() == View.GONE, "terminal cancellation hides action");
 
-            long old = ProgressBus.requestManual(context, Kind.CLEANING);
-            AutomationBanner.render(banner, ProgressBus.visible());
-            ProgressBus.cancelAttempt(ProgressBus.token(old));
-            long current = ProgressBus.requestManual(context, Kind.CLEANING);
-            button.performClick();
-            check(ProgressBus.active(current), "stale rendered button keeps newer attempt active");
+                long old = ProgressBus.requestManual(context, Kind.CLEANING);
+                AutomationBanner.render(banner, ProgressBus.visible());
+                ProgressBus.cancelAttempt(ProgressBus.token(old));
+                long current = ProgressBus.requestManual(context, Kind.CLEANING);
+                button.performClick();
+                check(ProgressBus.active(current), "stale rendered button keeps newer attempt active");
 
-            ProgressOverlay presenter = new ProgressOverlay(context);
-            try {
+                presenter[0] = new ProgressOverlay(context);
                 var notices = context.getSystemService(NotificationManager.class).getActiveNotifications();
                 var notice = java.util.Arrays.stream(notices).filter(n -> n.getId() == 19).findFirst().orElseThrow();
                 check(notice.getNotification().actions != null && notice.getNotification().actions.length == 1, "current attempt has notification cancellation");
@@ -48,9 +49,15 @@ final class CancellationUiChecks {
                 check(pending.isService() && context.getPackageName().equals(pending.getCreatorPackage()), "notification explicitly targets own service");
                 if (Build.VERSION.SDK_INT >= 31) check(pending.isImmutable(), "notification token cannot be rewritten");
                 ProgressBus.cancelAttempt(ProgressBus.token(current));
-                check(java.util.Arrays.stream(context.getSystemService(NotificationManager.class).getActiveNotifications()).noneMatch(n -> n.getId() == 19), "terminal attempt removes live notification");
-            } finally { presenter.close(); }
-        });
+            });
+            // NotificationManager cancellation is acknowledged asynchronously by the OS.
+            // Keep the presenter alive until the real terminal update removes its notice;
+            // closing it first would conceal a missing cancellation update.
+            long deadline = android.os.SystemClock.uptimeMillis() + 5000;
+            while (java.util.Arrays.stream(context.getSystemService(NotificationManager.class).getActiveNotifications()).anyMatch(n -> n.getId() == 19)
+                    && android.os.SystemClock.uptimeMillis() < deadline) android.os.SystemClock.sleep(25);
+            check(java.util.Arrays.stream(context.getSystemService(NotificationManager.class).getActiveNotifications()).noneMatch(n -> n.getId() == 19), "terminal attempt removes live notification");
+        } finally { ProgressChecks.main(i,() -> { if (presenter[0] != null) presenter[0].close(); }); }
     }
     private static void check(boolean pass, String message) { if (!pass) throw new AssertionError(message); }
 }

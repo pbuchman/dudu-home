@@ -41,6 +41,8 @@ export type Day = {
   timezone: string;
   derivation: Derivation;
   meters: number;
+  recorded_seconds?: number | null;
+  recorded_time_derivation?: RecordedTimeDerivation;
   point_count: number;
   segments: Segment[];
   stops: Stop[];
@@ -53,14 +55,21 @@ export type Range = {
   from: string;
   to: string;
   derivation: Derivation;
+  recorded_seconds?: number | null;
+  recorded_time_derivation?: RecordedTimeDerivation;
   days: {
     date: string;
     meters: number;
     point_count: number;
     stop_count: number;
+    recorded_seconds?: number | null;
   }[];
-  months: { month: string; meters: number }[];
+  months: { month: string; meters: number; recorded_seconds?: number | null }[];
   meters: number;
+};
+export type RecordedTimeDerivation = {
+  algorithm_version: "routebook-recorded-time-1";
+  gap_seconds: 30;
 };
 export type ClockState = "empty" | "future_clock" | "fresh" | "stale";
 export type Latest = {

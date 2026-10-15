@@ -56,6 +56,25 @@ class PrivacyChecks(unittest.TestCase):
             browser.write_text(json.dumps({'label': 'D' + 'om'}))
             self.assertNotEqual(scan('--working-tree').returncode, 0)
             browser.unlink()
+            technical = 'import { renderToStaticMarkup } from "react-' + 'd' + 'om/server";\n'
+            for suffix in ('.ts', '.tsx'):
+                module = root/('browser'+suffix)
+                module.write_text(technical)
+                self.assertEqual(scan('--working-tree').returncode, 0)
+                module.write_text(technical + 'const label = "D' + 'om";\n')
+                self.assertNotEqual(scan('--working-tree').returncode, 0)
+                module.write_text(technical)
+            git('add', '.'); git('commit', '-qm', 'Synthetic technical imports')
+            self.assertEqual(scan('--all-history').returncode, 0)
+            module = root/'browser.ts'
+            module.write_text(technical + 'const label = "D' + 'om";\n')
+            git('add', '.'); git('commit', '-qm', 'Synthetic short label')
+            module.write_text(technical)
+            git('add', '.'); git('commit', '-qm', 'Remove synthetic short label')
+            self.assertEqual(scan().returncode, 0)
+            historical = scan('--all-history')
+            self.assertNotEqual(historical.returncode, 0)
+            self.assertIn(b'REJECTED browser.ts: private label', historical.stdout)
             for suffix in ('.sqlite', '.pbf', '.building'):
                 artifact = root/('synthetic-map'+suffix)
                 artifact.write_text('Generated map fixture')

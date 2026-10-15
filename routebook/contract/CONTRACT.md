@@ -165,8 +165,8 @@ empty segments/stops, 0 totals. Provisioning registers device before its first i
 | Route | Response |
 |---|---|
 | GET /v1/latest?device_id=... | `{version,device_id,revision,server_time,point:Point\|null,fresh:boolean,clock_state:empty\|future_clock\|fresh\|stale}`; fresh iff point age at server_time is between 0 and 30 s inclusive; empty for null, future_clock for negative age, stale for age>30 s |
-| GET /v1/day?device_id=...&date=... | `{version,device_id,revision,date,timezone,derivation,meters,point_count,segments:[{run_id,source_segment_id,points:Point[],edge_from:Point\|null}],stops:[{stop_id,lat,lon,start_at,end_at,duration_seconds,overlap_seconds}]}` |
-| GET /v1/range?device_id=...&from=...&to=... | inclusive calendar dates, max366 days: `{version,device_id,revision,timezone,from,to,derivation,days:[{date,meters,point_count,stop_count}],months:[{month:YYYY-MM,meters}],meters}`; include zero days and all months touched |
+| GET /v1/day?device_id=...&date=... | `{version,device_id,revision,date,timezone,derivation,recorded_time_derivation,recorded_seconds,meters,point_count,segments:[{run_id,source_segment_id,points:Point[],edge_from:Point\|null}],stops:[{stop_id,lat,lon,start_at,end_at,duration_seconds,overlap_seconds}]}` |
+| GET /v1/range?device_id=...&from=...&to=... | inclusive calendar dates, max366 days: `{version,device_id,revision,timezone,from,to,derivation,recorded_time_derivation,recorded_seconds,days:[{date,meters,point_count,stop_count,recorded_seconds}],months:[{month:YYYY-MM,meters,recorded_seconds}],meters}`; include zero days and all months touched |
 | GET /v1/live?device_id=... | SSE described below |
 | GET /health | private only, `{status:ok}` iff DB connectivity works, else503; no coordinates/counts |
 
@@ -221,3 +221,36 @@ latest regression, gap splitting, exactly3 min stop, midnight totals/stops and D
 Backend restart must retain committed points/revision; Android restart must retain pending IDs.
 Ordinary emulator/synthetic tests cannot prove DUDU wake, radio GNSS, background delivery,
 physical route accuracy or installed APK acceptance. No radio installation in this stage.
+
+## Recorded time (additive, routebook-recorded-time-1)
+
+Day responses now add `recorded_seconds:number` and
+`recorded_time_derivation:{algorithm_version:"routebook-recorded-time-1",gap_seconds:30}`.
+Range responses add both top-level fields and `recorded_seconds` on every `days[]` and
+`months[]` row. Existing v1 ingest, distance, point counts, stops and geometry are unchanged.
+
+The label is **Czas w samochodzie**, with **na podstawie zapisu GPS** as its explanation.
+This is observed GPS continuity, not an ignition or driver-presence measurement. It includes
+stationary records, including parking of ten minutes or more. Within each device and source
+`segment_id`, deduplicate measurement timestamps, sort them and form consecutive intervals
+only for `0 < delta <= 30` seconds. Union intervals across segments before clipping to
+half-open Warsaw calendar days. Do not apply geometry, accuracy, distance, movement or speed
+filters to archived timestamps; do not bridge source segments or gaps, or pad either edge.
+A day may be 23 or 25 hours. Preserve fractional seconds; round only for display. Periods sum
+exactly these daily values and can exceed 24 hours.
+
+Read all archived timestamps in the requested bounds with at most 30 seconds of context
+before/after each outer boundary, independently of geometry run context or display sampling.
+Day/range timestamps and geometry/distance share a repeatable-read snapshot and revision.
+Late backfill recomputes from the immutable archive; no aggregate cache or schema migration
+is required. The bounded SQL timestamp query uses the existing device/time index. Day/range
+reads apply an 8-second statement timeout; calculation/read failure returns503, never zero.
+The existing maximum 366-day range remains in effect.
+
+A successful new-backend calculation always returns a finite nonnegative number. Zero means
+no qualifying intervals (including empty archives and isolated points). Absent fields or
+`null` from an older/unavailable backend mean unavailable; a client must never coerce them to
+zero. `point_count=0` is “Brak danych”; a single raw point may legitimately have zero seconds.
+Loading, failed requests, unavailable metrics and no observations are distinct UI states.
+Synthetic semantic examples are in `recorded-time-examples.json`; their response objects are
+explicitly projections of full responses, not replacements for map response shapes above.

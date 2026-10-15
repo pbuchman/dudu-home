@@ -1,6 +1,7 @@
 package com.pbuchman.duduhome.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +10,7 @@ import android.view.Gravity;
 import android.widget.*;
 import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.trip.TripController;
+import com.pbuchman.duduhome.trip.TripTime;
 import com.pbuchman.duduhome.location.HomeMonitorService;
 import java.util.Locale;
 
@@ -16,9 +18,10 @@ import java.util.Locale;
 public final class TripActivity extends Activity {
     public static boolean visible;
     private TripController controller;
-    private TextView locality, street, distance, status;
-    private Button primary, end, overlayToggle;
+    private TextView locality, street, distance, status, duration, durationLabel;
+    private Button primary, reset, overlayToggle;
     private TripOverlayPreferences overlayPreferences;
+    private AlertDialog resetDialog;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable tick = new Runnable() { public void run() { render(controller.snapshot()); handler.postDelayed(this, 500); } };
     @Override public void onCreate(Bundle state) {
@@ -34,15 +37,23 @@ public final class TripActivity extends Activity {
         });
         locality=findViewById(R.id.trip_locality); street=findViewById(R.id.trip_street);
         distance=findViewById(R.id.trip_distance); status=findViewById(R.id.trip_status);
-        primary=findViewById(R.id.trip_primary); end=findViewById(R.id.trip_end);
+        duration=findViewById(R.id.trip_time); durationLabel=findViewById(R.id.trip_time_label);
+        primary=findViewById(R.id.trip_primary); reset=findViewById(R.id.trip_reset);
         findViewById(R.id.trip_back).setOnClickListener(v -> finish());
         primary.setOnClickListener(v -> {
             String current=controller.snapshot().state();
             if(!current.equals("ACTIVE") && !HomeMonitorService.ready(this)) { status.setText(R.string.trip_permissions); return; }
-            controller.command(current.equals("ACTIVE") ? "PAUSE" : current.equals("PAUSED") ? "RESUME" : "START");
+            controller.command(current.equals("ACTIVE") ? "PAUSE" : "START");
             HomeMonitorService.ensureStarted(this);
         });
-        end.setOnClickListener(v -> controller.command("END"));
+        reset.setOnClickListener(v -> {
+            TripController.Snapshot current=controller.snapshot();
+            if (current.meters()>0 || current.millis()>0)
+                resetDialog=new AlertDialog.Builder(this).setMessage("Wyzerować czas i dystans?")
+                    .setNegativeButton("Anuluj", null)
+                    .setPositiveButton("Reset", (dialog, which) -> controller.command("RESET")).show();
+            else controller.command("RESET");
+        });
         HomeMonitorService.ensureStarted(this);
     }
     /** Shared renderer; instrumentation supplies synthetic snapshots without starting executors. */
@@ -50,13 +61,14 @@ public final class TripActivity extends Activity {
         overlayToggle.setText(overlayPreferences.visible() ? R.string.trip_overlay_hide : R.string.trip_overlay_show);
         locality.setText(state.title()); street.setText(state.subtitle());
         distance.setText(String.format(Locale.forLanguageTag("pl"), "%.1f km", state.meters()/1000));
-        primary.setText(state.active() ? "Pauza" : state.state().equals("PAUSED") ? "Wznów" : "Rozpocznij");
+        duration.setText(TripTime.format(state.millis()));
+        durationLabel.setText(state.partialTime() ? "Czas od aktualizacji" : "Czas sesji");
+        primary.setText(state.active() ? "Pauza" : "Start");
         primary.setEnabled(state.loaded() && state.error().isEmpty());
-        end.setVisibility(state.active() || state.state().equals("PAUSED") ? View.VISIBLE : View.GONE);
+        reset.setEnabled(state.loaded() && state.error().isEmpty());
         status.setText(!state.error().isEmpty() ? state.error() : !state.loaded() ? "Odczytywanie sesji…"
                 : state.state().equals("PAUSED") ? "Pomiar wstrzymany"
-                : state.state().equals("FINISHED") ? "Zakończony przejazd"
-                : state.active() ? "Dystans jest liczony również w tle" : "Rozpocznij nowy przejazd");
+                : state.active() ? "Czas i dystans są liczone również w tle" : "Pomiar wstrzymany");
     }
     @Override public void onResume() { super.onResume(); visible=true; handler.post(tick); }
     @Override public void onPause() { visible=false; handler.removeCallbacks(tick); super.onPause(); }

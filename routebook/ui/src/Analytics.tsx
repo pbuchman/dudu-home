@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
-  AnalyticsResponse,
   Journey,
   JourneyDetailResponse,
   Metrics,
@@ -19,6 +18,7 @@ import {
 } from "./analytics-model";
 import { km, localDate, time, type Geometry } from "./model";
 import MapView from "./MapView";
+import { recordedTime, type AnalyticsResponse } from "./recorded-time";
 
 const boundaries = {
   confirmed_stop: "potwierdzony postój",
@@ -288,16 +288,32 @@ export default function Analytics({
                 {summary.journeys.filter((j) => j.complete).length} kompletnych
               </span>
             </div>
+            <dl className="analytics-metrics recorded-metric">
+              <div>
+                <dt>Czas w samochodzie</dt>
+                <dd>
+                  {recordedTime(
+                    summary.totals.recorded_seconds,
+                    summary.totals.point_count !== 0,
+                  )}
+                </dd>
+                <dd className="recorded-explanation">
+                  na podstawie zapisu GPS
+                </dd>
+              </div>
+            </dl>
             <MetricsView
               value={summary.totals}
               observed={summary.journeys.length > 0}
             />
             <p className="muted">
-              Dystans i czas dotyczą przejazdów w wybranym okresie. Parking
+              Czas w samochodzie obejmuje ruch i postój przy ciągłym zapisie GPS.
+              Pozostałe czasy i dystans dotyczą przejazdów w wybranym okresie. Parking
               między przejazdami (≥10 min) jest pominięty; pełne wizyty są
               poniżej. Podróż na granicy dat ma pełne dane w dzienniku. Średnia
               całej podróży jest dostępna wyłącznie przy kompletnym zapisie.
             </p>
+            <RecordedPeriods summary={summary} />
           </section>
           <div className="journey-workspace">
             <section className="analytics-card journey-list">
@@ -619,6 +635,50 @@ export default function Analytics({
         </>
       ) : null}
     </main>
+  );
+}
+function RecordedPeriods({ summary }: { summary: AnalyticsResponse }) {
+  return (
+    <details className="recorded-periods">
+      <summary>Czas w samochodzie według dni, tygodni i miesięcy</summary>
+      {([
+        ["Dni", summary.days],
+        ["Tygodnie od poniedziałku", summary.weeks],
+        ["Miesiące", summary.months],
+      ] as const).map(([label, rows]) => (
+        <div
+          className="table-scroll"
+          key={label}
+          role="region"
+          aria-label={label}
+          tabIndex={0}
+        >
+          <table>
+            <caption>{label} · na podstawie zapisu GPS</caption>
+            <thead>
+              <tr>
+                <th scope="col">Okres</th>
+                <th scope="col">Czas w samochodzie</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length ? (
+                rows.map((row) => (
+                  <tr key={row.period}>
+                    <th scope="row">{row.period}</th>
+                    <td>
+                      {recordedTime(row.recorded_seconds, row.point_count !== 0)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={2}>Brak danych</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </details>
   );
 }
 type PlaceDraft = {

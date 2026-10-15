@@ -6,7 +6,7 @@ export interface StoredPoint extends Point { device_id: string; received_at: str
 export interface Envelope { version: 1; device_id: string; lane: 'latest' | 'backfill'; points: unknown[] }
 export interface Result { index: number; event_id: string | null; status: 'accepted' | 'duplicate' | 'rejected'; code: null | 'invalid_point' | 'event_conflict' }
 export interface Ack { version: 1; device_id: string; received_at: string; revision: number; results: Result[] }
-export interface Snapshot { device_id: string; revision: number; points: StoredPoint[] }
+export interface Snapshot { device_id: string; revision: number; points: StoredPoint[]; recorded_days?: Record<string, number> }
 export interface Derivation {
   gap_seconds: number; max_edge_speed_mps: number; stationary_speed_mps: number;
   min_edge_m: number; stop_radius_m: number; stop_seconds: number; earth_radius_m: number;

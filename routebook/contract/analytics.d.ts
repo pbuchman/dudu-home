@@ -22,7 +22,9 @@ export interface Visit {
   visit_id:string;start_at:string;end_at:string;duration_seconds:number;overlap_seconds:number;
   lat:number;lon:number;place:NamedPlace|null;
 }
-export interface PeriodSummary extends Metrics {period:string;journey_count:number;complete_journey_count:number;stop_count:number}
+export interface RecordedTimeDerivation {algorithm_version:"routebook-recorded-time-1";gap_seconds:30}
+export interface RecordedMetrics extends Metrics {recorded_seconds:number;point_count:number}
+export interface PeriodSummary extends RecordedMetrics {period:string;journey_count:number;complete_journey_count:number;stop_count:number}
 export interface DirectionalComparison {
   from_place:NamedPlace;to_place:NamedPlace;count:number;complete_count:number;
   mean_seconds:number;mean_meters:number;mean_stop_count:number;
@@ -36,7 +38,8 @@ export interface AnalyticsProvenance {
   context:{start_at:string;end_at:string;max_points:number;max_days:number};
 }
 export interface AnalyticsResponse extends AnalyticsProvenance {
-  totals:Metrics;journeys:Journey[];days:PeriodSummary[];weeks:PeriodSummary[];months:PeriodSummary[];
+  recorded_time_derivation:RecordedTimeDerivation;
+  totals:RecordedMetrics;journeys:Journey[];days:PeriodSummary[];weeks:PeriodSummary[];months:PeriodSummary[];
   visits:Visit[];places:NamedPlace[];comparisons:DirectionalComparison[];
 }
 export interface TimelineInterval {start_at:string;end_at:string;state:'moving'|'stopped'|'unknown';meters:number}

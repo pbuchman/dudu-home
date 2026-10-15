@@ -199,6 +199,24 @@ test('acceptance: real PostGIS + API + nginx metadata isolation and immutable in
       await post(r.points); const oldDay = await get('day?date=2026-10-05');
       const a = await get('analytics?from=2026-10-05&to=2026-10-05'); assert.equal(a.journeys.length, 2); assert.equal(a.source_revision, 1); assert.equal(a.metadata_revision, 2);
       near(a.totals.meters, oldDay.meters); assert.equal(a.comparisons.length, 2);
+      // Continuous raw observations include all three ten-minute parking periods,
+      // independently of the shorter journey elapsed time and map geometry.
+      assert.equal(new Set(r.points.map(point => point.segment_id)).size, 1);
+      assert.ok(r.points.slice(1).every((point, index) => {
+        const gap = Date.parse(point.measured_at) - Date.parse(r.points[index].measured_at);
+        return gap > 0 && gap <= 30_000;
+      }));
+      const observedSeconds = (Date.parse(r.points.at(-1).measured_at) - Date.parse(r.points[0].measured_at)) / 1000;
+      assert.equal(observedSeconds, 1940);
+      assert.equal(oldDay.recorded_seconds, observedSeconds);
+      assert.equal(a.totals.recorded_seconds, observedSeconds);
+      assert.equal(a.totals.point_count, r.points.length);
+      assert.ok(a.totals.recorded_seconds > a.totals.elapsed_seconds);
+      const range = await get('range?from=2026-10-05&to=2026-10-05');
+      assert.equal(range.recorded_seconds, observedSeconds);
+      assert.equal(range.days[0].recorded_seconds, observedSeconds);
+      assert.equal(range.months[0].recorded_seconds, observedSeconds);
+      for (const periods of [a.days, a.weeks, a.months]) assert.equal(periods[0].recorded_seconds, observedSeconds);
       const d = await get(`analytics/journey?from=2026-10-05&to=2026-10-05&journey_id=${a.journeys[0].journey_id}`); assert.equal(d.source_revision, a.source_revision); assert.equal(d.metadata_revision, a.metadata_revision);
       const changed = await write('PUT', `places/${placeA.place_id}`, { expected_metadata_revision: 2, ...placeA, place_id: undefined, name: 'Synthetic Revised Alpha' }); assert.equal(changed.status, 200);
       assert.deepEqual(await get('day?date=2026-10-05'), oldDay);
@@ -244,6 +262,10 @@ async function browserAcceptance(t, require, web, testDevice, post, archive, get
       await page.getByRole('heading', { name: 'Dziennik podróży' }).waitFor();
       await page.locator('.journey-row').first().waitFor(); await page.getByLabel('Pozycja w podróży', { exact: true }).waitFor();
       assert.equal(await page.title(), 'Routebook · prywatna historia'); assert.equal(await page.locator('.journey-row').count(), 2);
+      assert.equal(await page.locator('.recorded-metric dd').first().innerText(), '32 min 20 s', 'real archive parking time must reach the rendered analytics metric');
+      const recordedEvidence = process.env.ROUTEBOOK_ANALYTICS_EVIDENCE ?? tmpdir();
+      await mkdir(recordedEvidence, { recursive: true });
+      await page.screenshot({ path: resolve(recordedEvidence, 'routebook-recorded-parking-desktop.png'), fullPage: true });
       await page.getByRole('button', { name: 'Tydzień', exact: true }).click();
       await page.locator('.period-caption').filter({ hasText: /2026-10-05\s.*2026-10-11/ }).waitFor();
       await page.getByLabel('Pozycja w podróży', { exact: true }).waitFor();
