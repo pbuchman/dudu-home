@@ -410,8 +410,10 @@ public final class HomeMonitorService extends Service implements LocationListene
     }
     @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }
     @Override public void onStatusChanged(String provider, int status, Bundle extras) {
-        if (routebook != null && LocationManager.GPS_PROVIDER.equals(provider)
-                && status != android.location.LocationProvider.AVAILABLE) routebook.breakSegment();
+        if (LocationManager.GPS_PROVIDER.equals(provider) && status != android.location.LocationProvider.AVAILABLE) {
+            if (trip != null) trip.breakSegment();
+            if (routebook != null) routebook.breakSegment();
+        }
     }
     @Override public void onDestroy() {
         if (routebook != null) routebook.close();

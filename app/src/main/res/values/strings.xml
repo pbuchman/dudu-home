@@ -117,8 +117,8 @@
     <string name="navigation_drive">Jedź</string>
     <string name="navigation_choice_help">Wybór miejsca uruchomi nawigację w Google Maps.</string>
     <string name="trip_title">Gdzie jestem</string>
-    <string name="trip_start">Rozpocznij</string>
-    <string name="trip_end">Zakończ</string>
+    <string name="trip_start">Start</string>
+    <string name="trip_reset">Reset</string>
     <string name="trip_permissions">Brak uprawnień lokalizacji lub powiadomień. Sprawdź instalację.</string>
     <string name="trip_overlay_drag">Przesuń</string>
     <string name="trip_overlay_drag_description">Przeciągnij, aby przesunąć panel</string>

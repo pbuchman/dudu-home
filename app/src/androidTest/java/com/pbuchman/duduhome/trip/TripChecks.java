@@ -77,22 +77,21 @@ public final class TripChecks {
         TripController controller=TripController.get(c);
         for(int n=0;n<40 && !controller.snapshot().loaded();n++)SystemClock.sleep(50);
         check(controller.snapshot().loaded(),"trip loaded");
-        if(controller.snapshot().active() || controller.snapshot().state().equals("PAUSED")) {
-            controller.command("END");waitState(controller,"FINISHED");
-        }
+        controller.command("PAUSE");waitState(controller,"PAUSED");
+        controller.command("RESET");SystemClock.sleep(200);
         controller.command("START");waitState(controller,"ACTIVE");
         controller.offer(location(.001));SystemClock.sleep(1050);controller.offer(location(.0011));
         SystemClock.sleep(1050);controller.offer(location(.0012));SystemClock.sleep(400);
-        check(controller.snapshot().meters()>20 && controller.snapshot().place().complete(),"independent distance and offline resolver");
-        controller.command("PAUSE");waitState(controller,"PAUSED");double meters=controller.snapshot().meters();
-        controller.offer(location(.009));SystemClock.sleep(200);check(controller.snapshot().meters()==meters,"pause ignores fixes");
-        TripStore.Saved saved=new TripStore(c).read();check(saved.state().equals("PAUSED") && saved.meters()==meters,"pause acknowledged after durable save");
-        controller.command("RESUME");waitState(controller,"ACTIVE");controller.offer(location(.005));SystemClock.sleep(200);
-        check(controller.snapshot().meters()==meters,"resume no bridge");
-        controller.command("END");waitState(controller,"FINISHED");
-        check(new TripStore(c).read().state().equals("FINISHED"),"durable end");
-        controller.command("START");waitState(controller,"ACTIVE");check(controller.snapshot().meters()==0,"new session zero");
-        controller.command("END");waitState(controller,"FINISHED");
+        check(controller.snapshot().meters()>20 && controller.snapshot().millis()>1800 && controller.snapshot().place().complete(),"independent distance time and offline resolver");
+        controller.command("PAUSE");waitState(controller,"PAUSED");double meters=controller.snapshot().meters();long millis=controller.snapshot().millis();
+        controller.offer(location(.009));SystemClock.sleep(200);check(controller.snapshot().meters()==meters && controller.snapshot().millis()==millis,"pause ignores fixes");
+        TripStore.Saved saved=new TripStore(c).read();check(saved.state().equals("PAUSED") && saved.meters()==meters && saved.millis()==millis,"pause acknowledged after durable save");
+        controller.command("START");waitState(controller,"ACTIVE");controller.offer(location(.005));SystemClock.sleep(200);
+        check(controller.snapshot().meters()==meters && controller.snapshot().millis()==millis,"start continues totals without bridge");
+        controller.command("RESET");SystemClock.sleep(200);
+        check(controller.snapshot().active() && controller.snapshot().meters()==0 && controller.snapshot().millis()==0,"active reset zeros both and retains active");
+        controller.command("PAUSE");waitState(controller,"PAUSED");
+        TripSessionChecks.run(c);
         check(!com.pbuchman.duduhome.automation.HomeActions.busy(),"trip never acquires action lease");
     }
 }

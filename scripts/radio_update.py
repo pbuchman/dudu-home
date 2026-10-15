@@ -153,38 +153,23 @@ def ui_resource(adb,name,seconds=15):
         time.sleep(.5)
 
 def smoke_trip(adb):
-    # Preserve an existing user trip or summary. Only exercise a fresh installation's empty session.
-    saved=subprocess.run([*adb,'exec-out','run-as',PACKAGE,'cat','no_backup/trip-state.json'],capture_output=True,timeout=10)
-    try:before=json.loads(saved.stdout)
-    except ValueError:before={'state':'OFF','meters':0}
-    if before.get('state') in ('ACTIVE','PAUSED') or before.get('meters',0)>0:
-        return 'skipped to preserve existing trip'
-    started=False
-    try:
-        tap_node(adb,ui_resource(adb,'where_am_i_button'))
-        primary=ui_resource(adb,'trip_primary')
-        if primary.get('text')!='Rozpocznij':raise Blocked('Unexpected existing trip state')
-        tap_node(adb,primary);started=True;time.sleep(2)
-        if ui_resource(adb,'trip_primary').get('text')!='Pauza':raise Blocked('Trip did not start')
-        city=ui_resource(adb,'trip_locality').get('text')
-        run(adb,['shell','input','keyevent','KEYCODE_HOME']);time.sleep(2)
-        overlay=ui_resource(adb,'trip_locality',seconds=5)
-        city=overlay.get('text')
-        tap_node(adb,overlay)
-        if ui_resource(adb,'trip_primary').get('text')!='Pauza':raise Blocked('Overlay tap did not open trip')
-        run(adb,['shell','input','keyevent','KEYCODE_HOME']);time.sleep(1)
-        run(adb,['shell','cmd','statusbar','expand-notifications']);time.sleep(1)
-        notification=next((n for n in ui_tree(adb).iter('node') if n.get('resource-id')=='android:id/title' and n.get('text')==city),None)
-        if notification is None:raise Blocked('Trip notification not found in radio UI')
-        tap_node(adb,notification)
-        tap_node(adb,ui_resource(adb,'trip_primary'));time.sleep(1)
-        if ui_resource(adb,'trip_primary').get('text')!='Wznów':raise Blocked('Pause not confirmed')
-        tap_node(adb,ui_resource(adb,'trip_end'));started=False;time.sleep(1)
-        if ui_resource(adb,'trip_primary').get('text')!='Rozpocznij':raise Blocked('End not confirmed')
-        tap_node(adb,ui_resource(adb,'trip_back'))
-        return 'passed start/background/overlay/notification/pause/end'
-    finally:
-        if started:
-            run(adb,['shell','cmd','statusbar','collapse'])
-            run(adb,['shell','am','start','-n',PACKAGE+'/.ui.MainActivity','-a',PACKAGE+'.OPEN_TRIP'])
-            tap_node(adb,ui_resource(adb,'trip_end',seconds=30))
+    # Installation only inspects the passive screen. Never Start, Pause or Reset user data.
+    # GPS may keep increasing an already-active session while this check is running.
+    tap_node(adb,ui_resource(adb,'where_am_i_button'))
+    # The passive screen scrolls on short landscape displays; reveal its lower controls.
+    tree=ui_tree(adb)
+    scroll=next((n for n in tree.iter('node') if n.get('scrollable')=='true'),None)
+    if scroll is not None:
+        bounds=re.fullmatch(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]',scroll.get('bounds',''))
+        if bounds is None:raise Blocked('Trip scroll bounds unavailable; no session action tapped')
+        left,top,right,bottom=map(int,bounds.groups());x=(left+right)//2
+        run(adb,['shell','input','swipe',str(x),str(top+(bottom-top)*3//4),str(x),str(top+(bottom-top)//4),'300'])
+    primary=ui_resource(adb,'trip_primary')
+    if primary.get('text') not in ('Start','Pauza'):
+        raise Blocked('Unexpected session control; no session action tapped')
+    if ui_resource(adb,'trip_reset').get('text')!='Reset':
+        raise Blocked('Reset control unavailable; no session action tapped')
+    if not re.fullmatch(r'[0-9]{2,}:[0-9]{2}:[0-9]{2}',ui_resource(adb,'trip_time').get('text','')):
+        raise Blocked('Session time unavailable; no session action tapped')
+    run(adb,['shell','input','keyevent','KEYCODE_BACK'])
+    return 'passed passive session screen/time/controls; existing state and totals preserved'
