@@ -13,10 +13,11 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.4.0-rc2` (code 26).**
-> Home Dev adds time in the car from archived GPS, including stationary observations.
-> Android adds manual session duration and Start/Pause/Reset controls.
-> [Release notes](docs/RELEASE_1_4_0_RC2.md).
+> **Combined test candidate `1.4.0-rc3` (code 27).**
+> Home Dev distinguishes observed GPS time from estimated parking-tail corrections.
+> Android adds a passive radio observer with a separate durable event queue.
+> Power-based timer corrections require an independently validated firmware profile.
+> [Release notes](docs/RELEASE_1_4_0_RC3.md).
 > Android, backend, private map UI and deployment tooling now share one source revision.
 > Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
 > last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
@@ -77,11 +78,13 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   unacknowledged points in SQLite and send the newest fix before historical backlog. The
   private web map shows live/day/range history plus a journey diary, movement/stop/unknown
   time, a synchronized speed chart and replay, named places/visits and directional comparisons.
-  Day/range/table and period summaries also show time in the car from continuous GPS
-  records, including long stationary parking. This is separate from journey elapsed time
-  and the manual radio session; absence of observations remains explicit.
-  All detailed analysis runs on Home Dev using existing records; the radio collector and
-  ingestion format are unchanged. No fuel/cost estimates or additional GPS telemetry.
+  Day/range/table and period summaries show corrected time alongside raw GPS time and
+  excluded parking tails, with estimated and provisional corrections labelled explicitly.
+  Waiting with a known active radio counts. The metric remains separate from journey
+  elapsed time and the manual radio session; absent observations are not zero-speed driving.
+  All detailed analysis runs on Home Dev. The GPS collector and v1 ingest format remain
+  compatible; optional v2 radio observations use a separate queue. No fuel/cost estimates
+  or additional GPS sampling. [Correction rules and quality target](docs/PARKING_TIME.md).
   Upload needs separate private provisioning; [architecture and pairing](docs/ROUTEBOOK.md).
 - **Automatic gate calls:** after three continuous seconds of qualified GPS movement in any
   direction, including reversing, following a good fix in the parking area. A new boot or

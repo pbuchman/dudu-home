@@ -6,6 +6,15 @@ UI/API/SSE), PostgreSQL on 8793. Check host inventory before assigning these por
 
 ## Updating an existing paired installation to 1.4
 
+For the explicitly approved 1.4.0-rc3 parking-time rollout, the owner waived a new backup.
+Skip step 2's source/configuration copies and database dump for that rollout. Record only
+configuration digests/permissions, existing source/image identifiers and raw-archive count
+and digest evidence in a private receipt. Preserve incoming measurements; the event-table
+migration is additive. Retain old application images for rollback, never restore an older
+database over newly received points. All other deployment/verification steps still apply.
+Power interpretation profiles remain empty until separate hardware acceptance, so existing
+configuration and pairing require no changes to use historical estimates.
+
 Use the reviewed merged release revision. Do not run pairing/provisioning again and do not
 change public ingest, tailnet routes, device identity, credentials or the raw archive.
 

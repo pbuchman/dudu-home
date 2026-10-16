@@ -1,6 +1,19 @@
 # Development handoff
 
-## Current candidate: 1.4.0-rc2 / code 26
+## Current candidate: 1.4.0-rc3 / code 27
+
+RC3 separates recorded GPS coverage from estimated parking-tail exclusions on Home Dev.
+All day/range/table/period and trip/comparison views retain raw time and expose correction
+quality. Passive radio events use v2 ingestion and a separate Android outbox; v1 GPS and
+its SQLite schema remain unchanged. Firmware interpretation is diagnostic by default.
+Manual Start/Pauza/Reset remains independent. See RELEASE_1_4_0_RC3.md and PARKING_TIME.md.
+
+The owner waived a new backup for this rollout. Preserve archive/configuration and retain
+private source/image/count/digest receipts for application-only rollback. Install no APK
+on the physical radio in this workstream. Confirmed power interpretation and the independent
+one-hundred-event precision study remain pending even when synthetic verification passes.
+
+## Previous candidate: 1.4.0-rc2 / code 26
 
 RC2 adds GPS-observed time to Home Dev day/range/table and analytics period summaries,
 including long stationary parking. The separate Android session gains elapsed observed

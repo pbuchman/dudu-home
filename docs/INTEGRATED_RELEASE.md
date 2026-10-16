@@ -1,14 +1,16 @@
-# Combined main candidate: 1.4.0-rc2 / code 26
+# Combined main candidate: 1.4.0-rc3 / code 27
 
 ## Current change and independent delivery
 
-The RC2 candidate adds GPS-observed time to private Home Dev summaries and manual time
-with Start/Pause/Reset on the passive Android trip screen. It retains the RC1 journey
-analytics and movable/dismissible location card. Collection, immutable offline records
-and ingestion v1 stay unchanged. [Current release notes](RELEASE_1_4_0_RC2.md) define
-scope and acceptance.
+The RC3 candidate adds conservative parking-tail corrections to private Home Dev summaries,
+with raw/estimated/provisional evidence kept visible. Android adds independent passive power
+observations and bounded manual-timer gating that requires a verified firmware profile.
+It retains RC2 Start/Pause/Reset and RC1 journey analytics and movable/dismissible card.
+GPS collection, its original database and ingestion v1 stay compatible.
+[Current release notes](RELEASE_1_4_0_RC3.md) define scope and acceptance.
 One tested merged commit identifies source, private APK and server/UI. Publish source only,
-then deploy the existing Home Dev service with backup and preserved archive/provisioning.
+then deploy the existing Home Dev service with preserved archive/provisioning. For this
+update the owner explicitly waived a new backup; keep image/source identifiers for rollback.
 Radio installation remains in a separate workstream; the historical installation procedure
 below is background, not an instruction to install the older code-23 artifact.
 
