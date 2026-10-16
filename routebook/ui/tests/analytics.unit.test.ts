@@ -58,6 +58,41 @@ describe("private analytics display and replay", () => {
     ])
       expect(sameRevision(detail, { ...summary, ...changed })).toBe(false);
   });
+  it("accepts request-time differences but rejects correction maturity crossed between reads", () => {
+    const { summary, detail } = analyticsFixture();
+    const correction = {
+      correction_algorithm_version: "routebook-in-car-1" as const,
+      correction_computed_at: "2026-10-05T12:00:00.000Z",
+      correction_next_refresh_at: "2026-10-05T12:01:00.000Z",
+    };
+    const a = { ...detail, ...correction };
+    expect(
+      sameRevision(a, {
+        ...summary,
+        ...correction,
+        correction_computed_at: "2026-10-05T12:00:00.010Z",
+      }),
+    ).toBe(true);
+    expect(
+      sameRevision(a, {
+        ...summary,
+        ...correction,
+        correction_computed_at: "2026-10-05T12:01:00.000Z",
+        correction_next_refresh_at: null,
+      }),
+    ).toBe(false);
+    expect(
+      sameRevision(
+        {
+          ...a,
+          correction_computed_at: "2026-10-05T12:01:00.001Z",
+          correction_next_refresh_at: null,
+        },
+        { ...summary, ...correction },
+      ),
+    ).toBe(false);
+    expect(sameRevision(a, summary)).toBe(false);
+  });
   it("selects raw observations from map position and separates historical from live marker", () => {
     expect(nearestObservation(points, 0.006, 0)).toBe(3);
     const result = mapData({}, points[0], "fresh", points[3]);

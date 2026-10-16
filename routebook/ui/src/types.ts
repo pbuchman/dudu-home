@@ -1,3 +1,4 @@
+import type { CorrectionMetrics } from "../../contract/analytics.js";
 export type Point = {
   event_id: string;
   segment_id: string;
@@ -33,7 +34,7 @@ export type Segment = {
   points: Point[];
   edge_from: Point | null;
 };
-export type Day = {
+export type Day = Partial<CorrectionMetrics> & {
   version: 1;
   device_id: string;
   revision: number;
@@ -47,7 +48,7 @@ export type Day = {
   segments: Segment[];
   stops: Stop[];
 };
-export type Range = {
+export type Range = Partial<CorrectionMetrics> & {
   version: 1;
   device_id: string;
   revision: number;
@@ -57,14 +58,18 @@ export type Range = {
   derivation: Derivation;
   recorded_seconds?: number | null;
   recorded_time_derivation?: RecordedTimeDerivation;
-  days: {
+  days: (Partial<CorrectionMetrics> & {
     date: string;
     meters: number;
     point_count: number;
     stop_count: number;
     recorded_seconds?: number | null;
-  }[];
-  months: { month: string; meters: number; recorded_seconds?: number | null }[];
+  })[];
+  months: (Partial<CorrectionMetrics> & {
+    month: string;
+    meters: number;
+    recorded_seconds?: number | null;
+  })[];
   meters: number;
 };
 export type RecordedTimeDerivation = {

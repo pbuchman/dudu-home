@@ -197,7 +197,9 @@ button.primary:hover {
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.recorded-metric dd.recorded-explanation, .analytics-metrics dd.recorded-explanation, .month-recorded {
+.recorded-metric dd.recorded-explanation,
+.analytics-metrics dd.recorded-explanation,
+.month-recorded {
   color: var(--muted);
   font-size: 12px;
   font-weight: 400;
@@ -1278,4 +1280,46 @@ button:disabled {
   .comparison {
     padding: 16px;
   }
+}
+
+.in-car-time {
+  margin: 1rem 0;
+}
+.recorded-explanation {
+  display: block;
+  white-space: normal;
+}
+.correction-detail {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0.55rem 0;
+  overflow-wrap: anywhere;
+}
+.correction-detail summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.correction-detail dl {
+  display: grid;
+  gap: 0.45rem;
+}
+.correction-detail dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.2rem 1rem;
+}
+.correction-detail dt {
+  font-weight: 400;
+}
+.correction-detail dd {
+  margin: 0;
+  font-weight: 600;
+}
+.correction-detail p {
+  color: var(--muted);
+  max-width: 70ch;
+}
+.correction-detail li {
+  margin-bottom: 0.5rem;
 }

@@ -75,7 +75,7 @@ test("API day, range, month and analytics periods show independent authoritative
   await expect(page).toHaveTitle(/Routebook/);
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   await expect(metric(page)).toHaveText("45 min");
-  await expect(page.getByText("na podstawie zapisu GPS", { exact: true })).toBeVisible();
+  await expect(page.getByText("Zapis GPS (surowy) · korekta niedostępna", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Zakres", exact: true }).click();
   await page.getByLabel("Od", { exact: true }).fill("2026-10-14");
   await page.getByLabel("Do", { exact: true }).fill("2026-10-15");

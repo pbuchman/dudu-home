@@ -1,9 +1,5 @@
-import type {
-  JourneyDetailResponse,
-  PlaceWrite,
-  PlacesResponse,
-} from "../../contract/analytics.js";
-import type { AnalyticsResponse } from "./recorded-time";
+import type { PlaceWrite, PlacesResponse } from "../../contract/analytics.js";
+import type { AnalyticsResponse, JourneyDetailResponse } from "./recorded-time";
 export function analyticsApi(device: string) {
   async function request<T>(
     path: string,

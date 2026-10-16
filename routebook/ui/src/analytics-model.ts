@@ -1,7 +1,8 @@
 import type {
   AnalyticsPoint,
-  JourneyDetailResponse,
+  CorrectionMetadata,
 } from "../../contract/analytics.js";
+import type { JourneyDetailResponse } from "./recorded-time";
 export function duration(seconds: number | null | undefined): string {
   if (seconds == null) return "Brak danych";
   const rounded = Math.round(seconds);
@@ -48,9 +49,24 @@ export function sameRevision(
     source_revision: number;
     metadata_revision: number;
     algorithm_version: string;
-  },
+  } & Partial<CorrectionMetadata>,
 ) {
+  const crossedMaturity = (
+    earlier: Partial<CorrectionMetadata>,
+    later: Partial<CorrectionMetadata>,
+  ) => {
+    const boundary = Date.parse(earlier.correction_next_refresh_at ?? "");
+    const computed = Date.parse(later.correction_computed_at ?? "");
+    return (
+      Number.isFinite(boundary) &&
+      Number.isFinite(computed) &&
+      computed >= boundary
+    );
+  };
   return (
+    a.correction_algorithm_version === b.correction_algorithm_version &&
+    !crossedMaturity(a, b) &&
+    !crossedMaturity(b, a) &&
     a.source_revision === b.source_revision &&
     a.metadata_revision === b.metadata_revision &&
     a.algorithm_version === b.algorithm_version

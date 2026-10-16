@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Adapter, Day, Latest, Range } from "./types";
 import { clockState, geometry, type Geometry } from "./model";
 import { loadRange, type Progress } from "./range-loader";
+import { useCorrectionRefresh } from "./use-correction-refresh";
 export type Selection = {
   mode: "day" | "live" | "range";
   date: string;
@@ -20,6 +21,11 @@ export function useRoutebook(adapter: Adapter, selection: Selection) {
     "connecting" | "connected" | "offline"
   >("connecting");
   const [refresh, setRefresh] = useState(0);
+  const correctionRefresh = useCallback(() => setRefresh((n) => n + 1), []);
+  useCorrectionRefresh(
+    (selection.mode === "range" ? range : day)?.correction_next_refresh_at,
+    correctionRefresh,
+  );
   const [, setTick] = useState(0);
   const clock = useRef(0);
   const revision = useRef(-1);
