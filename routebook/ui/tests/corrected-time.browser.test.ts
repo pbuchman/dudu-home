@@ -307,3 +307,23 @@ test("a repeated stale correction deadline does not loop requests", async ({
   await page.clock.runFor(10000);
   expect(h.requests.day).toBe(2);
 });
+
+for (const view of ["day", "range", "analytics"] as const)
+  test(`server-relative maturity survives an ahead client clock in ${view}`, async ({ page }) => {
+    const h = await harness(page, true);
+    await page.clock.setFixedTime(new Date("2026-10-05T13:00:00Z"));
+    await page.goto("/");
+    if (view === "analytics")
+      await page.getByRole("button", { name: "Analizy", exact: true }).click();
+    if (view === "range")
+      await page.getByRole("button", { name: "Zakres", exact: true }).click();
+    await expect(primary(page)).toHaveText("30 min");
+    await page.clock.runFor(10000);
+    await expect(primary(page)).toHaveText("30 min");
+    // Server has now matured. A local wall-clock correction must neither postpone
+    // the monotonic timer nor have consumed its single refresh prematurely.
+    h.mature();
+    await page.clock.setFixedTime(new Date("2026-10-05T10:00:00Z"));
+    await page.clock.runFor(51000);
+    await expect(primary(page)).toHaveText("28 min 20 s");
+  });

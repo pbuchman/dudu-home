@@ -24,6 +24,7 @@ export function useRoutebook(adapter: Adapter, selection: Selection) {
   const correctionRefresh = useCallback(() => setRefresh((n) => n + 1), []);
   useCorrectionRefresh(
     (selection.mode === "range" ? range : day)?.correction_next_refresh_at,
+    (selection.mode === "range" ? range : day)?.correction_computed_at,
     correctionRefresh,
   );
   const [, setTick] = useState(0);

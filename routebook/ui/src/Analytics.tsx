@@ -100,7 +100,11 @@ export default function Analytics({
   const [detailError, setDetailError] = useState("");
   const [refresh, setRefresh] = useState(0);
   const correctionRefresh = useCallback(() => setRefresh((n) => n + 1), []);
-  useCorrectionRefresh(summary?.correction_next_refresh_at, correctionRefresh);
+  useCorrectionRefresh(
+    summary?.correction_next_refresh_at,
+    summary?.correction_computed_at,
+    correctionRefresh,
+  );
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<PlaceDraft>();
   const [saving, setSaving] = useState(false);
