@@ -66,9 +66,103 @@ final class ProgressChecks {
                 + " allowed=" + HomeActions.allowsExternalLaunch() + " busy=" + HomeActions.busy()
                 + " monitor_ready=" + HomeMonitorService.ready(context) + " progress=" + (progress == null ? "none" : progress.phase());
     }
+    private static void checkFloatingGestures(Instrumentation i,Context c,ProgressOverlay panel)throws Exception {
+        var original=new java.util.concurrent.atomic.AtomicReference<List<ProgressModel.State>>();
+        main(i,()->original.set(ProgressBus.snapshot()));
+        final long heldAt=SystemClock.uptimeMillis();
+        main(i,()->{
+            View root=(View)field(panel,"overlay");MotionEvent e=MotionEvent.obtain(heldAt,heldAt,MotionEvent.ACTION_DOWN,8,8,0);
+            root.dispatchTouchEvent(e);e.recycle();
+        });SystemClock.sleep(400);
+        main(i,()->{
+            View root=(View)field(panel,"overlay");check(root.isActivated()&&root.getAlpha()<1f,"actual350ms timer arms visible hold feedback");
+            MotionEvent e=MotionEvent.obtain(heldAt,SystemClock.uptimeMillis(),MotionEvent.ACTION_CANCEL,8,8,0);root.dispatchTouchEvent(e);e.recycle();
+        });
+        final int[] start={0,0};
+        main(i,()->{
+            View root=(View)field(panel,"overlay");root.getLocationOnScreen(start);
+            nativeDrag(root,root.findViewById(R.id.banner_title),-90,0,349);
+        });i.waitForIdleSync();
+        main(i,()->{
+            View root=(View)field(panel,"overlay");int[] at=new int[2];root.getLocationOnScreen(at);
+            check(at[0]==start[0]&&at[1]==start[1],"349ms horizontal movement cannot drag or act");
+            nativeDrag(root,root.findViewById(R.id.banner_title),-90,90,350);
+        });i.waitForIdleSync();SystemClock.sleep(100);
+        main(i,()->{
+            View root=(View)field(panel,"overlay");int[] at=new int[2];root.getLocationOnScreen(at);
+            check(at[0]<start[0]&&at[1]==start[1],"whole automation panel holds then drags horizontally");
+            check(root.getAlpha()==1f&&!root.isActivated(),"release removes drag feedback");
+            View title=root.findViewById(R.id.banner_title),cancel=root.findViewById(R.id.banner_cancel_attempt);
+            int[] titleAt=new int[2],cancelAt=new int[2];title.getLocationOnScreen(titleAt);cancel.getLocationOnScreen(cancelAt);
+            nativeDrag(root,title,cancelAt[0]+cancel.getWidth()/2f-titleAt[0]-title.getWidth()/2f,
+                    cancelAt[1]+cancel.getHeight()/2f-titleAt[1]-title.getHeight()/2f,350);
+        });i.waitForIdleSync();
+        main(i,()->check(ProgressBus.snapshot().equals(original.get()),"non-button hold350 moveoverCancel release cannot cancel automation"));
+        check(c.getSharedPreferences("progress_overlay_ui",0).contains("horizontal"),"automation position persisted separately");
+        int[] saved=new int[2];
+        main(i,()->{
+            ((View)field(panel,"overlay")).getLocationOnScreen(saved);
+            try {
+                var remove=ProgressOverlay.class.getDeclaredMethod("removeOverlay");remove.setAccessible(true);remove.invoke(panel);
+                var render=ProgressOverlay.class.getDeclaredMethod("render");render.setAccessible(true);render.invoke(panel);
+            }catch(ReflectiveOperationException e){throw new AssertionError(e);}
+        });i.waitForIdleSync();
+        main(i,()->{
+            int[] restored=new int[2];((View)field(panel,"overlay")).getLocationOnScreen(restored);
+            check(restored[0]==saved[0]&&restored[1]==saved[1],"new automation window restores persisted bounded position");
+        });
+        capture(i,"progress-overlay-drag.png");
+        checkNativeButtonStreams(i,((View)field(panel,"overlay")).getContext());
+    }
+    private static void checkNativeButtonStreams(Instrumentation i,Context context) throws Exception {
+        int[] taps={0},drags={0};PanelDragLayout[] root={null};android.widget.Button[] button={null};
+        WindowManager windows=context.getSystemService(WindowManager.class);
+        main(i,()->{
+            root[0]=new PanelDragLayout(context);button[0]=new android.widget.Button(context);button[0].setText("Synthetic button");
+            button[0].setOnClickListener(v->taps[0]++);root[0].addView(button[0],new android.widget.LinearLayout.LayoutParams(200,80));
+            root[0].setPanelDragListener((v,e)->{drags[0]++;return true;});
+            WindowManager.LayoutParams p=new WindowManager.LayoutParams(240,100,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE|WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,android.graphics.PixelFormat.TRANSLUCENT);
+            p.gravity=Gravity.TOP|Gravity.LEFT;p.setTitle("Synthetic button fixture");windows.addView(root[0],p);
+        });i.waitForIdleSync();
+        try {
+            main(i,()->nativeDrag(root[0],button[0],0,0,20));i.waitForIdleSync();
+            main(i,()->{
+                check(taps[0]==1&&drags[0]==0,"attached native button tap stays native and never arms drag");
+                nativeDrag(root[0],button[0],0,0,400);
+            });i.waitForIdleSync();
+            main(i,()->{
+                check(taps[0]==2&&drags[0]==0,"button hold stays native and never becomes panel drag");
+                nativeDrag(root[0],button[0],250,0,400);
+            });i.waitForIdleSync();
+            main(i,()->{
+                check(taps[0]==2&&drags[0]==0,"button-origin move outside keeps native cancellation without panel drag");
+                root[0].removeView(button[0]);root[0].setOnClickListener(v->taps[0]++);
+                nativeDrag(root[0],root[0],-50,0,349);
+            });i.waitForIdleSync();
+            main(i,()->{
+                check(taps[0]==2&&drags[0]==0,"349ms horizontal movement suppresses accidental passive open");
+                nativeDrag(root[0],root[0],-50,0,350);
+            });i.waitForIdleSync();
+            main(i,()->check(taps[0]==2&&drags[0]>0,"exact350ms drag owns release and suppresses click"));
+        } finally {main(i,()->windows.removeViewImmediate(root[0]));}
+    }
+    private static void nativeDrag(View root,View target,float dx,float dy,long hold) {
+        int[] at=new int[2],origin=new int[2];target.getLocationOnScreen(at);root.getLocationOnScreen(origin);
+        float x=at[0]-origin[0]+target.getWidth()/2f,y=at[1]-origin[1]+target.getHeight()/2f;
+        long down=SystemClock.uptimeMillis();
+        for(int action:new int[]{MotionEvent.ACTION_DOWN,MotionEvent.ACTION_MOVE,MotionEvent.ACTION_UP}) {
+            MotionEvent e=MotionEvent.obtain(down,down+(action==MotionEvent.ACTION_DOWN?0:hold),action,
+                    action==MotionEvent.ACTION_DOWN?x:x+dx,action==MotionEvent.ACTION_DOWN?y:y+dy,0);
+            root.dispatchTouchEvent(e);e.recycle();
+            if(action==MotionEvent.ACTION_MOVE&&hold>=350&&!(target instanceof android.widget.Button))
+                check(root.getAlpha()<1f&&root.isActivated(),"long press has visible drag feedback");
+        }
+    }
     static void run(Instrumentation i) throws Exception {
         Context c=i.getTargetContext();
         stopMonitorAndAwait(i, c);
+        check(c.getSharedPreferences("progress_overlay_ui",0).edit().clear().commit(),"clear synthetic panel position");
         var prefs=c.getSharedPreferences("gate_settings",0);
         check(prefs.edit().putString("gate_number","000000000").remove("configured_at")
                 .remove("last_dial_started_at").commit(),"synthetic settings");
@@ -121,6 +215,9 @@ final class ProgressChecks {
             check(field(panel[0],"inline")==null,"inline removed");
             WindowManager.LayoutParams p=(WindowManager.LayoutParams)view.getLayoutParams();
             check(p.type==WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,"overlay type");
+            float density=view.getResources().getDisplayMetrics().density;
+            check(view.getWidth()<=Math.round(350*density)&&view.getHeight()>=Math.round(91*density),"compact action350dp/min91dp");
+            check(((android.widget.TextView)view.findViewById(R.id.banner_cancel_attempt)).getText().toString().equals("Anuluj"),"floating action uses short native cancellation label");
             check((p.flags&WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)!=0,"no focus");
             check((p.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)==0,"bounded overlay receives cancellation touches");
             check((p.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)!=0,"touches outside pass through");
@@ -129,6 +226,7 @@ final class ProgressChecks {
             check(HomeActions.allowsExternalLaunch(),"overlay cannot change action eligibility");
         });
         capture(i,"progress-overlay.png");
+        checkFloatingGestures(i,c,panel[0]);
         main(i,()-> {
             epoch[0]=ProgressBus.reset(c,Reason.RESET);
             ProgressBus.offer(c,epoch[0],ProgressBus.HOME,List.of(new DetectionProgress(Kind.RETURN,3,
@@ -196,12 +294,10 @@ final class ProgressChecks {
         });
         capture(i,"progress-action.png");
         main(i,preview::finish);
-        String category="PROGRESS_TEST_"+"A".repeat(170);
-        for(int n=0;n<1800;n++) { Diagnostics.record(c,category); if(n%32==0)check(Diagnostics.awaitWrites(),"journal drain"); }
+        Diagnostics.record(c,"PROGRESS_JOURNAL_TEST");
         check(Diagnostics.awaitWrites(),"journal final drain");
         File journal=new File(c.getNoBackupFilesDir(),"diagnostics.txt");
-        File previous=new File(c.getNoBackupFilesDir(),"diagnostics.previous.txt");
-        check(previous.exists()&&previous.length()<=128*1024+300&&journal.length()<=128*1024+300,"existing two-file rotation bound");
+        check(journal.length()>0 && journal.length()<=1024*1024,"one MiB segment bound; rotation checked by host journal suite");
         long size=journal.length();Diagnostics.record(c,"invalid payload\nphone or coordinates");
         check(journal.length()==size,"unsafe diagnostic payload rejected");
     }

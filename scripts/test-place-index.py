@@ -65,11 +65,11 @@ class MapTests(unittest.TestCase):
             source.write_text('<osm version="0.6">'+''.join(nodes+ways+relations)+'</osm>')
             index.build(source,target,'Synthetic','2026-01-01')
             with sqlite3.connect(target) as db:
-                self.assertEqual(dict(db.execute('SELECT key,value FROM metadata'))['schema'],'2')
+                self.assertEqual(dict(db.execute('SELECT key,value FROM metadata'))['schema'],'3')
                 self.assertEqual(set(db.execute('SELECT kind,provenance FROM places')),{('village','osm_place_node'),('hamlet','osm_place_node'),('isolated_dwelling','osm_place_node')})
                 areas=list(db.execute('SELECT name,rings,kind,provenance,admin_level,feature_id FROM areas'))
                 self.assertEqual(len(areas),2)
                 self.assertEqual({(a[0],*a[2:]) for a in areas},{('Synthetic Locality 8','administrative_locality','osm_admin_boundary','8','relation:200')})
                 self.assertEqual(sorted(len(json.loads(a[1])) for a in areas),[1,2])
-            self.assertEqual(json.loads(target.with_suffix('.manifest.json').read_text())['schema'],2)
+            self.assertEqual(json.loads(target.with_suffix('.manifest.json').read_text())['schema'],3)
 if __name__=='__main__':unittest.main()

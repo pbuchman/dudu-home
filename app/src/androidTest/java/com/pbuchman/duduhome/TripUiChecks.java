@@ -21,6 +21,7 @@ final class TripUiChecks {
         check(overlayPreferences.setVisible(true)&&overlayPreferences.savePosition(1f,0f),"initial UI preferences durable");
         checkPreferenceFailure(c);
         checkLocationCard(i, c);
+        TripNotificationChecks.run(i);
         TripController controller=TripController.get(c);
         controller.command("START");state(controller,"ACTIVE");
         android.location.Location stationary=new android.location.Location("gps");
@@ -127,14 +128,19 @@ final class TripUiChecks {
             i.runOnMainSync(() -> {
                 card[0] = new TripLocationCard(themed, v -> { });
                 card[0].render("Miejscowość Testowa", "Aleja Błękitnych Chmur Testowych");
-                layout(card[0], themed, 390);
+                layout(card[0], themed, 286);
             });
             i.waitForIdleSync();
             i.runOnMainSync(() -> {
                 TextView road = card[0].findViewById(R.id.trip_street);
+                check(card[0].findViewById(R.id.trip_overlay_drag)==null,"compact card has no separate handle/instruction row");
+                check(card[0].getHeight()>=Math.round(112*themed.getResources().getDisplayMetrics().density),"compact location min112dp");
+                check(card[0].findViewById(R.id.trip_overlay_close).getWidth()==Math.round(48*themed.getResources().getDisplayMetrics().density),"adjacent close target48dp");
+                check(Math.abs(road.getTextSize()-android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,25,themed.getResources().getDisplayMetrics()))<.01,"street25sp");
+                check(Math.abs(((TextView)card[0].findViewById(R.id.trip_locality)).getTextSize()-android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,16,themed.getResources().getDisplayMetrics()))<.01,"locality16sp");
                 check(road.getMaxLines() == 3, "road bounded to three readable lines");
                 check(road.getLayout().getLineCount() >= 2, "long road naturally wraps");
-                check(card[0].getContentDescription().toString().endsWith(road.getText().toString()), "accessibility retains full name");
+                check(card[0].getContentDescription().toString().contains(road.getText().toString()), "accessibility retains full name");
                 if (scale == 1f) {
                     check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.GONE, "normal long name needs no expansion");
                     for (int n = 0; n < road.getLayout().getLineCount(); n++) check(road.getLayout().getEllipsisCount(n) == 0, "normal long name fully visible");
@@ -147,20 +153,24 @@ final class TripUiChecks {
                 check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.VISIBLE, "overflow has visible full-name action");
                 card[0].setMaximumHeight(Math.round(180 * themed.getResources().getDisplayMetrics().density));
                 layout(card[0], themed, 260);
-                for(int id:new int[]{R.id.trip_overlay_close,R.id.trip_overlay_drag}) {
+                for(int id:new int[]{R.id.trip_overlay_close}) {
                     View control=card[0].findViewById(id);
                     View row=(View)control.getParent();
                     check(control.getTop()>=0 && control.getBottom()<=row.getHeight(),"whole control remains inside short-viewport header");
-                    android.widget.Button button=(android.widget.Button)control;
-                    check(button.getWidth()-button.getCompoundPaddingLeft()-button.getCompoundPaddingRight()>=button.getPaint().measureText(button.getText().toString()),"move/hide text fits without horizontal glyph clipping");
+                    if(control instanceof android.widget.Button button)check(button.getWidth()-button.getCompoundPaddingLeft()-button.getCompoundPaddingRight()>=button.getPaint().measureText(button.getText().toString()),"hide glyph fits");
                 }
                 android.widget.ScrollView address=(android.widget.ScrollView)card[0].findViewById(R.id.trip_street).getParent().getParent();
                 check(address.canScrollVertically(1),"short viewport scrolls full address and expansion control");
                 card[0].setMaximumHeight(Integer.MAX_VALUE);
-                card[0].render("Miejscowość Testowa", "Testowa"); layout(card[0], themed, 390);
+                card[0].render("Miejscowość Testowa", "Testowa"); layout(card[0], themed, 286);
             });
             i.waitForIdleSync();
-            i.runOnMainSync(() -> check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.GONE, "short name removes expansion"));
+            i.runOnMainSync(() -> {
+                check(card[0].findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"short name removes expansion");
+                card[0].render("Miejscowość Testowa","");layout(card[0],themed,286);
+                check(card[0].findViewById(R.id.trip_street).getVisibility()==View.GONE,"unnamed road hides street row");
+                check(card[0].findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"unnamed hides expansion");
+            });
         }
     }
     private static void layout(View view, Context c, int widthDp) {

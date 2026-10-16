@@ -1,5 +1,64 @@
 # Design decisions
 
+## Confirmed street presentation and durable queue evidence - October 16 RC4
+
+- Keep raw matching quality separate from the street shown on screen. Retain a confirmed
+  street through uncertain observations without a time/distance presentation grace or
+  last-known prefix. Confirm another named or unnamed road with two distinct valid fixes.
+  A confirmed unnamed road hides the street row. This supersedes the local grace below.
+- Reset display memory at a new trip, provider disable, or ten seconds without a valid fix.
+  Older resolver generations cannot restore a pre-reset label. These presentation resets
+  never rearm gate, cleaning or media opportunities.
+- The compact card uses max286dp width, 25sp street and 16sp locality. Floating surfaces
+  support a 350ms non-button hold and horizontal drag with bounded persisted positions;
+  inline controls retain their existing behavior. Hiding the trip card never stops collection.
+- The owner explicitly requested on-device diagnostic evidence before dispatch and across
+  process restarts. Keep cancelled unsent occurrences in a private bounded journal while
+  preserving their existing quota/reservation semantics. This supersedes the historical
+  no-durable-cancellation-history rule, not any action safety rule.
+- Generic journals retain at most eight1MiB files for seven days. Private location decisions
+  and displayed labels retain at most32MiB for seven days, enabled by default and never
+  uploaded automatically. Credential and message contents remain excluded.
+- Do not add Wispr-based admission or delayed-Spotify suppression to the Dudu queue.
+  The separately maintained adapter owns its local dictation/media session.
+- Offline tests, replay, installation and physical acceptance are independent gates. Retained
+  labels are not proof of location correctness; a natural radio failure needs causal evidence.
+
+## Source-proven short-fragment heading candidate - October 16
+
+- Schema 3 adds `road_short_headings(road_id,heading,support_length)` and binds its policy,
+  source hash and generation. Preserve schemas 1/2 and schema-2 locality evidence.
+- Only nonzero fragments at most 5 m can use contiguous support from the same original
+  OSM way. Extend at most 10 m/eight edges from each end; traverse only source nodes with
+  eligible-road incidence exactly two. Stop at way ends/branches, reject curves above
+  15 degrees, repeated nodes, missing/zero geometry or exhausted edge limits. Require
+  both supported chain and chord at least 10 m. Never join ways by equal coordinates.
+- Keep source way IDs, segment ordinals, source node IDs and degree proof in a private
+  build audit. The radio receives orientation only. Count node incidence on disk with
+  bounded batches/cache; the full source/map/audit remain outside Git.
+- Runtime requires actual bearing and speed above 2 m/s. Invalid/absent row or policy
+  retains old scoring. All road candidates, distance/margins/query guards, two-fix
+  confirmation, locality/online generation rules and 3 s/40 m retention remain unchanged.
+- This is a local candidate. Exact new-pack replay, held-out ground truth and physical
+  presentation/latency acceptance are separate gates; score changes alone prove none of them.
+
+## Local street stability integration - October 16
+
+- Keep offline matching responsive while optional Photon HTTP is in flight. Both lanes
+  coalesce pending fixes; only an exact current offline fix/session accepts online results.
+- Retain a recently confirmed street only as explicit `Ostatnio: …` / `LAST_KNOWN`,
+  bounded by 3 seconds and 40 metres. A contradictory named road or certain locality,
+  missing map coverage, invalid GPS or segment break clears it. Do not weaken road
+  ambiguity or locality boundaries to make a test appear stable.
+- Raw per-fix correlation requires a separate private runtime-file opt-in, bounded local
+  trace and no automatic export. Normal category-only diagnostics remain unchanged.
+- Code 28 combines the local code-24 street contract with the code-27 session timer,
+  movable card and passive diagnostic power observer. Keep atomic checkpoints, input
+  epochs, the separate power outbox and diagnostic UNKNOWN profile unchanged.
+- Code 28 is a local candidate only; build checks and approximate archived-route analysis
+  are distinct from new physical-radio acceptance. No release or publication is implied.
+
+
 ## Parking-tail corrections and passive power observations - October 16 RC3
 
 - Keep raw recorded GPS time unchanged and expose a separate corrected in-car estimate.

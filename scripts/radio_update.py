@@ -91,7 +91,7 @@ def sha(path):
 def map_manifest(path,allow_legacy=False):
     path=Path(path).resolve()
     manifest=json.loads(path.with_suffix('.manifest.json').read_text())
-    supported=(1,2) if allow_legacy else (2,)
+    supported=(1,2,3) if allow_legacy else (2,3)
     if manifest.get('schema') not in supported or manifest.get('file')!=path.name or manifest.get('bytes')!=path.stat().st_size or manifest.get('sha256')!=sha(path):
         raise Blocked('Map manifest/checksum mismatch')
     spec=importlib.util.spec_from_file_location('place_builder',Path(__file__).with_name('build-place-index.py'))

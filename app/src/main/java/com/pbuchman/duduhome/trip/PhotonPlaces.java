@@ -16,13 +16,14 @@ final class PhotonPlaces {
     private final Opener opener;
     private TripFix requested, cachedFix;
     private PlaceResult cached;
-    private long lastRequest, blockedUntil;
+    private long lastRequest, blockedUntil, cachedAt;
     private int failures;
     PhotonPlaces(Context context) { this(context, url -> (HttpURLConnection)url.openConnection()); }
     PhotonPlaces(Context context, Opener opener) { quota = context.getSharedPreferences("trip_photon_quota", 0); this.opener = opener; }
+    TripFix evidenceFix() { return cachedFix; }
     PlaceResult resolve(TripFix fix) {
         long now = SystemClock.elapsedRealtime();
-        if (cached != null && cachedFix.distance(fix) < 40) return cached;
+        if (cached != null && now>=cachedAt && now-cachedAt<=30000 && cachedFix.distance(fix) < 40) return cached;
         if (now < blockedUntil || (requested != null && (now-lastRequest < 30000 || requested.distance(fix)<100))) return null;
         long wall=System.currentTimeMillis();
         if(wall < quota.getLong("retry_until",0)) return null;
@@ -62,7 +63,7 @@ final class PhotonPlaces {
             }
             PlaceResult result=parse(new JSONObject(new String(bytes,StandardCharsets.UTF_8)),fix);
             failures=0;
-            if(result!=null) { cached=result; cachedFix=fix; }
+            if(result!=null) { cached=result; cachedFix=fix;cachedAt=now; }
             return result;
         } catch(Exception unavailable) { blockedUntil=now+(60000L << Math.min(6,failures++)); return null; }
         finally { if(connection!=null) connection.disconnect(); }

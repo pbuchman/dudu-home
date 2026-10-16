@@ -1,6 +1,35 @@
 # Development handoff
 
-## Current candidate: 1.4.0-rc3 / code 27
+## Local heading candidate: 1.4.0-rc3-local-street3 / code 29
+
+Schema-3 builder/reader/install compatibility adds provenance-backed short-fragment
+orientation only. See WHERE_AM_I.md for the exact source-node/way bounds and metadata.
+Schema 2 remains readable with its old road scores and current locality evidence.
+The source, APK, maps and build audit stay private. Build/lint and host fixtures pass;
+Android SQLite fixtures compile but were not executed in this session. New-pack replay,
+held-out truth and physical radio checks remain separate and pending.
+
+## Local integration: 1.4.0-rc3-local-street2 / code 28
+
+This isolated local patch starts from merged code 27 (`44f9f1f`) and preserves the prior
+code-24 street contract. Offline and optional Photon work run independently; only an exact
+current fix/generation may accept HTTP evidence. The bounded LAST_KNOWN presentation and
+private opt-in trace are documented in WHERE_AM_I.md. This integration changes no road
+geometry, score threshold, recovery/confirmation policy, gate executor or action ordering.
+
+TripController merges this resolver with the code-27 manual session rather than replacing
+its timer/power logic. Keep atomic state/time/distance checkpoints, input epochs, diagnostic
+UNKNOWN firmware profile, separate power outbox and unchanged GPS schema 1. The session
+instrumentation now references PlaceResolver and its independent generation boundary.
+
+Build/lint and host results are in VERIFICATION.md. No worker device/emulator operations,
+source publication or Home Dev deployment are part of this local delivery. Private source,
+APK/signature/hash receipt and the selected existing APK-only update plan stay outside Git.
+Preserve map/configuration and current safety state; never clear data or restore an earlier
+safety snapshot after monitoring has resumed. Radio installation and runtime checks belong
+to the coordinating device workstream.
+
+## Combined source candidate: 1.4.0-rc3 / code 27
 
 RC3 separates recorded GPS coverage from estimated parking-tail exclusions on Home Dev.
 All day/range/table/period and trip/comparison views retain raw time and expose correction

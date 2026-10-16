@@ -46,8 +46,9 @@ Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
 Automatic cleaning has one consumed attempt per Europe/Warsaw day. Pending reservations live
 in RAM; durable protection is committed immediately before external sending. Explicit user
-cancellation before sending discards that occurrence and its buffered diagnostics, without
-consuming quota or durable cancellation history. Non-user failure, missing configuration and
+cancellation before sending discards that occurrence without consuming quota. The owner's
+October 16 RC4 plan explicitly retains bounded private diagnostic cancellation history;
+the journal cannot replay actions or rearm reservations. Non-user failure, missing configuration and
 expired queued work still consume the opportunity. Sent or uncertain external commands retain
 reservations. Gate cleanup may only affect its own call and always preserves the 60-second block.
 Cancellation groups Yanosik and Spotify and never bypasses gate-area priority. Rearm cancelled

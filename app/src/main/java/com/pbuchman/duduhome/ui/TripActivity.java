@@ -59,7 +59,9 @@ public final class TripActivity extends Activity {
     /** Shared renderer; instrumentation supplies synthetic snapshots without starting executors. */
     public void render(TripController.Snapshot state) {
         overlayToggle.setText(overlayPreferences.visible() ? R.string.trip_overlay_hide : R.string.trip_overlay_show);
-        locality.setText(state.title()); street.setText(state.subtitle());
+        String title=state.title(),subtitle=state.subtitle();
+        locality.setText(title);street.setText(subtitle);street.setVisibility(subtitle.isEmpty()?View.GONE:View.VISIBLE);
+        controller.presented("trip_full",visible,state,title,subtitle);
         distance.setText(String.format(Locale.forLanguageTag("pl"), "%.1f km", state.meters()/1000));
         duration.setText(TripTime.format(state.millis()));
         durationLabel.setText(state.partialTime() ? "Czas od aktualizacji" : "Czas sesji");
@@ -71,5 +73,5 @@ public final class TripActivity extends Activity {
                 : state.active() ? "Czas i dystans są liczone również w tle" : "Pomiar wstrzymany");
     }
     @Override public void onResume() { super.onResume(); visible=true; handler.post(tick); }
-    @Override public void onPause() { visible=false; handler.removeCallbacks(tick); super.onPause(); }
+    @Override public void onPause() { visible=false;controller.presented("trip_full",false,controller.snapshot(),"",""); handler.removeCallbacks(tick); super.onPause(); }
 }

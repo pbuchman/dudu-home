@@ -20,11 +20,64 @@ final class TripSessionChecks {
         ((ExecutorService)field(c,"counter")).submit(()->{}).get(3,TimeUnit.SECONDS);
     }
     private static void close(TripController c)throws Exception {
-        ((ExecutorService)field(c,"counter")).shutdownNow();((ExecutorService)field(c,"resolver")).shutdownNow();
+        ((ExecutorService)field(c,"counter")).shutdownNow();((AutoCloseable)field(c,"resolver")).close();
     }
     private static com.pbuchman.duduhome.routebook.PowerEvent power(String kind){
         return new com.pbuchman.duduhome.routebook.PowerEvent(new java.util.UUID(1,1).toString(),new java.util.UUID(1,2).toString(),0,
                 "2026-10-16T10:00:00.000Z",SystemClock.elapsedRealtime(),new java.util.UUID(1,3).toString(),kind,0,0,"synthetic-audit-v1","synthetic-build");
+    }
+    private static void set(Object object,String name,Object value)throws Exception {
+        Field f=object.getClass().getDeclaredField(name);f.setAccessible(true);f.set(object,value);
+    }
+    private static void retainedPlaceChecks(TripController c)throws Exception {
+        ExecutorService counter=(ExecutorService)field(c,"counter");
+        long now=SystemClock.elapsedRealtime(),last=now-9000;
+        PlaceResult alpha=new PlaceResult("Synthetic City","Synthetic Alpha","offline",true,true);
+        PlaceResult uncertain=new PlaceResult("Synthetic City","",PlaceResult.Quality.CONTAINMENT,PlaceResult.Quality.AMBIGUOUS,"offline_boundary","offline_road",true);
+        counter.submit(()->{try {
+            PlaceStabilizer s=new PlaceStabilizer();s.offer(alpha,new TripFix(last-1000,last-1000,0,0,3,0,false,0,false,false));
+            s.offer(alpha,new TripFix(last,last,0,0,3,0,false,0,false,false));
+            s.offer(uncertain,new TripFix(last+1,last+1,0,0,3,0,false,0,false,false));
+            set(c,"stabilizer",s);set(c,"place",s.current());set(c,"rawLocal",uncertain);
+            set(c,"currentFix",new TripFix(last,last,0,0,3,0,false,0,false,false));set(c,"fixTime",last);
+            Method publish=TripController.class.getDeclaredMethod("publish");publish.setAccessible(true);publish.invoke(c);
+        }catch(Exception e){throw new AssertionError(e);}}).get(3,TimeUnit.SECONDS);
+        check(c.snapshot().subtitle().equals("Synthetic Alpha"),"retained name survives beyond former three seconds");
+        check(c.diagnostic().contains("street_quality=AMBIGUOUS display_street_quality=LAST_KNOWN"),"raw diagnostic quality independent of retained label");
+        Location noisy=new Location("gps");noisy.setLatitude(0);noisy.setLongitude(0);noisy.setAccuracy(200);noisy.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+        c.offer(noisy);settle(c);
+        check(c.snapshot().subtitle().equals("Synthetic Alpha")&&c.snapshot().fixTime()==last,"single noisy fix keeps prior valid freshness/name");
+        Method expire=TripController.class.getDeclaredMethod("expirePlaces",long.class);expire.setAccessible(true);
+        long oldGeneration=(long)field(c,"placeGeneration");
+        counter.submit(()->{try{expire.invoke(c,last+10000);}catch(Exception e){throw new AssertionError(e);}}).get(3,TimeUnit.SECONDS);
+        check((long)field(c,"placeGeneration")==oldGeneration,"exact ten-second freshness still qualifies");
+        counter.submit(()->{try{expire.invoke(c,last+10001);Method publish=TripController.class.getDeclaredMethod("publish");publish.setAccessible(true);publish.invoke(c);}catch(Exception e){throw new AssertionError(e);}}).get(3,TimeUnit.SECONDS);
+        check((long)field(c,"placeGeneration")>oldGeneration&&((PlaceStabilizer)field(c,"stabilizer")).current().street().isEmpty(),"GPS loss clears generation and retained name");
+        Method post=TripController.class.getDeclaredMethod("postPlace",PlaceResolver.Job.class,PlaceResult.class,boolean.class,TripFix.class);post.setAccessible(true);
+        TripFix returned=new TripFix(now,now,0,0,3,0,false,0,false,false);
+        counter.submit(()->{try{set(c,"currentFix",returned);set(c,"fixTime",now);}catch(Exception e){throw new AssertionError(e);}}).get(3,TimeUnit.SECONDS);
+        post.invoke(c,new PlaceResolver.Job(oldGeneration,returned),alpha,false,null);settle(c);
+        check(c.snapshot().place().street().isEmpty(),"late pre-loss resolver cannot revive held name after GPS returns");
+        long currentGeneration=(long)field(c,"placeGeneration");
+        post.invoke(c,new PlaceResolver.Job(currentGeneration,returned),alpha,false,null);settle(c);
+        check(c.snapshot().place().street().isEmpty(),"GPS return requires first fresh confirmation");
+        TripFix second=new TripFix(now+1,now+1,0,0,3,0,false,0,false,false);
+        counter.submit(()->{try{set(c,"currentFix",second);set(c,"fixTime",now+1);}catch(Exception e){throw new AssertionError(e);}}).get(3,TimeUnit.SECONDS);
+        post.invoke(c,new PlaceResolver.Job(currentGeneration,second),alpha,false,null);settle(c);
+        check(c.snapshot().place().street().equals("Synthetic Alpha"),"two new GPS fixes restore confirmed street");
+        c.breakSegment();settle(c);
+        check(c.snapshot().fixTime()==0&&c.snapshot().place().street().isEmpty(),"provider/verified-journey boundary clears held display");
+        post.invoke(c,new PlaceResolver.Job(currentGeneration,second),alpha,false,null);settle(c);
+        check(c.snapshot().place().street().isEmpty(),"late callback cannot revive name after explicit boundary");
+        Field writer=PlaceTrace.class.getDeclaredField("writer");writer.setAccessible(true);
+        ((ExecutorService)writer.get(null)).submit(()->{}).get(3,TimeUnit.SECONDS);
+        PlaceTrace trace=(PlaceTrace)field(c,"trace");File directory=(File)field(trace,"directory");boolean expiry=false,boundary=false;
+        for(String line:Files.readAllLines(new File(directory,"trip-place-trace.jsonl").toPath())) {
+            org.json.JSONObject row=new org.json.JSONObject(line);if(!row.optString("event").equals("presentation"))continue;
+            if(row.optString("surface").equals("controller_reset_gps_expired"))expiry=row.getLong("generation")==currentGeneration&&!row.getBoolean("visible")&&row.isNull("fix_reference");
+            if(row.optString("surface").equals("controller_reset_segment"))boundary=row.getLong("generation")>currentGeneration&&!row.getBoolean("visible")&&row.isNull("fix_reference");
+        }
+        check(expiry&&boundary,"expiry/provider reset trace uses new generation and no stale fix reference");
     }
     static void run(Context context)throws Exception {
         File directory=new File(context.getCacheDir(),"trip-session-checks");directory.mkdirs();
@@ -60,7 +113,7 @@ final class TripSessionChecks {
             check(blocked.await(3,TimeUnit.SECONDS),"counter barrier");
             Location location=new Location("gps");location.setLatitude(0);location.setLongitude(0);location.setAccuracy(3);
             location.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());controller.offer(location);
-            long oldGeneration=controller.snapshot().generation();
+            long oldGeneration=(long)field(controller,"placeGeneration");
             long oldEpoch=((java.util.concurrent.atomic.AtomicLong)field(controller,"inputEpoch")).get();
             controller.observePower(power("snapshot"),RadioProfile.State.OFF);
             controller.command("RESET");
@@ -77,17 +130,17 @@ final class TripSessionChecks {
             Method enqueue=TripController.class.getDeclaredMethod("enqueue",inputType);enqueue.setAccessible(true);enqueue.invoke(controller,lateInput);settle(controller);
             check(controller.snapshot().fixTime()==0,"late pre-reset producer envelope discarded");
             // A resolver result computed before Reset must not revive the previous place.
-            Class<?> jobType=Class.forName(TripController.class.getName()+"$Job");
+            Class<?> jobType=PlaceResolver.Job.class;
             Constructor<?> constructor=jobType.getDeclaredConstructors()[0];constructor.setAccessible(true);
             long now=SystemClock.elapsedRealtime();
             Object job=constructor.newInstance(oldGeneration,new TripFix(now,now,0,0,3,0,false,0,false,false));
-            Method post=TripController.class.getDeclaredMethod("postPlace",jobType,PlaceResult.class,boolean.class);post.setAccessible(true);
+            Method post=TripController.class.getDeclaredMethod("postPlace",jobType,PlaceResult.class,boolean.class,TripFix.class);post.setAccessible(true);
             ((ExecutorService)field(controller,"counter")).submit(()->{
                 try {Field current=TripController.class.getDeclaredField("currentFix");current.setAccessible(true);
                     current.set(controller,new TripFix(now,now,0,0,3,0,false,0,false,false));
                 }catch(Exception failure){throw new AssertionError(failure);}
             }).get(3,TimeUnit.SECONDS);
-            post.invoke(controller,job,new PlaceResult("Stara Miejscowość Testowa","Stara Ulica Testowa","offline",true,true),false);settle(controller);
+            post.invoke(controller,job,new PlaceResult("Stara Miejscowość Testowa","Stara Ulica Testowa","offline",true,true),false,null);settle(controller);
             check(controller.snapshot().place().locality().isEmpty() && controller.snapshot().fixTime()==0
                     && controller.snapshot().meters()==0 && controller.snapshot().millis()==0,"stale resolver cannot restore pre-reset state");
             controller.command("PAUSE");settle(controller);controller.command("RESET");settle(controller);
@@ -95,6 +148,7 @@ final class TripSessionChecks {
             controller.observePower(power("snapshot"),RadioProfile.State.ON);settle(controller);
             check(!controller.snapshot().active()&&controller.snapshot().millis()==0,"known ON never resumes explicitly paused manual session");
             controller.command("START");settle(controller);check(controller.snapshot().active(),"Start after Pause");
+            retainedPlaceChecks(controller);
         } finally {close(controller);}
         for(String command:new String[]{"RESET","PAUSE"}) {
             MemoryStore failed=new MemoryStore();TripController c=new TripController(isolated,failed);

@@ -16,8 +16,10 @@ Backgrounding or turning the screen off does not pause. The full screen shows lo
 street, kilometres (one decimal) and **Czas sesji** as HH:MM:SS (hours may exceed 24).
 The time counter is on this main screen only; the existing location card remains address-only.
 Automatic Routebook recording, offline queue and ingest remain independent of all session controls.
-The card starts at the top right and shows locality at 24 sp above the primary street at 32 sp.
-Its **Przesuń** handle moves the card; releasing a drag never opens the trip. The independent
+The card starts at the top right, is at most 286 dp wide and shows locality at 16 sp above
+the primary street at 25 sp, with a minimum height of 112 dp. The 48 dp × button sits beside
+the address; there is no visible drag handle/instruction row. Hold any non-button area for 350 ms, then move horizontally.
+The held card visibly dims; releasing a drag never opens the trip. The independent
 **×** button hides only the card. **Pokaż panel w tle** / **Ukryj panel w tle** on the passive
 trip screen changes that preference, including before a trip starts. Hiding stays in effect
 until explicitly restored there, across service/process restarts and later trips. Counting,
@@ -35,8 +37,11 @@ street lines in a ScrollView. The silent ongoing notification includes the compl
 in its expanded BigText presentation and one content intent.
 
 Without a fresh fix, show **Brak sygnału GPS** instead of claiming the last name is current.
-Without a matching map/online result, show an unknown locality/street while continuing to
-count qualified GPS movement. A point settlement without containment/address evidence is
+Before the first confirmation, missing map/online evidence shows an unknown locality/street
+while qualified GPS movement continues to count. A confirmed street remains visible through
+unknown, ambiguous or unconfirmed results until another road has two distinct valid fixes.
+It has no time/distance retention limit or extra prefix. Confirmed unnamed roads hide the
+street row, leaving locality only. The retained label is presentation state, not a fresh match. A point settlement without containment/address evidence is
 labelled **Okolice …**. A municipality is not substituted for a town or village.
 
 RC3 matches locality independently of street selection. A reliable containing locality
@@ -58,13 +63,17 @@ location overlay is hidden while automation presentation, protected UI or execut
 the screen. A notification tap routes through MainActivity and waits for a safe menu state
 before opening the trip. Merely changing a name never launches an Activity.
 
-The overlay is at most 390 dp wide, bounded by the available window width minus 32 dp,
+The location overlay is at most 286 dp wide, bounded by the available window width minus 32 dp,
 with 16 dp margins inside current system bars/cutout bounds. Its height wraps its content up
-to the available safe height; a short viewport scrolls the address while move/hide controls
-stay at the top. The saved relative position adapts to width, height, inset and name changes,
+to the available safe height; a short viewport scrolls the address while the close button remains reachable beside it. The saved relative position adapts to width, height, inset and name changes,
 keeping the whole card reachable, and survives temporary automation suppression. It is non-focusable,
 receives touches within its own window, and has no full-screen transparent input surface.
-The automation banner receives cancellation touches within its own bounded window. System apps may suppress overlays;
+The compact floating automation banner is at most 350 dp wide and at least 91 dp high,
+with a short **Anuluj** button. It uses the same 350 ms non-button hold and horizontal drag,
+with its own persistent position. Its inline menu banner stays in place. **Anuluj tę próbę**
+keeps the captured attempt token and native tap behavior; a drag release cannot activate it.
+Moving either surface changes presentation only. The automation banner receives cancellation
+touches within its own bounded window. System apps may suppress overlays;
 this feature does not bypass such restrictions.
 
 ## Distance and persistence
@@ -155,11 +164,45 @@ streams a temporary file, verifies its device checksum, then atomically renames 
 upload leaves the old index intact. National maps are installed locally, not bundled in APKs
 or published as source assets. Refresh by building a new dated pack and rerunning the installer.
 
-The builder now writes **map schema 2**. RC3 can still read schema 1, but an old pack lacks
+The local code-29 builder writes **map schema 3**. The reader accepts schema 2 unchanged
+and can still read schema 1, but an old schema-1 pack lacks
 the new administrative-boundary evidence: fixing locality requires both the code-23 APK
-and a schema-2 pack. Ordinary installation validates schema 2; legacy acceptance is reserved
+and a schema-2-or-newer pack. Ordinary installation validates schema 2 or 3; legacy acceptance is reserved
 for backed-up recovery, not a normal installation override. Keep the previous APK and pack
 together for rollback. This map schema is independent of navigation JSON schema 2.
+
+### Source-proven short heading (local code 29)
+
+Schema 3 adds `road_short_headings(road_id INTEGER PRIMARY KEY, heading REAL,
+support_length REAL)` without replacing road geometry or locality tables. Only nonzero
+fragments at most 5 m can receive support. The computer follows ordered segments within
+one original OSM way, at most 10 m/eight edges each way, traversing only source nodes with
+exactly two eligible-road endpoint incidences. Way ends and branches stop extension;
+missing/zero geometry, repeated nodes/cycles, an edge limit or a directed deviation above
+15 degrees rejects support. Both chain and endpoint chord must reach 10 m.
+
+Heading is degrees clockwise from north using a local equirectangular projection with
+111195 metres per degree and longitude scaled at the fragment midpoint latitude. Runtime
+treats it bidirectionally, only with actual GPS bearing and reported speed above 2 m/s.
+Support must be finite, at least 10 m and at most 25 m (one micrometre numerical tolerance);
+heading must be finite and in [0,360). Invalid/absent support or an unknown policy retains
+the old score. No road class/name is filtered and all existing ambiguity/confirmation,
+query, locality and online freshness rules remain intact. Display retention is separate from
+these raw matching rules, as described below.
+
+Metadata binds `same-osm-way-degree2-v1`, its exact policy SHA-256, original PBF SHA-256
+and deterministic map generation. A separate private audit records way ID, segment ordinal,
+support range, source node IDs and interior degree proof. It is never part of public source
+or the APK. The builder uses a disk SQLite incidence pass (32 MiB page cache, at most
+100000 pending distinct nodes), then the existing disk-backed located OSM pass. The
+incidence pass conservatively includes zero/missing edges and duplicate ways, which can
+reject support but cannot create an unproved continuation. Keep enough disk for both old
+and new packs, node/incidence scratch, indexes and the audit. Do not overwrite the source.
+
+Private opt-in trace adds supported-heading count, the best candidate's heading source and
+support length, and map generation. It retains the same bounded queue/files and privacy rules.
+This candidate needs an exact schema-3-pack replay, held-out route evidence and physical
+presentation/latency acceptance; synthetic geometry and score gains are not correctness labels.
 
 Sources: [Geofabrik Poland](https://download.geofabrik.de/europe/poland.html),
 [OSM settlement model](https://wiki.openstreetmap.org/wiki/Key:place).
@@ -185,6 +228,39 @@ a nearby/ambiguous online label cannot downgrade reliable containment or address
 A small in-memory result
 cache is an optimization; the downloaded map is the actual offline fallback.
 
+### Confirmed street display and raw evidence
+
+Offline lookup and optional Photon HTTP use separate latest-only workers. An online response
+can enrich only the exact current offline fix and place generation. Online cache evidence
+expires after 30 seconds and 40 metres from its original fix; cache reuse never renews that
+origin. Existing request/quota limits, schema-3 heading support, distance/margin ambiguity and
+locality rules are unchanged.
+
+A new named or explicitly unnamed road needs two distinct valid GPS fixes. Offline and online
+results for one fix count once. A changed candidate keeps the previous confirmed display until
+its second fix. Missing coverage, ambiguous roads, a different locality and isolated noisy
+fixes do not erase a confirmed street. Retained named display uses `LAST_KNOWN` internally
+and shows the plain name; raw `UNKNOWN`/`AMBIGUOUS` remains visible in diagnostics and trace.
+This must never be counted as an improved raw matcher score. A typed `UNNAMED` road contains
+no made-up street string and suppresses the street row only after confirmation. Photon cannot
+replace this explicit offline evidence with a nearby named street.
+
+The current 10-second valid-GPS freshness rule controls loss: invalid/noisy fixes do not renew
+its timer or clear a name immediately. Provider disablement, an explicit session/journey
+boundary, or more than 10 seconds without a valid fix clears place confirmation and advances
+the callback generation. GPS return requires two new fixes; late responses cannot revive a
+pre-loss street. Street retention changes no gate, cleaning, media or route-collection decision.
+
+Private place traces retain separate raw and displayed labels, qualities, fix identity and
+resolver timing. Coalesced `presentation` rows record actual overlay/full-screen/notification
+labels and visibility with the exact rendered snapshot generation/fix reference. Reset rows
+carry the new generation and no stale fix reference, even when no resolver result arrives. The approved diagnostics implementation keeps them automatically in bounded
+app-private files, never logcat, Routebook payload or public source. No coordinates, names or
+trace files belong in a public test fixture or screenshot. Collect evidence only into an
+owner-only directory outside Git. Queue drops and write failures remain explicit; an absent
+row does not prove that a lookup/display transition did not occur. See the implementation
+acceptance matrix in [STREET_PANEL_ACCEPTANCE.md](STREET_PANEL_ACCEPTANCE.md).
+
 [Geoapify Free](https://www.geoapify.com/pricing/) is an alternative with 3000 credits/day
 (reverse geocoding uses one credit), but requires an account/key. It is not implemented or
 required by this version. Public Nominatim is deliberately excluded because of its
@@ -195,7 +271,7 @@ required by this version. Public Nominatim is deliberately excluded because of i
 Focused emulator-only overlay checks use the existing SafetyChecks runner with
 `-e tripOverlay seed`, then a force-stop and `-e tripOverlay restore`; `-e tripOverlay visible`
 checks the restored choice after another force-stop. Keep GPS permission disabled. The checks
-seed an invented nonzero trip total, exercise drag/no-open, hide/restore and automation
+seed an invented nonzero trip total, exercise whole-card hold/horizontal drag/no-open, hide/restore and automation
 suppression, verify process identity changes and safe card/control bounds, and write synthetic
 `trip-overlay-moved-<phase>.png` captures to app external files. Resize the emulator between
 phases to verify saved-position adaptation. These modes never dispatch actions or supply GPS.

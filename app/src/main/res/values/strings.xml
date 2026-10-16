@@ -121,7 +121,7 @@
     <string name="trip_reset">Reset</string>
     <string name="trip_permissions">Brak uprawnień lokalizacji lub powiadomień. Sprawdź instalację.</string>
     <string name="trip_overlay_drag">Przesuń</string>
-    <string name="trip_overlay_drag_description">Przeciągnij, aby przesunąć panel</string>
+    <string name="trip_overlay_drag_description">Przytrzymaj i przesuń panel poziomo</string>
     <string name="trip_overlay_close">Ukryj panel</string>
     <string name="trip_overlay_show">Pokaż panel w tle</string>
     <string name="trip_overlay_hide">Ukryj panel w tle</string>

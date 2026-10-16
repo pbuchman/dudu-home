@@ -1,5 +1,47 @@
 # Verification ledger
 
+## Local source-heading candidate / code 29, 2026-10-16
+
+- Built from the frozen local code-28 source in an isolated private non-Git source copy.
+  `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` pass. Pure trip/time/power,
+  29 street-stability/resolver checks and the finite-support/policy/direction checks pass.
+- Seven heading tests include independent invented geometry and actual toy-PBF parsing
+  through both builder passes. Five existing format/locality-parser tests and eleven
+  map-update tests pass with the computer osmium environment. A synthetic million-node
+  incidence benchmark measures bounded memory/disk mechanics, not national-build duration.
+- Android SQLite fixtures compile for schema 2/3, straight/reverse/unnamed turns,
+  stationary/no-bearing/no-speed/poor GPS, invalid support/policy, parallel ambiguity,
+  locality retention and query overflow. They were not run on an emulator or radio in
+  this candidate session. Existing online/generation tests remain unchanged.
+- Exact new national-pack replay, independently labelled held-out evidence and physical
+  radio presentation/latency acceptance remain pending. No installation, publication,
+  physical action or claim of national correctness follows from this candidate.
+
+## Local street integration / code 28, 2026-10-16
+
+- Built from merged code 27 (`44f9f1f`) plus the existing local code-24 street contract.
+  Manual controller integration retains the session timer, input epochs, atomic checkpoints,
+  passive diagnostic power observer and independent v1 GPS/v2 power queues. No gate,
+  cleaning, media, road geometry or street-confirmation threshold changes are included.
+- `assembleDebug assembleDebugAndroidTest lintDebug` passed. A fresh-worktree SDK-path
+  failure was resolved by supplying the installed SDK through ANDROID_HOME; no source or
+  dependency change was needed. The APK uses code 28 / 1.4.0-rc3-local-street2 and the
+  existing local signing certificate. Exact source/APK hashes remain in the private receipt.
+- Trip distance/session-time, radio profile/debounce and all 29 street-stability checks
+  passed. The synthetic map suite passed three cases and skipped two optional parser cases
+  without pyosmium. The separate Routebook protocol suite passed all 84 GPS assertions and
+  the shared v2 request/ACK/validation checks.
+- Detector/departure/motion/priority/progress checks passed. Installer (10), private tools
+  (8), navigation (6), public-tree regression (1), fresh installer (5) and diagnostics (4)
+  tests passed. The source diff passes whitespace validation.
+- Routebook build and unit suites passed unchanged: backend 53 passed, 7 database/runtime
+  cases skipped without their integration environment; UI 29 passed. No backend/browser
+  runtime acceptance or Home Dev deployment was performed for this Android-only merge.
+- The existing emulator session regression was adapted for the new resolver type and
+  generation, and the complete test APK compiled. Instrumentation, first-launch/no-dial,
+  radio update, real GNSS, street presentation and power/sleep acceptance were not executed
+  by this integration worker. Those remain separate coordinator/runtime checks.
+
 ## Integrated 1.4.0-rc3 / code 27, 2026-10-16
 
 - Corrected in-car time uses full-resolution GPS coverage while preserving the original
