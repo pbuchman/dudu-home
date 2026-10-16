@@ -1,5 +1,46 @@
 # Verification ledger
 
+## Integrated 1.4.0-rc3 / code 27, 2026-10-16
+
+- Corrected in-car time uses full-resolution GPS coverage while preserving the original
+  recorded time, raw points and observed stops. Conservative historical estimates and
+  provisional tails are labelled separately from physically confirmed power exclusions.
+  Both shipped power-profile registries remain untrusted by default.
+- Android debug/instrumentation builds and lint passed. Full emulator SafetyChecks,
+  session UI inspection and first-launch/no-dial passed. Separate Routebook instrumentation
+  passed 68 queue/storage/upload assertions, seed (2), force-stop/resume (4) and attached
+  service integration (10). The service test first refused missing emulator permissions;
+  after the documented grants it passed without weakening the production guard.
+- Pure timer/profile checks, all 84 existing GPS protocol assertions and the new shared v2
+  request/ACK fixture passed. Checks cover OFF debounce/expiry, motion contradiction,
+  generation boundaries, independent GPS/power failures and rollback-compatible storage.
+  Actual Android HTTPS-to-PostGIS-to-browser acceptance passed all 32 existing v1 checks
+  with an unchanged application APK. This does not establish physical vendor IPC behavior.
+- Backend/PostGIS finished with 92 passes and one optional nginx subtest skipped. Real
+  nginx isolation was covered separately by all ten PostGIS/nginx/Chromium acceptance
+  tests. Independent parking runtime checks cover additive migration over GPS data,
+  durable/idempotent v2 ACKs, authentication/body/rate limits, power-only SSE revision,
+  cross-view parity, trusted ON veto and clock-only maturity. Six offline quality-study
+  tests confirm that synthetic or incompletely labelled evidence cannot pass the target.
+- All 29 UI unit tests and 36 browser tests passed, including desktop/mobile presentation,
+  late corrections and server-relative refresh when the browser clock is one hour ahead
+  or jumps backwards. The first broad browser invocation lacked its fixture environment;
+  the correctly configured complete rerun passed. The existing analytics immutability
+  test now fixes its store clock, retaining exact response assertions despite the new
+  calculation timestamp.
+- Independent performance checks returned the 366-day, 543,245-point range in 4.94 seconds
+  and a dense 17,280-point day in 345 ms. A separate correction-specific 20,001-point range
+  took 161 ms. These are synthetic local timings, not a Home Dev service guarantee.
+- Deployment template/plan checks, installer, detector, progress, diagnostics and private
+  source/history scans passed. Two optional local OSM cases were skipped without pyosmium;
+  CI installs the pinned dependency. Generic privacy-vocabulary hits were reviewed.
+- The owner explicitly approved this rollout without a new backup. Deployment must retain
+  raw points/configuration, verify the pre-existing archive prefix and use additive metadata.
+  Source-only publication still requires green PR, merged-main and tag checks; exact links,
+  merged APK provenance and Home Dev receipts are recorded after those gates complete.
+  Radio installation, firmware-bound power interpretation and the independent first-100
+  detection study remain pending. No 95-percent field result is claimed.
+
 ## Integrated 1.4.0-rc2 / code 26, 2026-10-15
 
 - Recorded time is derived from the raw GPS archive, including stationary recording and

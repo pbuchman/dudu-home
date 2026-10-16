@@ -37,7 +37,8 @@ Without trusted radio observations for a candidate, all of these conditions are 
 - Median accuracy is at most 10 m, radius from the first sample at most 15 m and every
   internal sampling interval at most fifteen seconds.
 - The preceding 120 seconds of the same segment contain at least two movement samples
-  with speed at least 2 m/s and accuracy at most 15 m.
+  with speed at least 2 m/s and accuracy at most 15 m, belonging to accepted moving
+  geometry edges. Fixed-coordinate speed spikes do not establish preceding driving.
 
 Remove at most 300 seconds from the end, never more than the stop or actual coverage.
 These corrections are estimated, with open archive tails additionally provisional.
@@ -83,6 +84,10 @@ calibration archive. A correct event requires true radio shutdown and a boundary
 greater than thirty seconds. Report false deducted time and missed parking separately.
 Missing reference labels cannot count as successes. An RC may expose labelled estimates
 before this study, but must not advertise the target as achieved.
+
+The private, offline study format and evaluator are documented in
+[the parking acceptance guide](../routebook/tests/parking/README.md). Its synthetic tests
+verify the reporting gate; they are not independent reference observations.
 
 Backend, UI and Android are implemented in separate worktrees by gpt-6.1-sol workers at
 xhigh, high and xhigh effort, respectively, after the backend contract is frozen. An
