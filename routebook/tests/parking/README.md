@@ -53,3 +53,39 @@ the known false deducted total; do not present that partial total as complete.
 
 The evaluator exits 2 on invalid/unsafe input, otherwise 0 after printing a report.
 Consumers must inspect `status` and `target_achieved`, not infer PASS from exit 0.
+
+## Synthetic runtime acceptance
+
+After building Routebook, run all parking checks against a disposable local PostGIS
+database. Its name must begin `routebook_synthetic`; production/remote URLs are
+refused. Every runtime case uses fresh random synthetic device/segment identifiers
+and preserves existing rows. The suite does not create or drop databases.
+
+```sh
+cd routebook
+npm run build
+ROUTEBOOK_TEST_DB_URL=postgres://postgres@127.0.0.1:55443/routebook_synthetic_qa \
+  node --test tests/parking/*.test.mjs
+```
+
+Without the DB variable runtime acceptance is explicitly skipped. The same command
+runs in CI with its existing synthetic PostGIS service. Runtime coverage includes
+additive migration over v1 GPS data, old v1 client draining, v2 authentication,
+binding/body/rate validation, durable duplicate/conflict ACKs, a real SSE connection
+with a power-only update and unchanged GPS, cross-view correction consistency,
+trusted ON with ACC OFF, clock-only maturity, and a timed 20,001-point raw range.
+The timing is a local synthetic bound and does not establish Home Dev latency.
+
+`rollback.test.mjs` additionally accepts `ROUTEBOOK_PARKING_OLD_SOURCE`, pointing to
+an independently built, temporary Routebook source from RC2 commit `2b00cab`.
+With that variable set it runs the actual preceding backend against the upgraded
+synthetic database: old v1 upload/read continues, v2 is refused without an ACK,
+new power rows survive, and returning to the new backend retains both archives.
+Without the old-source variable that separate rollback test is explicitly skipped.
+Keep the temporary build outside the checkout; it needs no runtime credentials.
+
+The companion `tests/analytics/acceptance.test.mjs` exercises the real nginx template
+and Chromium against PostGIS. Run it with `ROUTEBOOK_ANALYTICS_TEST_DB` pointing to
+the same dedicated test database and `ROUTEBOOK_ANALYTICS_BROWSER=1`; all screenshots
+belong outside the checkout. Android build/lint/emulator and hardware acceptance
+are separate gates. No synthetic suite can validate physical radio OFF mapping.

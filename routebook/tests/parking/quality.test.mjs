@@ -52,6 +52,7 @@ test('reference independence, non-calibration data and frozen rules are required
     x => { x.reference.complete_detection_stream = false; },
     x => { x.algorithm.frozen_at = '2026-02-01T00:00:00Z'; },
     x => { x.algorithm.rules_sha256 = 'not-a-hash'; },
+    x => { x.algorithm.frozen_at = '2026-02-31T00:00:00Z'; },
     x => { x.detections[1].detected_at = '2026-01-01T00:00:00Z'; },
     x => { x.detections[0].coordinates = [0, 0]; },
     x => { x.detections[0].label = { radio_off: false, falsely_deducted_seconds: 0 }; },
