@@ -254,3 +254,63 @@ zero. `point_count=0` is “Brak danych”; a single raw point may legitimately 
 Loading, failed requests, unavailable metrics and no observations are distinct UI states.
 Synthetic semantic examples are in `recorded-time-examples.json`; their response objects are
 explicitly projections of full responses, not replacements for map response shapes above.
+
+
+## Radio observations v2 and corrected car time (additive)
+
+Existing GPS envelopes/ACKs remain version 1 without any changed fields. The same authenticated
+POST /v1/ingest also accepts version 2 with exactly `version,device_id,lane,events`.
+`events` uses the RadioObservation shape in analytics.d.ts; every field is required and extra
+keys are rejected. `latest` contains one event, `backfill` 1..200, encoded body <=256 KiB.
+All UUIDs are canonical lowercase. `sequence` and `elapsed_realtime_ms` are nonnegative safe
+integers. `observed_at` has the same UTC/range/future-clock validation as measured_at.
+Raw states are null or signed 32-bit integers. Identifier fields match `[A-Za-z0-9._:-]+`
+(profile 1..80, firmware 1..120). Android firmware_id is `sha256:` plus the lowercase SHA-256
+of its exact Build.FINGERPRINT UTF-8. Kinds are snapshot, transition and observer_lost.
+No sender-supplied interpreted state is accepted. Observer epochs change on process/rebind
+restart and boot_id changes on full boot. First snapshots establish only a current baseline.
+
+Version-2 ACKs mirror the existing result/index/event_id/status contract, with version 2 and
+`invalid_observation` replacing invalid_point. Immutable independent observation rows use
+(device_id,event_id), preserve first receipt, and follow identical duplicate/conflict and
+COMMIT-before-ACK rules. Events-only commits advance the same durable device/source revision
+and emit existing SSE updates with affected dates; GPS latest is unchanged.
+
+Production has **no trusted interpretation profile by default**. Optional private runtime
+`power_profiles` entries bind `profile_id`, exact `firmware_id`, `validation_id`,
+`validated_at` and nonempty `states:[{acc_state,module1_state,state:'on'|'off'}]`.
+The validation ID is an immutable owner-held physical evidence reference. Diagnostic profiles
+cannot be enabled. Both Android and server require independent explicit audited registration;
+sender profile claims never grant trust. No physical ON/OFF mapping is currently validated.
+
+Correction metrics in analytics.d.ts are additive on day/range responses and each day/month
+row, analytics totals/periods/journeys and journey detail. Directional comparisons include mean
+and median raw recorded/corrected/excluded time. Distances, segmentation, elapsed time and
+speed averages retain their existing definitions. `recorded_seconds` remains the raw union
+of GPS-observed intervals. `in_car_seconds = recorded_seconds - excluded_tail_seconds`.
+Confirmed + estimated equals excluded; provisional is a subset of estimated. Metadata supplies
+algorithm version, computation UTC and next clock-only maturity refresh (or null). Clients must
+refetch at maturity even when no ingest/SSE event occurs. Missing fields mean unavailable.
+
+The canonical correction reads the **full raw archive** in the same snapshot/revision as
+bounded map/analytics geometry. It unions exclusion intervals, intersects recorded coverage,
+and only then clips to half-open Europe/Warsaw days, including DST. Late GPS or radio data
+can undo an earlier estimate. Detail returns clipped correction_intervals and reason categories.
+
+Trusted ON vetoes historical heuristics. Trusted telemetry for a candidate supplies only its
+actual covered OFF intervals; unknown holes are not filled by heuristic. OFF must survive
+three seconds, effective from its first observation, and overlap two successive stationary
+GPS fixes <=15 s apart, speed <=0.7 m/s, accuracy <=25 m and displacement <=15 m. Snapshots
+are expected every30 s, expire after45 s. Lost observer, epoch/boot change, nonconsecutive
+sequence, backwards/mismatched wall/monotonic clock or contradictory moving GPS breaks OFF
+coverage; no unbounded carry and no time before the first snapshot is reconstructed.
+
+Without trusted telemetry a historical tail qualifies only with observed stop span
+270 <= seconds <330 at segment end and a following measured gap >=600 s, or archive end
+at least600 s old by BOTH measurement and server-receipt clocks. It needs >=40 points,
+all speeds present <=0.7, all accuracy <=25, >=90% speeds <=0.3, median accuracy <=10,
+all points <=15 m from its first point, every sample interval <=15 s, and >=2 good moving
+points (speed >=2, accuracy <=15) in the SAME segment in the preceding120 s.
+Remove min(300,span) from the END, intersected with recorded coverage. This remains estimated;
+open archive ends are provisional. No95% accuracy claim is established without independent
+100-case evaluation.
