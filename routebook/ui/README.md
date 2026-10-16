@@ -135,12 +135,25 @@ kolektora GPS ani danych źródłowych.
 
 ## Czas w samochodzie
 
-Widoki Dzień/Na żywo i Zakres, miesięczne zestawienie oraz tabela dni pokazują
-`recorded_seconds` z odpowiedniego poziomu odpowiedzi API. Analizy korzystają
-z `totals.recorded_seconds` oraz osobnych wartości `days[]`, `weeks[]` i `months[]`.
-Ta metryka obejmuje ruch i postoje przy ciągłym zapisie GPS; nie jest sumą czasów
-podróży ani wynikiem obliczeń z geometrii mapy. Objaśnienie „na podstawie zapisu GPS”
-zachowuje granicę między obserwacją GPS a pomiarem zapłonu lub obecności kierowcy.
+Widoki Dzień/Na żywo, Zakres i jego tabela dni/miesięcy oraz analizy okresów,
+podróży i kierunków pokazują przede wszystkim `in_car_seconds` z backendu.
+`recorded_seconds` pozostaje surowym czasem ciągłego zapisu GPS, niezależnym od
+segmentacji podróży i geometrii mapy. Rozwijane „Zapis GPS i korekta” pokazuje
+surowy czas, `excluded_tail_seconds` i podział wykluczenia: potwierdzone sygnałem
+zasilania, szacowane GPS oraz tymczasową część otwartej końcówki. Szacunek i wynik
+tymczasowy są jawnie opisane; nie stanowią pomiaru obecności w samochodzie.
+Ręczny licznik radia pozostaje niezależny. Mapa, postoje, dystans i średnie
+zachowują oryginalne dane i znaczenie.
+
+Starszy backend bez korekty pokazuje surowy czas i „korekta niedostępna”.
+Nie zastępujemy brakującej korekty zerem ani potwierdzeniem. Starsza podróż bez
+surowej metryki zachowuje jawnie opisany czas podróży z lukami. Porównania
+zachowują ten czas osobno od mediany i średniej poprawionej oraz surowego zapisu.
+
+Power-only aktualizacje korzystają z istniejącej rewizji SSE i odświeżają metryki
+także przy identycznym ostatnim GPS. `correction_next_refresh_at` uruchamia odczyt
+po dojrzeniu tymczasowej końcówki bez nowego pomiaru/zdarzenia. Powtórzony nieaktualny
+deadline nie tworzy pętli żądań. Późny backlog może cofnąć wcześniejsze wykluczenie.
 
 Brak pola, `null` i nieprawidłowa liczba pokazują „Niedostępne”, a poprawne zero
 przy obserwacjach pokazuje „0 s”. Potwierdzony `point_count: 0` pokazuje „Brak danych”.
@@ -156,3 +169,8 @@ też SSE po późnym dosłaniu danych, opóźnioną odpowiedź starego wyboru, b
 brak/null/zero oraz desktop i telefon. Browser plugin not available: użyto
 istniejącego Playwright Chromium, bez dodawania zależności przeglądarkowych.
 Dowody zapisywać poza repo przez `ROUTEBOOK_UI_EVIDENCE_DIR`.
+
+`corrected-time.browser.test.ts` sprawdza dzień → zakres/tabelę → analizy okresów,
+szczegóły podróży i porównania kierunkowe, cofnięcie szacunku przez backlog,
+aktualizację samych sygnałów zasilania oraz dojrzenie końcówki bez SSE. Wszystkie
+dane są wymyślone; screenshoty desktop/mobile pozostają poza repo.

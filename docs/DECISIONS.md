@@ -1,5 +1,26 @@
 # Design decisions
 
+## Parking-tail corrections and passive power observations - October 16 RC3
+
+- Keep raw recorded GPS time unchanged and expose a separate corrected in-car estimate.
+  Only unioned exclusions intersecting recorded coverage can reduce it. Full-archive
+  evidence, Warsaw calendar clipping and late-data reversal apply consistently across views.
+- The conservative five-minute-tail estimator is labelled estimated, with open archive
+  tails additionally provisional. A measured stop or a GPS gap does not prove radio OFF.
+  Waiting with the radio active counts even with ACC OFF. No blanket five-minute deduction.
+- Add passive module-0 observations and a separate durable Android outbox. GPS database
+  version 1 and ingest v1 stay compatible with an older APK/backend. No second GPS service,
+  vendor command, ignition rearming or change to gate/cleaning/media behavior.
+- Trust only an explicitly audited firmware-bound interpretation; shipped defaults are
+  diagnostic. Bound OFF coverage and invalidate it on loss/restart/motion. The manual
+  timer preserves Start/Pauza/Reset and generation-safe atomic checkpoints.
+- The 95-percent precision target needs one hundred independent labelled detections after
+  freezing the algorithm. Implementation tests and historical estimates do not establish it.
+- The owner explicitly approved this Home Dev deployment without a new backup. Preserve
+  raw observations/configuration and use additive metadata plus application-only rollback.
+  Physical radio installation and signal acceptance remain in a separate workstream.
+  The detailed approved rules are in [PARKING_TIME.md](PARKING_TIME.md).
+
 ## Recorded time and manual session controls - October 15 RC2
 
 - Home Dev sums the union of observed GPS time intervals independently of journey

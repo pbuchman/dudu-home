@@ -1,0 +1,37 @@
+{
+  "note": "Invented raw diagnostic observation. No ON/OFF interpretation is validated.",
+  "request": {
+    "version": 2,
+    "device_id": "00000000-0000-4000-8000-000000000101",
+    "lane": "latest",
+    "events": [
+      {
+        "event_id": "00000000-0000-4000-8000-000000000102",
+        "observer_epoch": "00000000-0000-4000-8000-000000000103",
+        "sequence": 0,
+        "observed_at": "2026-10-14T08:00:00.000Z",
+        "elapsed_realtime_ms": 12345,
+        "boot_id": "00000000-0000-4000-8000-000000000104",
+        "kind": "snapshot",
+        "acc_state": 0,
+        "module1_state": 0,
+        "interpretation_profile": "diagnostic-v1",
+        "firmware_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "ack": {
+    "version": 2,
+    "device_id": "00000000-0000-4000-8000-000000000101",
+    "received_at": "2026-10-14T08:00:01.000Z",
+    "revision": 1,
+    "results": [
+      {
+        "index": 0,
+        "event_id": "00000000-0000-4000-8000-000000000102",
+        "status": "accepted",
+        "code": null
+      }
+    ]
+  }
+}

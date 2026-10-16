@@ -10,6 +10,13 @@
 The independent [Where am I module](WHERE_AM_I.md) reuses the location service; it does not
 change the calling IPC, callbacks, reservation or hangup rules below.
 
+Version 1.4.0-rc3 adds a separate passive Toolkit module-0 observer for ACC/update 50 and
+MCU/update 1. It only registers/unregisters callbacks and never sends module commands.
+These raw values are diagnostic until an explicit firmware-bound profile is physically
+validated. Neither ACC OFF nor screen OFF alone means the radio has stopped operating.
+This observer cannot rearm gate/media work or replace DuduCycle. Its bounded time-correction
+rules and remaining hardware acceptance are in [PARKING_TIME.md](PARKING_TIME.md).
+
 RC3 recognizes a departure event after three seconds of qualified GPS movement in any
 direction. It does not shorten the phone snapshot or bypass fresh idle admission below.
 Event time, dispatch, `DIAL_REQUESTED`, outgoing and idle are separate diagnostic milestones;

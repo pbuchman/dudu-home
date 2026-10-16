@@ -1,10 +1,12 @@
 import type {
   AnalyticsPoint,
-  JourneyDetailResponse,
   Metrics,
   NamedPlace,
 } from "../../contract/analytics.js";
-import type { AnalyticsResponse } from "../src/recorded-time";
+import type {
+  AnalyticsResponse,
+  JourneyDetailResponse,
+} from "../src/recorded-time";
 export const device = "6b8f2886-ccbd-5b1d-b014-3fa94cc0a1ea";
 export const home: NamedPlace = {
   place_id: "10000000-0000-4000-8000-000000000001",

@@ -1,3 +1,4 @@
+import { correctionFor, correctionMetrics } from './in-car-time.js';
 import { recordedDays, recordedTimeDerivation } from './recorded-time.js';
 import { dates, dayBounds, localDate, nextDate, timezone } from './calendar.js';
 export { date, dates, dayBounds, localDate, nextDate, timezone } from './calendar.js';
@@ -47,11 +48,11 @@ export function day(s:Snapshot,d:string,cfg:Derivation=defaults,derived=derive(s
     const i=run.indexOf(pts[0]);segments.push({run_id:run[0].event_id,source_segment_id:run[0].segment_id,points:pts,edge_from:i>0?run[i-1]:null});
   }
   const stops=derived.stops.flatMap(stop=>{const overlap=(Math.min(b.end,Date.parse(stop.end_at))-Math.max(b.start,Date.parse(stop.start_at)))/1000;return overlap>0?[{...stop,overlap_seconds:overlap}]:[];});
-  return {version:1,device_id:s.device_id,revision:s.revision,date:d,timezone,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,recorded_seconds:recordedDays(s,d,d)[d],meters,point_count,segments,stops};
+  return {version:1,device_id:s.device_id,revision:s.revision,date:d,timezone,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,...correctionMetrics(correctionFor(s),b.start,b.end),recorded_seconds:recordedDays(s,d,d)[d],meters,point_count,segments,stops};
 }
 export function range(s:Snapshot,from:string,to:string,cfg:Derivation=defaults) {
-  const requested=dates(from,to),derived=derive(s.points,cfg),recorded=recordedDays(s,from,to);
-  const summaries=new Map(requested.map(date=>[date,{date,meters:0,point_count:0,stop_count:0,recorded_seconds:recorded[date]}]));
+  const requested=dates(from,to),derived=derive(s.points,cfg),recorded=recordedDays(s,from,to),correction=correctionFor(s);
+  const summaries=new Map(requested.map(date=>[date,{date,meters:0,point_count:0,stop_count:0,...correctionMetrics(correction,dayBounds(date).start,dayBounds(date).end),recorded_seconds:recorded[date]}]));
   const windows=requested.map(date=>({date,...dayBounds(date)}));
   const start=windows[0].start_at,end=windows.at(-1)!.end_at;let windowIndex=0;
   // Single pass over points, rather than scanning an entire selected range for each day.
@@ -59,8 +60,11 @@ export function range(s:Snapshot,from:string,to:string,cfg:Derivation=defaults) 
   for(const stop of derived.stops){const first=localDate(stop.start_at)>from?localDate(stop.start_at):from,last=localDate(stop.end_at)<to?localDate(stop.end_at):to;
     for(let d=first;d<=last;d=nextDate(d)){const b=dayBounds(d);if(Math.min(b.end,Date.parse(stop.end_at))>Math.max(b.start,Date.parse(stop.start_at)))summaries.get(d)!.stop_count++;}
   }
-  const days=[...summaries.values()],totals=new Map<string,{meters:number;recorded_seconds:number}>();for(const d of days){const month=d.date.slice(0,7),total=totals.get(month)??{meters:0,recorded_seconds:0};total.meters+=d.meters;total.recorded_seconds+=d.recorded_seconds;totals.set(month,total);}
-  return {version:1,device_id:s.device_id,revision:s.revision,timezone,from,to,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,recorded_seconds:days.reduce((n,d)=>n+d.recorded_seconds,0),days,months:[...totals].map(([month,total])=>({month,...total})),meters:days.reduce((n,d)=>n+d.meters,0)};
+  const days=[...summaries.values()],totals=new Map<string,typeof days[number]>();
+  const additive=['meters','recorded_seconds','in_car_seconds','excluded_tail_seconds','confirmed_excluded_seconds','estimated_excluded_seconds','provisional_excluded_seconds'] as const;
+  for(const d of days){const month=d.date.slice(0,7),total=totals.get(month);if(total){for(const key of additive)total[key]+=d[key];}else totals.set(month,{...d});}
+  const b={start:windows[0].start,end:windows.at(-1)!.end};
+  return {version:1,device_id:s.device_id,revision:s.revision,timezone,from,to,derivation:cfg,recorded_time_derivation:recordedTimeDerivation,...correctionMetrics(correction,b.start,b.end),recorded_seconds:days.reduce((n,d)=>n+d.recorded_seconds,0),days,months:[...totals].map(([month,total])=>{const {date:_date,point_count:_points,stop_count:_stops,...metrics}=total;return {month,...metrics};}),meters:days.reduce((n,d)=>n+d.meters,0)};
 }
 /** Conservative invalidation: every observed local day plus neighbours, including long stops whose anchor changes. */
 export function affectedDates(points:StoredPoint[]) {return [...new Set(points.flatMap(p=>{const d=localDate(p.measured_at);return [nextDate(d,-1),d,nextDate(d)];}))].sort();}

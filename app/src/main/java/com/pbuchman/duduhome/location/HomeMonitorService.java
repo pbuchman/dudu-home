@@ -53,6 +53,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private com.pbuchman.duduhome.trip.TripController trip;
     private com.pbuchman.duduhome.ui.TripPresentation tripPresentation;
     private com.pbuchman.duduhome.routebook.Routebook routebook;
+    private com.pbuchman.duduhome.startup.RadioPowerObserver radioPower;
     private LocationManager locations;
     private HomeConfiguration config;
     private HomeDetector detector;
@@ -176,6 +177,10 @@ public final class HomeMonitorService extends Service implements LocationListene
             stopSelf(); return START_NOT_STICKY;
         }
         if (routebook == null) routebook = new com.pbuchman.duduhome.routebook.Routebook(this);
+        if (radioPower == null) radioPower = new com.pbuchman.duduhome.startup.RadioPowerObserver(this,(event,powerState)->{
+            if(routebook!=null)routebook.offerPower(event);
+            if(trip!=null)trip.observePower(event,powerState);
+        });
         if (next == null || !next.enabled) {
             if (detector != null) {
                 automation.reset(Reason.CONFIGURATION);
@@ -416,7 +421,8 @@ public final class HomeMonitorService extends Service implements LocationListene
         }
     }
     @Override public void onDestroy() {
-        if (routebook != null) routebook.close();
+        if (radioPower != null) radioPower.close(()->{if(routebook!=null)routebook.close();});
+        else if (routebook != null) routebook.close();
         if (tripPresentation != null) tripPresentation.close();
         if (trip != null) trip.breakSegment();
         if (automation != null) automation.close();
@@ -444,6 +450,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (automation != null) writer.println(automation.diagnostic());
         if (trip != null) writer.println(trip.diagnostic());
         if (routebook != null) writer.println(routebook.diagnostic());
+        if (radioPower != null) writer.println(radioPower.diagnostic());
     }
     @Override public IBinder onBind(Intent intent) { return null; }
 }

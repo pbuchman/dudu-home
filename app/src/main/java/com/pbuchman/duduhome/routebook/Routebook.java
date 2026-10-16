@@ -18,21 +18,38 @@ public final class Routebook implements AutoCloseable {
     private volatile String diagnostic="ROUTEBOOK_STARTING", uploadState="DISABLED", counts="", device="";
     private volatile boolean closed;
     private Outbox db; private CollectorFilter filter; private Uploader uploader;
+    private volatile PowerArchive power;
+    private final Object powerLock=new Object();
+    private final ArrayBlockingQueue<PowerEvent> powerStarting=new ArrayBlockingQueue<>(128);
     public Routebook(Context context) {
         this.context=context.getApplicationContext();
         disk.execute(()-> {
             try {
                 db=new Outbox(new File(this.context.getNoBackupFilesDir(),"routebook.sqlite"));
                 device=db.device();
+            } catch(RuntimeException failure) {
+                report("STORAGE_DEGRADED");
+                // A previously established power identity can drain independently of a failed GPS DB.
+                try{device=PowerOutbox.existingDevice(new File(this.context.getNoBackupFilesDir(),"radio-power.sqlite"));}
+                catch(RuntimeException unavailable){report("POWER_IDENTITY_UNAVAILABLE");}
+            }
+            if(Point.uuid(device)) {
                 PrivateConfig config=null;
-                try { config=PrivateConfig.load(this.context.getNoBackupFilesDir(),db.device()); }
+                try { config=PrivateConfig.load(this.context.getNoBackupFilesDir(),device); }
                 catch(Exception bad) { uploadState="CONFIG_BLOCKED"; report("CONFIG_BLOCKED"); }
                 if(config!=null) uploadState=config.enabled?"ENABLED":"DISABLED";
+                synchronized(powerLock){
+                    power=new PowerArchive(this.context.getNoBackupFilesDir(),device,config,this::report);
+                    PowerEvent event;while((event=powerStarting.poll())!=null)power.offer(event);
+                }
+                if(db==null)return;
+                try {
                 filter=new CollectorFilter(db.highWater(),config==null?CollectorFilter.DEFAULTS:config.limits);
                 uploader=new Uploader(db,config,Uploader::https,category->{ uploadState=category; report(category); });
                 diagnostic="COLLECTION_READY UPLOAD="+(config!=null&&config.enabled?"ENABLED":"DISABLED");
                 uploader.kick();
-            } catch(RuntimeException failure) { report("STORAGE_DEGRADED"); }
+                } catch(RuntimeException failure) { report("STORAGE_DEGRADED"); }
+            }
         });
     }
     private void report(String category) { diagnostic=category; Diagnostics.record(context,"ROUTEBOOK_"+category); }
@@ -57,7 +74,14 @@ public final class Routebook implements AutoCloseable {
         try { disk.execute(task); } catch(RejectedExecutionException full) { missed.set(true); diagnostic="COLLECTION_QUEUE_DEGRADED"; }
     }
     public void breakSegment() { enqueue(()-> { if(filter!=null) filter.breakSegment(); }); }
-    public String diagnostic() { return "routebook="+diagnostic+" upload="+uploadState+" "+counts+" device_id="+device; }
+    public void offerPower(PowerEvent event) {
+        synchronized(powerLock){
+            if(closed)return;
+            if(power!=null)power.offer(event);
+            else if(!powerStarting.offer(event))report("POWER_QUEUE_DEGRADED");
+        }
+    }
+    public String diagnostic() { return "routebook="+diagnostic+" upload="+uploadState+" "+counts+" device_id="+device+" "+(power==null?"POWER_STARTING":power.diagnostic()); }
     @Override public void close() {
         closed=true;
         // Finish queued durable writes; uploader must stop before the shared SQLite handle closes.
@@ -66,6 +90,7 @@ public final class Routebook implements AutoCloseable {
             try { disk.awaitTermination(15,TimeUnit.SECONDS); }
             catch(InterruptedException e) { Thread.currentThread().interrupt(); }
             if(uploader!=null) uploader.close();
+            if(power!=null) power.close();
             if(disk.isTerminated() && (uploader==null||uploader.stopped()) && db!=null) db.close();
         },"routebook-cleanup"); cleanup.start();
     }

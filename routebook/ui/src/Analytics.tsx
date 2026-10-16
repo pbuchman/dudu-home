@@ -1,11 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  Journey,
-  JourneyDetailResponse,
-  Metrics,
-  NamedPlace,
-  Visit,
-} from "../../contract/analytics.js";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Metrics, NamedPlace, Visit } from "../../contract/analytics.js";
 import type { RuntimeConfig } from "./types";
 import { analyticsApi } from "./analytics-api";
 import {
@@ -18,7 +12,20 @@ import {
 } from "./analytics-model";
 import { km, localDate, time, type Geometry } from "./model";
 import MapView from "./MapView";
-import { recordedTime, type AnalyticsResponse } from "./recorded-time";
+import {
+  recordedTime,
+  type AnalyticsResponse,
+  type Journey,
+  type JourneyDetailResponse,
+} from "./recorded-time";
+import {
+  InCarTime,
+  InCarValue,
+  CorrectionBreakdown,
+  correctionLabel,
+  validSeconds,
+} from "./InCarTime";
+import { useCorrectionRefresh } from "./use-correction-refresh";
 
 const boundaries = {
   confirmed_stop: "potwierdzony postój",
@@ -92,6 +99,12 @@ export default function Analytics({
   const [error, setError] = useState("");
   const [detailError, setDetailError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const correctionRefresh = useCallback(() => setRefresh((n) => n + 1), []);
+  useCorrectionRefresh(
+    summary?.correction_next_refresh_at,
+    summary?.correction_computed_at,
+    correctionRefresh,
+  );
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<PlaceDraft>();
   const [saving, setSaving] = useState(false);
@@ -288,30 +301,23 @@ export default function Analytics({
                 {summary.journeys.filter((j) => j.complete).length} kompletnych
               </span>
             </div>
-            <dl className="analytics-metrics recorded-metric">
-              <div>
-                <dt>Czas w samochodzie</dt>
-                <dd>
-                  {recordedTime(
-                    summary.totals.recorded_seconds,
-                    summary.totals.point_count !== 0,
-                  )}
-                </dd>
-                <dd className="recorded-explanation">
-                  na podstawie zapisu GPS
-                </dd>
-              </div>
-            </dl>
+            <InCarTime
+              value={summary.totals}
+              observed={summary.totals.point_count !== 0}
+            />
             <MetricsView
               value={summary.totals}
               observed={summary.journeys.length > 0}
             />
             <p className="muted">
-              Czas w samochodzie obejmuje ruch i postój przy ciągłym zapisie GPS.
-              Pozostałe czasy i dystans dotyczą przejazdów w wybranym okresie. Parking
-              między przejazdami (≥10 min) jest pominięty; pełne wizyty są
-              poniżej. Podróż na granicy dat ma pełne dane w dzienniku. Średnia
-              całej podróży jest dostępna wyłącznie przy kompletnym zapisie.
+              {validSeconds(summary.totals.in_car_seconds)
+                ? "Czas w samochodzie pomija wykluczoną końcówkę postoju; szczegóły pokazują surowy zapis i podstawę korekty. "
+                : "Korekta czasu jest niedostępna. Surowy czas GPS obejmuje także końcowy postój przy ciągłym zapisie. "}
+              Pozostałe czasy i dystans dotyczą przejazdów w wybranym okresie.
+              Parking między przejazdami (≥10 min) jest pominięty; pełne wizyty
+              są poniżej. Podróż na granicy dat ma pełne dane w dzienniku.
+              Średnia całej podróży jest dostępna wyłącznie przy kompletnym
+              zapisie.
             </p>
             <RecordedPeriods summary={summary} />
           </section>
@@ -338,7 +344,19 @@ export default function Analytics({
                       {endpoint(j.end)}
                     </strong>
                     <span>
-                      {km(j.meters)} km · {duration(j.elapsed_seconds)}
+                      {km(j.meters)} km ·{" "}
+                      {validSeconds(j.in_car_seconds) ||
+                      validSeconds(j.recorded_seconds) ? (
+                        <InCarValue value={j} />
+                      ) : (
+                        duration(j.elapsed_seconds)
+                      )}
+                      <small className="recorded-explanation">
+                        {validSeconds(j.in_car_seconds) ||
+                        validSeconds(j.recorded_seconds)
+                          ? correctionLabel(j)
+                          : "Czas podróży (z lukami) · korekta niedostępna"}
+                      </small>
                     </span>
                     <span
                       className={`quality-badge ${j.complete ? "complete" : "partial"}`}
@@ -434,7 +452,31 @@ export default function Analytics({
                     </p>
                     <dl>
                       <div>
-                        <dt>Mediana czasu</dt>
+                        <dt>Mediana czasu w samochodzie</dt>
+                        <dd>{recordedTime(c.median_in_car_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Średni czas w samochodzie</dt>
+                        <dd>{recordedTime(c.mean_in_car_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Mediana wykluczonej końcówki</dt>
+                        <dd>{recordedTime(c.median_excluded_tail_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Mediana zapisu GPS (surowego)</dt>
+                        <dd>{recordedTime(c.median_recorded_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Średni zapis GPS (surowy)</dt>
+                        <dd>{recordedTime(c.mean_recorded_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Średnia wykluczona końcówka</dt>
+                        <dd>{recordedTime(c.mean_excluded_tail_seconds)}</dd>
+                      </div>
+                      <div>
+                        <dt>Mediana czasu podróży (z lukami)</dt>
                         <dd>{duration(c.median_seconds)}</dd>
                       </div>
                       <div>
@@ -450,6 +492,26 @@ export default function Analytics({
                         </dd>
                       </div>
                     </dl>
+                    <p className="recorded-explanation">
+                      {correctionLabel({
+                        in_car_seconds: c.median_in_car_seconds,
+                        excluded_tail_seconds: c.median_excluded_tail_seconds,
+                        confirmed_excluded_seconds:
+                          c.confirmed_excluded_seconds,
+                        estimated_excluded_seconds:
+                          c.estimated_excluded_seconds,
+                        provisional_excluded_seconds:
+                          c.provisional_excluded_seconds,
+                      })}
+                    </p>
+                    <p className="muted">
+                      Wykluczenie w próbce: potwierdzone sygnałem zasilania{" "}
+                      {recordedTime(c.confirmed_excluded_seconds)} · szacowane
+                      GPS {recordedTime(c.estimated_excluded_seconds)} · w tym
+                      tymczasowe {recordedTime(c.provisional_excluded_seconds)}.
+                      Czas podróży przed korektą obejmuje również luki
+                      obserwacji.
+                    </p>
                     <details>
                       <summary>Godzina wyjazdu · liczebność próbki</summary>
                       <div className="table-scroll">
@@ -458,7 +520,9 @@ export default function Analytics({
                             <tr>
                               <th>Godzina</th>
                               <th>Podróże</th>
-                              <th>Mediana czasu</th>
+                              <th>Mediana czasu w samochodzie</th>
+                              <th>Średni czas w samochodzie</th>
+                              <th>Czas podróży przed korektą</th>
                               <th>Mediana km</th>
                             </tr>
                           </thead>
@@ -467,6 +531,8 @@ export default function Analytics({
                               <tr key={d.hour}>
                                 <td>{String(d.hour).padStart(2, "0")}:00</td>
                                 <td>{d.count}</td>
+                                <td>{recordedTime(d.median_in_car_seconds)}</td>
+                                <td>{recordedTime(d.mean_in_car_seconds)}</td>
                                 <td>{duration(d.median_seconds)}</td>
                                 <td>{km(d.median_meters)}</td>
                               </tr>
@@ -641,11 +707,13 @@ function RecordedPeriods({ summary }: { summary: AnalyticsResponse }) {
   return (
     <details className="recorded-periods">
       <summary>Czas w samochodzie według dni, tygodni i miesięcy</summary>
-      {([
-        ["Dni", summary.days],
-        ["Tygodnie od poniedziałku", summary.weeks],
-        ["Miesiące", summary.months],
-      ] as const).map(([label, rows]) => (
+      {(
+        [
+          ["Dni", summary.days],
+          ["Tygodnie od poniedziałku", summary.weeks],
+          ["Miesiące", summary.months],
+        ] as const
+      ).map(([label, rows]) => (
         <div
           className="table-scroll"
           key={label}
@@ -667,12 +735,24 @@ function RecordedPeriods({ summary }: { summary: AnalyticsResponse }) {
                   <tr key={row.period}>
                     <th scope="row">{row.period}</th>
                     <td>
-                      {recordedTime(row.recorded_seconds, row.point_count !== 0)}
+                      <InCarValue
+                        value={row}
+                        observed={row.point_count !== 0}
+                      />
+                      <small className="recorded-explanation">
+                        {correctionLabel(row)}
+                      </small>
+                      <CorrectionBreakdown
+                        value={row}
+                        observed={row.point_count !== 0}
+                      />
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={2}>Brak danych</td></tr>
+                <tr>
+                  <td colSpan={2}>Brak danych</td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -847,6 +927,28 @@ function JourneyPanel({
         Granice: {boundaries[j.start_boundary]} → {boundaries[j.end_boundary]}.{" "}
         {j.point_count} pomiarów · {j.stop_count} obserwowanych postojów.
       </p>
+      <InCarTime value={j} observed={j.point_count !== 0} />
+      <p className="muted">
+        Pełny czas podróży przed korektą: {duration(j.elapsed_seconds)}. Luki
+        obserwacji pozostają nierozstrzygnięte.
+      </p>
+      {detail.correction_intervals?.length ? (
+        <details className="correction-detail">
+          <summary>Przedziały wykluczenia</summary>
+          <ul>
+            {detail.correction_intervals.map((interval, i) => (
+              <li key={`${interval.start_at}:${i}`}>
+                {datetime(interval.start_at)} – {datetime(interval.end_at)} ·{" "}
+                {interval.reason === "confirmed_power_off"
+                  ? "potwierdzone sygnałem zasilania"
+                  : interval.reason === "provisional_archive_tail"
+                    ? "szacowany postój końcowy · tymczasowy"
+                    : "szacowany postój końcowy na podstawie GPS"}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       <MetricsView value={j} />
       <div className="journey-map">
         <MapView

@@ -1,12 +1,17 @@
+import type { RadioObservation } from '../../contract/analytics.js';
+import type { CorrectionCalculation, PowerProfile } from './in-car-time.js';
 export interface Point {
   event_id: string; segment_id: string; measured_at: string;
   lat: number; lon: number; accuracy_m: number; speed_mps: number | null;
 }
 export interface StoredPoint extends Point { device_id: string; received_at: string }
-export interface Envelope { version: 1; device_id: string; lane: 'latest' | 'backfill'; points: unknown[] }
-export interface Result { index: number; event_id: string | null; status: 'accepted' | 'duplicate' | 'rejected'; code: null | 'invalid_point' | 'event_conflict' }
-export interface Ack { version: 1; device_id: string; received_at: string; revision: number; results: Result[] }
-export interface Snapshot { device_id: string; revision: number; points: StoredPoint[]; recorded_days?: Record<string, number> }
+export interface GpsEnvelope { version: 1; device_id: string; lane: 'latest' | 'backfill'; points: unknown[] }
+export interface ObservationEnvelope {version:2;device_id:string;lane:'latest'|'backfill';events:unknown[]}
+export type Envelope=GpsEnvelope|ObservationEnvelope;
+export interface StoredObservation extends RadioObservation {device_id:string;received_at:string}
+export interface Result { index: number; event_id: string | null; status: 'accepted' | 'duplicate' | 'rejected'; code: null | 'invalid_point' | 'invalid_observation' | 'event_conflict' }
+export interface Ack { version: 1|2; device_id: string; received_at: string; revision: number; results: Result[] }
+export interface Snapshot { device_id: string; revision: number; points: StoredPoint[]; recorded_days?: Record<string, number>; correction?:CorrectionCalculation; observations?:StoredObservation[]; power_profiles?:PowerProfile[] }
 export interface Derivation {
   gap_seconds: number; max_edge_speed_mps: number; stationary_speed_mps: number;
   min_edge_m: number; stop_radius_m: number; stop_seconds: number; earth_radius_m: number;

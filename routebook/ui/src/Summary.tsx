@@ -1,7 +1,12 @@
 import type { Day, Range } from "./types";
 import type { Geometry } from "./model";
 import { km, time, partialMonth, observationGaps } from "./model";
-import { recordedTime } from "./recorded-time";
+import {
+  InCarTime,
+  InCarValue,
+  CorrectionBreakdown,
+  correctionLabel,
+} from "./InCarTime";
 export function Summary({
   day,
   range,
@@ -39,19 +44,20 @@ export function Summary({
           <span>obserwacji</span>
         </div>
       </div>
-      <dl className="recorded-metric">
-        <dt>Czas w samochodzie</dt>
-        <dd>
-          {loading
-            ? "Pobieranie…"
-            : error
-              ? "Błąd pobierania"
-              : value
-                ? recordedTime(value.recorded_seconds, observations !== 0)
+      {loading || error || !value ? (
+        <dl className="recorded-metric">
+          <dt>Czas w samochodzie</dt>
+          <dd>
+            {loading
+              ? "Pobieranie…"
+              : error
+                ? "Błąd pobierania"
                 : "Niedostępne"}
-        </dd>
-        <dd className="recorded-explanation">na podstawie zapisu GPS</dd>
-      </dl>
+          </dd>
+        </dl>
+      ) : (
+        <InCarTime value={value} observed={observations !== 0} />
+      )}
       {loading && !day && !range ? (
         <p role="status">Pobieranie historii…</p>
       ) : null}
@@ -128,17 +134,24 @@ export function MonthlyChart({ range }: { range: Range }) {
               <strong>{m.month}</strong>
               <span>{km(m.meters)} km</span>
             </div>
-            <p className="month-recorded">
+            <div className="month-recorded">
               Czas w samochodzie:{" "}
               <strong>
-                {recordedTime(
-                  m.recorded_seconds,
-                  range.days.some(
+                <InCarValue
+                  value={m}
+                  observed={range.days.some(
                     (d) => d.date.startsWith(m.month) && d.point_count > 0,
-                  ),
-                )}
+                  )}
+                />
               </strong>
-            </p>
+              <span className="recorded-explanation">{correctionLabel(m)}</span>
+              <CorrectionBreakdown
+                value={m}
+                observed={range.days.some(
+                  (d) => d.date.startsWith(m.month) && d.point_count > 0,
+                )}
+              />
+            </div>
             <div className="bar-track" aria-hidden="true">
               <div
                 className="bar"
@@ -160,7 +173,9 @@ export function MonthlyChart({ range }: { range: Range }) {
           tabIndex={0}
         >
           <table>
-            <caption>Dane dzienne · czas na podstawie zapisu GPS</caption>
+            <caption>
+              Dane dzienne · czas po korekcie i surowy zapis GPS
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Dzień</th>
@@ -174,7 +189,16 @@ export function MonthlyChart({ range }: { range: Range }) {
                 <tr key={d.date}>
                   <th scope="row">{d.date}</th>
                   <td>{km(d.meters)}</td>
-                  <td>{recordedTime(d.recorded_seconds, d.point_count > 0)}</td>
+                  <td>
+                    <InCarValue value={d} observed={d.point_count > 0} />
+                    <small className="recorded-explanation">
+                      {correctionLabel(d)}
+                    </small>
+                    <CorrectionBreakdown
+                      value={d}
+                      observed={d.point_count > 0}
+                    />
+                  </td>
                   <td>{d.stop_count}</td>
                 </tr>
               ))}

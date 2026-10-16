@@ -59,6 +59,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: node --test tests/parking/*.test.mjs
       - run: npm run check:contract
       - run: python3 deploy/test-templates.py
       - run: node --test deploy/plan.test.mjs

@@ -1,3 +1,4 @@
+import type { RadioObservation } from '../../contract/analytics.js';
 import { HttpError, type Envelope, type Point } from './types.js';
 export const uuid = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x);
 export const record = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x);
@@ -14,12 +15,19 @@ export function validPoint(x: unknown, receivedAt: string): x is Point {
     num(x.accuracy_m,Number.MIN_VALUE,50) && (x.speed_mps === null || num(x.speed_mps,0,80));
 }
 export function envelope(x: unknown, deviceId: string): Envelope {
-  if (!record(x) || !exact(x,['version','device_id','lane','points']) || x.version !== 1 || !uuid(x.device_id) ||
-      !['latest','backfill'].includes(String(x.lane)) || !Array.isArray(x.points) || x.points.length < 1 || x.points.length > 200 ||
-      (x.lane === 'latest' && x.points.length !== 1)) throw new HttpError(422,'invalid_envelope');
-  if (x.device_id !== deviceId) throw new HttpError(403,'device_binding');
-  return x as unknown as Envelope;
+  if(!record(x)||(x.version!==1&&x.version!==2))throw new HttpError(422,'invalid_envelope');
+  const key=x.version===1?'points':'events',items=x[key];
+  if(!exact(x,['version','device_id','lane',key])||!uuid(x.device_id)||!['latest','backfill'].includes(String(x.lane))||!Array.isArray(items)||items.length<1||items.length>200||(x.lane==='latest'&&items.length!==1))throw new HttpError(422,'invalid_envelope');
+  if(x.device_id!==deviceId)throw new HttpError(403,'device_binding');return x as unknown as Envelope;
 }
+export const observationKeys=['event_id','observer_epoch','sequence','observed_at','elapsed_realtime_ms','boot_id','kind','acc_state','module1_state','interpretation_profile','firmware_id'] as const;
+const safe=(x:unknown)=>typeof x==='number'&&Number.isSafeInteger(x)&&x>=0;
+export const rawState=(x:unknown)=>x===null||(typeof x==='number'&&Number.isInteger(x)&&x>=-(2**31)&&x<=2**31-1);
+export const identifier=(x:unknown,max:number)=>typeof x==='string'&&x.length>=1&&x.length<=max&&/^[A-Za-z0-9._:-]+$/.test(x);
+export function validObservation(x:unknown,receivedAt:string):x is RadioObservation {
+  return record(x)&&exact(x,[...observationKeys])&&uuid(x.event_id)&&uuid(x.observer_epoch)&&uuid(x.boot_id)&&safe(x.sequence)&&safe(x.elapsed_realtime_ms)&&instant(x.observed_at)&&x.observed_at>='2000-01-01T00:00:00.000Z'&&Date.parse(x.observed_at)<=Date.parse(receivedAt)+300000&&['snapshot','transition','observer_lost'].includes(String(x.kind))&&rawState(x.acc_state)&&rawState(x.module1_state)&&identifier(x.interpretation_profile,80)&&identifier(x.firmware_id,120);
+}
+export const sameObservation=(a:RadioObservation,b:RadioObservation)=>observationKeys.every(k=>a[k]===b[k]);
 export function samePoint(a: Point,b: Point): boolean {
   return (['event_id','segment_id','measured_at','lat','lon','accuracy_m','speed_mps'] as const).every(k => a[k] === b[k]);
 }

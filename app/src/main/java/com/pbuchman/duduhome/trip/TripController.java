@@ -39,7 +39,8 @@ public final class TripController {
     private final OfflinePlaces offline;
     private final PhotonPlaces photon;
     private TripDistance distance = new TripDistance(0);
-    private TripTime time = new TripTime(0);
+    private final RadioTimeGate radioTimeGate = new RadioTimeGate();
+    private TripTime time = new TripTime(0,radioTimeGate);
     private boolean partialTime;
     private String state = "PAUSED", error = "";
     private long generation, fixTime, savedAt;
@@ -55,11 +56,12 @@ public final class TripController {
         store = persistence; offline = new OfflinePlaces(context); photon = new PhotonPlaces(context);
         resolver.execute(offline::prepare);
         counter.execute(() -> {
-            try { TripStore.Saved saved = store.read(); state = saved.state(); generation = saved.generation(); distance = new TripDistance(saved.meters()); time = new TripTime(saved.millis()); partialTime = saved.partialTime(); }
+            try { TripStore.Saved saved = store.read(); state = saved.state(); generation = saved.generation(); distance = new TripDistance(saved.meters()); time = new TripTime(saved.millis(),radioTimeGate); partialTime = saved.partialTime(); }
             catch (Exception invalid) { storageFailed = true; error = "Nie można odczytać zapisanej sesji"; }
             loaded = true; publish();
         });
         counter.scheduleWithFixedDelay(() -> {
+            if(!storageFailed) time.settle(SystemClock.elapsedRealtime());
             if (!storageFailed && "ACTIVE".equals(state) && SystemClock.elapsedRealtime() - savedAt >= 5000) save();
             publish();
         }, 1, 1, TimeUnit.SECONDS);
@@ -67,17 +69,18 @@ public final class TripController {
     public Snapshot snapshot() { return snapshot; }
     public void command(String command) {
         if (!java.util.Set.of("START", "PAUSE", "RESET").contains(command)) return;
-        observationFloor.set(SystemClock.elapsedRealtime()); inputEpoch.incrementAndGet();
+        long boundary=SystemClock.elapsedRealtime();observationFloor.set(boundary); inputEpoch.incrementAndGet();
         counter.execute(() -> {
             if (!loaded || storageFailed) return;
+            radioTimeGate.boundary(boundary);time.settle(boundary);
             String next = command.equals("RESET") ? state : command.equals("START") ? "ACTIVE" : "PAUSED";
             double nextMeters = command.equals("RESET") ? 0 : distance.meters();
-            long nextMillis = command.equals("RESET") ? 0 : time.millis();
+            long nextMillis = command.equals("RESET") ? 0 : time.boundaryMillis();
             boolean nextPartial = !command.equals("RESET") && partialTime;
             // Publish the new state/totals only after all three values are durable together.
             try {
                 store.write(next, generation + 1, nextMeters, nextMillis, nextPartial);
-                state = next; generation++; distance = new TripDistance(nextMeters); time = new TripTime(nextMillis);
+                state = next; generation++; distance = new TripDistance(nextMeters); time = new TripTime(nextMillis,radioTimeGate);
                 partialTime = nextPartial; savedAt = SystemClock.elapsedRealtime();
                 invalidate();
             } catch (Exception failed) { storageFailure(); }
@@ -85,13 +88,21 @@ public final class TripController {
         });
     }
     private void invalidate() {
-        distance.breakSegment(); time.breakSegment(); fixes.clear(); latest.set(null); gap.set(false);
+        distance.breakSegment(); if(storageFailed)time.discardPending();else time.breakSegment(); fixes.clear(); latest.set(null); gap.set(false);
         currentFix = null; resolvedFix = null; enrichmentFix = null; fixTime = 0;
         stabilizer = new PlaceStabilizer(); place = PlaceResult.unknown(false);
     }
     public void breakSegment() {
-        observationFloor.set(SystemClock.elapsedRealtime()); inputEpoch.incrementAndGet(); gap.set(true);
-        counter.execute(() -> { generation++; invalidate(); publish(); });
+        long boundary=SystemClock.elapsedRealtime();observationFloor.set(boundary); inputEpoch.incrementAndGet(); gap.set(true);
+        counter.execute(() -> { radioTimeGate.boundary(boundary);generation++; invalidate(); publish(); });
+    }
+    public void observePower(com.pbuchman.duduhome.routebook.PowerEvent event,RadioProfile.State observed) {
+        long epoch=inputEpoch.get();
+        counter.execute(()->{
+            if(storageFailed||epoch!=inputEpoch.get()||event.elapsedRealtimeMs()<observationFloor.get())return;
+            radioTimeGate.observe(event.observerEpoch(),event.elapsedRealtimeMs(),observed);
+            time.settle(SystemClock.elapsedRealtime()); publish();
+        });
     }
     public void offer(Location location) {
         if (!snapshot.active()) return;

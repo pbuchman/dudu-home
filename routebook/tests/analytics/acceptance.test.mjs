@@ -150,7 +150,8 @@ test('acceptance: real PostGIS + API + nginx metadata isolation and immutable in
   const require = createRequire(resolve(root, 'backend/package.json'));
   const pg = require('pg'); const pool = new pg.Pool({ connectionString: db.href });
   const { PgStore } = await backend('store.js'); const { createServers } = await backend('server.js');
-  const store = new PgStore(pool), testDevice = randomUUID(), token = 'synthetic_analytics_acceptance_abcdefghijklmnopqrstuvwxyz';
+  // Keep calculation provenance deterministic while comparing complete read bodies.
+  const store = new PgStore(pool, undefined, [], () => '2026-11-01T00:00:00.000Z'), testDevice = randomUUID(), token = 'synthetic_analytics_acceptance_abcdefghijklmnopqrstuvwxyz';
   await store.bootstrap([testDevice]);
   const apps = createServers(store, { devices: [{ device_id: testDevice, token }], now: () => '2026-11-01T00:00:00.000Z' });
   const dir = await mkdtemp(resolve(tmpdir(), 'routebook-analytics-qa-'));
@@ -331,6 +332,51 @@ async function browserAcceptance(t, require, web, testDevice, post, archive, get
       await page.screenshot({ path: resolve(screenshotDir, 'routebook-analytics-desktop.png'), fullPage: true });
       await page.setViewportSize({ width: 390, height: 844 }); await page.screenshot({ path: resolve(screenshotDir, 'routebook-analytics-mobile.png'), fullPage: true });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'mobile document overflows horizontally');
+      await page.close();
+    });
+    await t.test('browser: corrected parking reads and late GPS reversal through real nginx/PostGIS', async () => {
+      const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+      await page.route('https://api.maptiler.com/**', route => route.request().url().includes('/resources/logo.svg')
+        ? route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="110" height="24"><text x="2" y="17" font-size="12">Synthetic map style</text></svg>' })
+        : route.fulfill({ json: { version: 8, sources: {}, layers: [{ id: 'synthetic-background', type: 'background', paint: { 'background-color': '#e9edf2' } }] } }));
+      const errors = [], busy = []; page.on('pageerror', error => errors.push(error.message));
+      page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+      page.on('response', response => { if (response.status() === 429) busy.push(response.url()); });
+      const start = Date.parse('2026-10-08T08:00:00.000Z'), segment = randomUUID();
+      const point = (seconds, lon = 0, speed = 0, segment_id = segment) => ({ ...archive.points[0], event_id: randomUUID(), segment_id,
+        measured_at: new Date(start + seconds * 1000).toISOString(), lat: 0, lon, accuracy_m: 5, speed_mps: speed });
+      const points = [point(-20, -.0004, 2.2), point(-10, -.0002, 2.2), ...Array.from({ length: 61 }, (_, i) => point(i * 5)), point(900, 0, 0, randomUUID())];
+      await post(points);
+      const day = await get('day?date=2026-10-08'); assert.equal(day.recorded_seconds, 320); assert.equal(day.in_car_seconds, 20); assert.equal(day.estimated_excluded_seconds, 300);
+      await page.goto(web); await page.getByLabel('Wybrany dzień').fill('2026-10-08');
+      const primary = page.locator('.recorded-metric dd').first();
+      await primary.filter({ hasText: /^20 s$/ }).waitFor();
+      await page.getByText('Zapis GPS i korekta', { exact: true }).click();
+      assert.ok((await page.locator('.correction-detail').innerText()).includes('5 min 20 s'));
+      await page.getByRole('button', { name: 'Zakres', exact: true }).click();
+      await page.getByLabel('Od', { exact: true }).fill('2026-10-08'); await page.getByLabel('Do', { exact: true }).fill('2026-10-08');
+      await page.getByRole('button', { name: 'Pokaż zakres', exact: true }).click();
+      await primary.filter({ hasText: /^20 s$/ }).waitFor();
+      await page.getByText('Dane dzienne (1)', { exact: true }).click();
+      assert.ok((await page.getByRole('table').innerText()).includes('20 s'));
+      await page.getByRole('button', { name: 'Analizy', exact: true }).click();
+      await primary.filter({ hasText: /^20 s$/ }).waitFor();
+      await page.locator('.journey-detail .recorded-metric').filter({ hasText: '20 s' }).waitFor();
+      assert.ok((await page.locator('.period-card').innerText()).includes('Czas szacowany'));
+      const evidence = process.env.ROUTEBOOK_ANALYTICS_EVIDENCE ?? tmpdir();
+      await page.screenshot({ path: resolve(evidence, 'routebook-corrected-real-desktop.png'), fullPage: true });
+      await page.setViewportSize({ width: 390, height: 844 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.screenshot({ path: resolve(evidence, 'routebook-corrected-real-mobile.png'), fullPage: true });
+      // A late fix shortens the separating gap below ten minutes and reverses the
+      // estimate. Native SSE must refresh both list and detail without navigation.
+      await post([point(305)]);
+      await primary.filter({ hasText: /^5 min 25 s$/ }).waitFor();
+      await page.locator('.journey-detail .recorded-metric').filter({ hasText: '5 min 25 s' }).waitFor();
+      const after = await get('day?date=2026-10-08'); assert.equal(after.recorded_seconds, 325); assert.equal(after.excluded_tail_seconds, 0);
+      assert.equal(await page.locator('vite-error-overlay').count(), 0);
+      assert.ok(busy.every(url => new URL(url).pathname.startsWith('/v1/analytics')));
+      assert.deepEqual(errors.filter(error => !(busy.length && /Failed to load resource: the server responded with a status of 429/.test(error))), []);
       await page.close();
     });
   } finally { await browser.close(); }
