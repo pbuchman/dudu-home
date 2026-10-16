@@ -17,10 +17,12 @@
   Actual Android HTTPS-to-PostGIS-to-browser acceptance passed all 32 existing v1 checks
   with an unchanged application APK. This does not establish physical vendor IPC behavior.
 - Backend/PostGIS finished with 92 passes and one optional nginx subtest skipped. Real
-  nginx isolation was covered separately by all ten PostGIS/nginx/Chromium acceptance
-  tests. Independent parking runtime checks cover additive migration over GPS data,
+  nginx isolation was covered separately by all eleven PostGIS/nginx/Chromium acceptance
+  tests, including a real browser correction and late-GPS reversal through native SSE.
+  All fifteen independent parking/quality checks passed. Runtime coverage includes additive migration over GPS data,
   durable/idempotent v2 ACKs, authentication/body/rate limits, power-only SSE revision,
-  cross-view parity, trusted ON veto and clock-only maturity. Six offline quality-study
+  cross-view parity, trusted ON veto, clock-only maturity and actual RC2 backend rollback
+  on the upgraded database with preserved v2 observations. Six offline quality-study
   tests confirm that synthetic or incompletely labelled evidence cannot pass the target.
 - All 29 UI unit tests and 36 browser tests passed, including desktop/mobile presentation,
   late corrections and server-relative refresh when the browser clock is one hour ahead
