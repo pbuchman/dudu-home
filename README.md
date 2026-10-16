@@ -13,7 +13,20 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.4.0-rc3` (code 27).**
+> **Local heading candidate `1.4.0-rc3-local-street3` (code 29).**
+> Builds on code 28 and optionally reads source-proven short-fragment orientation from
+> map schema 3. Only a bounded, straight continuation within one original OSM way can
+> supply heading; unnamed roads remain candidates. Schema 2 retains its existing scores.
+> Local build/fixture checks do not establish physical road or display correctness.
+>
+> **Local integration `1.4.0-rc3-local-street2` (code 28).**
+> Combines the code-27 candidate below with the existing local street-stability changes:
+> independent offline/HTTP workers and explicitly uncertain **Ostatnio: …** for at most
+> three seconds and forty metres. Street geometry and confirmation thresholds are unchanged.
+> Local build and host checks are separate from physical-radio acceptance; see
+> [verification](docs/VERIFICATION.md) and [street contract](docs/WHERE_AM_I.md).
+>
+> **Combined source candidate `1.4.0-rc3` (code 27).**
 > Home Dev distinguishes observed GPS time from estimated parking-tail corrections.
 > Android adds a passive radio observer with a separate durable event queue.
 > Power-based timer corrections require an independently validated firmware profile.

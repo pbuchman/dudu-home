@@ -16,7 +16,7 @@ public final class NationalMapChecks {
         long[] durations=new long[64];int covered=0,matched=0,wrong=0,areaSamples=0,areaMatched=0,areaAmbiguous=0;
         try(SQLiteDatabase db=SQLiteDatabase.openDatabase(file.toString(),null,SQLiteDatabase.OPEN_READONLY)) {
             try(Cursor c=db.rawQuery("SELECT value FROM metadata WHERE key='schema'",null)) {
-                if(!c.moveToFirst() || !c.getString(0).equals("2"))throw new AssertionError("schema2 national pack required");
+                if(!c.moveToFirst() || !java.util.Set.of("2","3").contains(c.getString(0)))throw new AssertionError("schema2/3 national pack required");
             }
             try(Cursor c=db.rawQuery("SELECT count(*) FROM areas WHERE kind='administrative_locality' AND (admin_level!='8' OR provenance!='osm_admin_boundary' OR feature_id='')",null)) {
                 c.moveToFirst();if(c.getInt(0)!=0)throw new AssertionError("national boundary provenance invalid");
@@ -60,7 +60,7 @@ public final class NationalMapChecks {
         if(areaSamples<16 || areaMatched==0)throw new AssertionError("national containment sampling insufficient");
         resolver.close();
         return "national_samples=64 covered="+covered+" street_matches="+matched+" wrong="+wrong+" p95_ms="+durations[60]+" max_ms="+durations[63]
-                +" schema=2 area_samples="+areaSamples+" area_matches="+areaMatched+" area_ambiguous="+areaAmbiguous;
+                +" schema="+resolver.schemaVersion()+" area_samples="+areaSamples+" area_matches="+areaMatched+" area_ambiguous="+areaAmbiguous;
     }
     /** Bounded 9x9 interior search; holes and concave polygons are checked with the runtime predicate. */
     private static double[] interior(String geometry) {

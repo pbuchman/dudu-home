@@ -20,7 +20,7 @@ final class TripSessionChecks {
         ((ExecutorService)field(c,"counter")).submit(()->{}).get(3,TimeUnit.SECONDS);
     }
     private static void close(TripController c)throws Exception {
-        ((ExecutorService)field(c,"counter")).shutdownNow();((ExecutorService)field(c,"resolver")).shutdownNow();
+        ((ExecutorService)field(c,"counter")).shutdownNow();((AutoCloseable)field(c,"resolver")).close();
     }
     private static com.pbuchman.duduhome.routebook.PowerEvent power(String kind){
         return new com.pbuchman.duduhome.routebook.PowerEvent(new java.util.UUID(1,1).toString(),new java.util.UUID(1,2).toString(),0,
@@ -60,7 +60,7 @@ final class TripSessionChecks {
             check(blocked.await(3,TimeUnit.SECONDS),"counter barrier");
             Location location=new Location("gps");location.setLatitude(0);location.setLongitude(0);location.setAccuracy(3);
             location.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());controller.offer(location);
-            long oldGeneration=controller.snapshot().generation();
+            long oldGeneration=(long)field(controller,"placeGeneration");
             long oldEpoch=((java.util.concurrent.atomic.AtomicLong)field(controller,"inputEpoch")).get();
             controller.observePower(power("snapshot"),RadioProfile.State.OFF);
             controller.command("RESET");
@@ -77,17 +77,17 @@ final class TripSessionChecks {
             Method enqueue=TripController.class.getDeclaredMethod("enqueue",inputType);enqueue.setAccessible(true);enqueue.invoke(controller,lateInput);settle(controller);
             check(controller.snapshot().fixTime()==0,"late pre-reset producer envelope discarded");
             // A resolver result computed before Reset must not revive the previous place.
-            Class<?> jobType=Class.forName(TripController.class.getName()+"$Job");
+            Class<?> jobType=PlaceResolver.Job.class;
             Constructor<?> constructor=jobType.getDeclaredConstructors()[0];constructor.setAccessible(true);
             long now=SystemClock.elapsedRealtime();
             Object job=constructor.newInstance(oldGeneration,new TripFix(now,now,0,0,3,0,false,0,false,false));
-            Method post=TripController.class.getDeclaredMethod("postPlace",jobType,PlaceResult.class,boolean.class);post.setAccessible(true);
+            Method post=TripController.class.getDeclaredMethod("postPlace",jobType,PlaceResult.class,boolean.class,TripFix.class);post.setAccessible(true);
             ((ExecutorService)field(controller,"counter")).submit(()->{
                 try {Field current=TripController.class.getDeclaredField("currentFix");current.setAccessible(true);
                     current.set(controller,new TripFix(now,now,0,0,3,0,false,0,false,false));
                 }catch(Exception failure){throw new AssertionError(failure);}
             }).get(3,TimeUnit.SECONDS);
-            post.invoke(controller,job,new PlaceResult("Stara Miejscowość Testowa","Stara Ulica Testowa","offline",true,true),false);settle(controller);
+            post.invoke(controller,job,new PlaceResult("Stara Miejscowość Testowa","Stara Ulica Testowa","offline",true,true),false,null);settle(controller);
             check(controller.snapshot().place().locality().isEmpty() && controller.snapshot().fixTime()==0
                     && controller.snapshot().meters()==0 && controller.snapshot().millis()==0,"stale resolver cannot restore pre-reset state");
             controller.command("PAUSE");settle(controller);controller.command("RESET");settle(controller);

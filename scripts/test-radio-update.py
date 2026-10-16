@@ -22,7 +22,10 @@ def map_fixture(path,schema=2):
         db.executescript(sql+index.INDEXES)
         db.executemany('INSERT INTO metadata VALUES(?,?)',[('schema',str(schema)),('license','ODbL-1.0')])
         db.execute("INSERT INTO roads VALUES(1,'Synthetic Road','','',0,0,0,0.001)")
-        db.execute("INSERT INTO places VALUES('Synthetic Village',0,0,0,0"+(" ,'village','osm_place_node')" if schema==2 else ')'))
+        db.execute("INSERT INTO places VALUES('Synthetic Village',0,0,0,0"+(" ,'village','osm_place_node')" if schema>=2 else ')'))
+        if schema==3:
+            source_hash='1'*64
+            db.executemany('INSERT INTO metadata VALUES(?,?)',dict(source_sha256=source_hash,**index.heading_metadata(source_hash)).items())
         db.execute('INSERT INTO road_cells VALUES(0,0,1)')
     metadata,counts=index.validate(path)
     manifest={'schema':schema,'file':path.name,'bytes':path.stat().st_size,'sha256':radio.sha(path),'metadata':metadata,'counts':counts}
@@ -30,6 +33,16 @@ def map_fixture(path,schema=2):
     return manifest
 
 class PreflightTests(unittest.TestCase):
+    def test_schema3_policy_binding_before_upload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'map.sqlite';manifest=map_fixture(path,3)
+            self.assertEqual(radio.map_manifest(path),manifest)
+            with sqlite3.connect(path) as db:db.execute("UPDATE metadata SET value='wrong' WHERE key='short_heading_policy'")
+            manifest['sha256']=radio.sha(path)
+            path.with_suffix('.manifest.json').write_text(json.dumps(manifest))
+            with patch.object(radio,'run') as run:
+                with self.assertRaises(ValueError):radio.install_map(['adb'],path,manifest)
+                run.assert_not_called()
     def test_session_smoke_is_passive_for_active_and_paused(self):
         for state in ('Start','Pauza'):
             with self.subTest(state=state):

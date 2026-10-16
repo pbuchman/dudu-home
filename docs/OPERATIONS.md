@@ -42,7 +42,9 @@ record final results on the release page. Complete the private merged-source APK
 manifest after merge. The known signing certificate matches; physical installation is separate.
 
 Update APK and map together: the app reads schema 1 for compatibility, but the old pack
-does not contain the new locality evidence. Normal map installation requires schema 2.
+does not contain the new locality evidence. Normal map installation accepts schema 2 or 3.
+Schema 3 requires code 29 or newer with its recognized source-bound heading policy.
+Keep the code-28/schema-2 pair for rollback; never install schema 3 beside an older APK.
 Keep the prior APK/map pair for the updater's backed-up recovery; do not downgrade only
 the APK while leaving an incompatible new map. Reserve space for both staged and installed
 maps plus private backups. Map schema 2 is unrelated to navigation JSON schema 2.

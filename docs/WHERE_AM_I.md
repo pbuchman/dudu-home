@@ -155,11 +155,44 @@ streams a temporary file, verifies its device checksum, then atomically renames 
 upload leaves the old index intact. National maps are installed locally, not bundled in APKs
 or published as source assets. Refresh by building a new dated pack and rerunning the installer.
 
-The builder now writes **map schema 2**. RC3 can still read schema 1, but an old pack lacks
+The local code-29 builder writes **map schema 3**. The reader accepts schema 2 unchanged
+and can still read schema 1, but an old schema-1 pack lacks
 the new administrative-boundary evidence: fixing locality requires both the code-23 APK
-and a schema-2 pack. Ordinary installation validates schema 2; legacy acceptance is reserved
+and a schema-2-or-newer pack. Ordinary installation validates schema 2 or 3; legacy acceptance is reserved
 for backed-up recovery, not a normal installation override. Keep the previous APK and pack
 together for rollback. This map schema is independent of navigation JSON schema 2.
+
+### Source-proven short heading (local code 29)
+
+Schema 3 adds `road_short_headings(road_id INTEGER PRIMARY KEY, heading REAL,
+support_length REAL)` without replacing road geometry or locality tables. Only nonzero
+fragments at most 5 m can receive support. The computer follows ordered segments within
+one original OSM way, at most 10 m/eight edges each way, traversing only source nodes with
+exactly two eligible-road endpoint incidences. Way ends and branches stop extension;
+missing/zero geometry, repeated nodes/cycles, an edge limit or a directed deviation above
+15 degrees rejects support. Both chain and endpoint chord must reach 10 m.
+
+Heading is degrees clockwise from north using a local equirectangular projection with
+111195 metres per degree and longitude scaled at the fragment midpoint latitude. Runtime
+treats it bidirectionally, only with actual GPS bearing and reported speed above 2 m/s.
+Support must be finite, at least 10 m and at most 25 m (one micrometre numerical tolerance);
+heading must be finite and in [0,360). Invalid/absent support or an unknown policy retains
+the old score. No road class/name is filtered and all existing ambiguity/confirmation,
+query, locality, online freshness and `Ostatnio` limits remain intact.
+
+Metadata binds `same-osm-way-degree2-v1`, its exact policy SHA-256, original PBF SHA-256
+and deterministic map generation. A separate private audit records way ID, segment ordinal,
+support range, source node IDs and interior degree proof. It is never part of public source
+or the APK. The builder uses a disk SQLite incidence pass (32 MiB page cache, at most
+100000 pending distinct nodes), then the existing disk-backed located OSM pass. The
+incidence pass conservatively includes zero/missing edges and duplicate ways, which can
+reject support but cannot create an unproved continuation. Keep enough disk for both old
+and new packs, node/incidence scratch, indexes and the audit. Do not overwrite the source.
+
+Private opt-in trace adds supported-heading count, the best candidate's heading source and
+support length, and map generation. It retains the same bounded queue/files and privacy rules.
+This candidate needs an exact schema-3-pack replay, held-out route evidence and physical
+presentation/latency acceptance; synthetic geometry and score gains are not correctness labels.
 
 Sources: [Geofabrik Poland](https://download.geofabrik.de/europe/poland.html),
 [OSM settlement model](https://wiki.openstreetmap.org/wiki/Key:place).
@@ -184,6 +217,34 @@ distinct fixes. Photon may fill a missing street without replacing a certain off
 a nearby/ambiguous online label cannot downgrade reliable containment or address evidence.
 A small in-memory result
 cache is an optimization; the downloaded map is the actual offline fallback.
+
+### Local street-stability integration (code 28)
+
+`1.4.0-rc3-local-street2` separates optional Photon HTTP from the offline lookup worker.
+Only the latest pending fix is kept per worker. An online response can enrich only the
+same latest offline fix and session; it cannot restore an older boundary or street.
+Online cache evidence expires after 30 seconds and 40 metres from its original fix;
+reusing the cache does not renew that origin. The existing request and quota limits remain.
+
+After a confirmed street, a transient missing/ambiguous road may retain **Ostatnio: …**
+for at most 3 seconds and 40 metres from the last confirmed match. Its quality is
+`LAST_KNOWN`, never `MATCHED`. A different named road, different certain locality,
+missing coverage, invalid GPS or a segment break removes that retention immediately.
+The new road still needs two distinct fixes. Locality confirmation remains independent.
+Expiration also runs without a new fix, so an uncertain name cannot remain indefinitely.
+This is a local test candidate; its real-route presentation and timing need radio acceptance.
+
+For an explicitly authorized private diagnosis, create the regular app-private file
+`no_backup/trip-place-trace.enabled`. Removing it stops new trace writes. This opt-in
+records actual fix coordinates, bearing, names, road scores, raw and displayed quality,
+fix identity and resolver duration in `trip-place-trace.jsonl` plus one previous file.
+Each file is capped at 256 KiB; a 32-row writer queue drops excess diagnostic rows.
+Rows carry process identity, a sequence and cumulative dropped count; sequence gaps or
+write failures remain visible in later rows. Online no-result latency and stale-result
+rejections are separate categories, without private exception or HTTP-response text.
+These files are private evidence, never logcat, Routebook payload, repository or public
+test data. Collect them only into an owner-only directory outside Git, then remove the
+enable file. A dropped row is not evidence that a lookup or display transition did not occur.
 
 [Geoapify Free](https://www.geoapify.com/pricing/) is an alternative with 3000 credits/day
 (reverse geocoding uses one credit), but requires an account/key. It is not implemented or

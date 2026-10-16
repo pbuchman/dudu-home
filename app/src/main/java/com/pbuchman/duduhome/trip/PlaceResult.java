@@ -3,7 +3,7 @@ package com.pbuchman.duduhome.trip;
 /** Locality and street are independent evidence: a known city does not imply a known road. */
 public record PlaceResult(String locality, String street, Quality localityQuality, Quality streetQuality,
         String localitySource, String streetSource, boolean covered) {
-    public enum Quality { UNKNOWN, AMBIGUOUS, NEARBY, ADDRESS, CONTAINMENT, MATCHED }
+    public enum Quality { UNKNOWN, AMBIGUOUS, NEARBY, ADDRESS, CONTAINMENT, MATCHED, LAST_KNOWN }
     // Retained for renderer fixtures and schema-1 callers.
     public PlaceResult(String locality, String street, String source, boolean certain, boolean covered) {
         this(locality, street, locality.isEmpty() ? Quality.UNKNOWN : certain ? Quality.ADDRESS : Quality.NEARBY,
@@ -14,7 +14,12 @@ public record PlaceResult(String locality, String street, Quality localityQualit
     public String source() { return localitySource.startsWith("photon") || streetSource.startsWith("photon") ? "photon" : "offline"; }
     public boolean complete() { return certain() && !locality.isEmpty() && streetQuality == Quality.MATCHED && !street.isEmpty(); }
     public String title() { return locality.isEmpty() ? "Nieznana miejscowość" : locality; }
-    public String subtitle() { return street.isEmpty() ? "Nieznana ulica" : street; }
+    public String subtitle() { return street.isEmpty() ? "Nieznana ulica" : streetQuality == Quality.LAST_KNOWN ? "Ostatnio: " + street : street; }
+    /** Immutable snapshot readers enforce the deadline even if its publisher is delayed. */
+    public PlaceResult atStreetDeadline(long deadline,long now) {
+        if (streetQuality!=Quality.LAST_KNOWN || (deadline>0 && now<deadline)) return this;
+        return new PlaceResult(locality,"",localityQuality,Quality.UNKNOWN,localitySource,"offline",covered);
+    }
 
     /** Only genuine online components may survive as short-lived online cache evidence. */
     public PlaceResult onlineEvidence() {

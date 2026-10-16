@@ -9,6 +9,9 @@ import os
 from pathlib import Path
 import sqlite3
 import tempfile
+import re
+from short_road_headings import Incidence, orientation, metadata as heading_metadata
+from short_road_headings import POLICY_ID, POLICY_SHA256
 
 SETTLEMENTS = {'city', 'town', 'village', 'hamlet', 'isolated_dwelling'}
 ROADS = {'motorway','trunk','primary','secondary','tertiary','unclassified','residential',
@@ -16,6 +19,7 @@ ROADS = {'motorway','trunk','primary','secondary','tertiary','unclassified','res
 SCHEMA = '''
 CREATE TABLE metadata(key TEXT PRIMARY KEY,value TEXT NOT NULL);
 CREATE TABLE roads(id INTEGER PRIMARY KEY,name TEXT NOT NULL,ref TEXT NOT NULL,city TEXT NOT NULL,a REAL,b REAL,c REAL,d REAL);
+CREATE TABLE road_short_headings(road_id INTEGER PRIMARY KEY,heading REAL NOT NULL,support_length REAL NOT NULL);
 CREATE TABLE road_cells(x INTEGER,y INTEGER,id INTEGER);
 CREATE TABLE places(name TEXT,lat REAL,lon REAL,x INTEGER,y INTEGER,kind TEXT NOT NULL,provenance TEXT NOT NULL);
 CREATE TABLE addresses(city TEXT,lat REAL,lon REAL,x INTEGER,y INTEGER);
@@ -44,12 +48,30 @@ def validate(path):
     with sqlite3.connect(f'file:{Path(path).resolve()}?mode=ro',uri=True) as db:
         if db.execute('PRAGMA quick_check').fetchone()[0]!='ok': raise ValueError('Invalid map database')
         metadata=dict(db.execute('SELECT key,value FROM metadata'))
-        if metadata.get('schema') not in ('1','2') or metadata.get('license')!='ODbL-1.0': raise ValueError('Unsupported map metadata')
-        if metadata['schema']=='2':
+        if metadata.get('schema') not in ('1','2','3') or metadata.get('license')!='ODbL-1.0': raise ValueError('Unsupported map metadata')
+        if int(metadata['schema'])>=2:
             for table,required in [('places',{'kind','provenance'}),('areas',{'kind','provenance','admin_level','feature_id'})]:
                 columns={row[1] for row in db.execute(f'PRAGMA table_info({table})')}
                 if not required.issubset(columns): raise ValueError('Incomplete schema 2 provenance')
+        if metadata['schema']=='3':
+            source_hash=metadata.get('source_sha256','')
+            if not re.fullmatch('[0-9a-f]{64}',source_hash) or any(metadata.get(k)!=v for k,v in heading_metadata(source_hash).items()):
+                raise ValueError('Invalid schema 3 heading policy/source binding')
+            columns={row[1] for row in db.execute('PRAGMA table_info(road_short_headings)')}
+            if columns!={'road_id','heading','support_length'}: raise ValueError('Incomplete schema 3 heading table')
+            # LEFT JOIN catches orphan records. The source proof stays in the private audit.
+            if db.execute('SELECT h.road_id FROM road_short_headings h LEFT JOIN roads r ON r.id=h.road_id '
+                          'WHERE r.id IS NULL OR typeof(h.heading) NOT IN (\'real\',\'integer\') '
+                          'OR h.heading<0 OR h.heading>=360 OR typeof(h.support_length) NOT IN (\'real\',\'integer\') '
+                          'OR h.support_length<10 OR h.support_length>25.000001 LIMIT 1').fetchone():
+                raise ValueError('Invalid short heading geometry/support')
+            for a,b,c,d in db.execute('SELECT r.a,r.b,r.c,r.d FROM roads r JOIN road_short_headings h ON h.road_id=r.id'):
+                if not all(isinstance(v,(int,float)) and math.isfinite(v) for v in (a,b,c,d)):
+                    raise ValueError('Invalid supported road coordinates')
+                length=math.hypot((d-b)*111195*math.cos(math.radians((a+c)/2)),(c-a)*111195)
+                if not 0<length<=5.000001: raise ValueError('Heading attached to non-short fragment')
         counts={table:db.execute(f'SELECT count(*) FROM {table}').fetchone()[0] for table in ('roads','places','addresses','areas')}
+        if metadata['schema']=='3': counts['road_short_headings']=db.execute('SELECT count(*) FROM road_short_headings').fetchone()[0]
         if counts['roads']==0 or counts['places']==0: raise ValueError('Incomplete map index')
         for table,grid in [('roads','road_cells'),('areas','area_cells')]:
             # One table scan each, including legacy packs whose grids have no id-leading index.
@@ -68,7 +90,7 @@ def area_kind(tags):
         return 'administrative_locality' if tags.get('admin_level')=='8' else None
     return tags.get('place') if tags.get('place') in SETTLEMENTS else None
 
-def build(source,target,region,data_date):
+def build(source,target,region,data_date,heading_audit=None):
     import osmium
     source=Path(source).resolve();target=Path(target).resolve()
     with osmium.io.Reader(str(source)) as reader:
@@ -78,9 +100,21 @@ def build(source,target,region,data_date):
     target.parent.mkdir(parents=True,exist_ok=True)
     temporary=target.with_name(target.name+'.building')
     if temporary.exists(): raise ValueError('Incomplete build exists; inspect/remove it before retry')
+    heading_audit=Path(heading_audit).resolve() if heading_audit else target.with_suffix('.heading-audit.jsonl')
+    if heading_audit.exists(): raise ValueError('Heading audit exists; build a new version')
+    audit_temporary=heading_audit.with_name(heading_audit.name+'.building')
+    if audit_temporary.exists(): raise ValueError('Incomplete heading audit exists')
+    source_stat=source.stat();source_hash=digest(source)
+    heading_audit.parent.mkdir(parents=True,exist_ok=True)
+    audit=open(audit_temporary,'x',encoding='utf-8');os.chmod(audit_temporary,0o600)
+    audit.write(json.dumps(dict(record='header',schema=3,source_sha256=source_hash,**heading_metadata(source_hash)),sort_keys=True)+'\n')
     db=sqlite3.connect(temporary)
-    db.executescript('PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA temp_store=FILE;'+SCHEMA)
+    db.executescript('PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA temp_store=FILE; PRAGMA cache_size=-32768;'+SCHEMA)
     factory=osmium.geom.GeoJSONFactory()
+    incidence=None
+    class DegreeHandler(osmium.SimpleHandler):
+        def way(self,way):
+            if way.tags.get('highway') in ROADS: incidence.add_way(n.ref for n in way.nodes)
     class Handler(osmium.SimpleHandler):
         def __init__(self):
             super().__init__();self.road=0;self.area_id=0;self.seen=0
@@ -102,11 +136,21 @@ def build(source,target,region,data_date):
             points=[(n.lon,n.lat) for n in way.nodes]
             if not points:return
             if way.tags.get('highway') in ROADS:
-                for a,b in zip(points,points[1:]):
+                refs=[n.ref for n in way.nodes]
+                short_ordinals={i for i,(a,b) in enumerate(zip(points,points[1:]))
+                                if 0<math.hypot((b[0]-a[0])*111195*math.cos(math.radians((a[1]+b[1])/2)),(b[1]-a[1])*111195)<=5}
+                degrees=incidence.degrees(refs) if short_ordinals else {}
+                for ordinal,(a,b) in enumerate(zip(points,points[1:])):
                     if a==b:continue
                     self.road+=1
                     db.execute('INSERT INTO roads VALUES(?,?,?,?,?,?,?,?)',(self.road,way.tags.get('name',''),way.tags.get('ref',''),way.tags.get('addr:city') or way.tags.get('addr:place',''),a[1],a[0],b[1],b[0]))
                     db.executemany('INSERT INTO road_cells VALUES(?,?,?)',((x,y,self.road) for x,y in cells((a,b))))
+                    supported=orientation(refs,points,ordinal,degrees) if ordinal in short_ordinals else None
+                    if supported:
+                        db.execute('INSERT INTO road_short_headings VALUES(?,?,?)',(self.road,supported['heading'],supported['support_length']))
+                        audit.write(json.dumps(dict(record='heading',road_id=self.road,way_id=way.id,
+                                                    node_ids=refs[supported['support_range'][0]:supported['support_range'][1]+2],
+                                                    **supported),separators=(',',':'))+'\n')
             self.address(way.tags,sum(p[0] for p in points)/len(points),sum(p[1] for p in points)/len(points));self.checkpoint()
         def area(self,area):
             kind=area_kind(area.tags)
@@ -120,27 +164,42 @@ def build(source,target,region,data_date):
                 db.execute('INSERT INTO areas VALUES(?,?,?,?,?,?,?)',(self.area_id,area.tags['name'],json.dumps(polygon,separators=(',',':')),kind,provenance,area.tags.get('admin_level',''),feature_id))
                 db.executemany('INSERT INTO area_cells VALUES(?,?,?)',((x,y,self.area_id) for x,y in cells(polygon[0])))
     try:
-        print('Indexing OSM roads, addresses, settlements and locality boundaries (schema 2)...',flush=True)
+        print('Counting eligible-road source-node incidence (schema 3, disk-backed, 32 MiB SQLite cache)...',flush=True)
         # Disk-backed node locations keep the national extract out of radio memory and bound builder RAM.
         with tempfile.TemporaryDirectory(prefix='dudu-osm-nodes-',dir=target.parent) as scratch:
+            incidence=Incidence(str(Path(scratch)/'incidence.sqlite'))
+            DegreeHandler().apply_file(str(source));incidence.flush()
+            print(json.dumps(dict(phase='incidence_ready',endpoint_observations=incidence.endpoints,
+                                  scratch_bytes=(Path(scratch)/'incidence.sqlite').stat().st_size)),flush=True)
+            print('Indexing OSM roads, supported headings, addresses, settlements and locality boundaries...',flush=True)
             Handler().apply_file(str(source),locations=True,idx=f'sparse_file_array,{scratch}/nodes')
+            incidence.close();incidence=None
         db.commit();print('Building spatial indexes...',flush=True);db.executescript(INDEXES)
-        meta={'schema':'2','region':region,'data_date':data_date,'built_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              'source':'https://download.geofabrik.de/europe/poland.html','source_sha256':digest(source),'source_timestamp':source_timestamp or data_date,
+        current_stat=source.stat()
+        if (source_stat.st_ino,source_stat.st_size,source_stat.st_mtime_ns)!=(current_stat.st_ino,current_stat.st_size,current_stat.st_mtime_ns):
+            raise ValueError('Source changed during build')
+        audit.flush();os.fsync(audit.fileno());audit.close()
+        meta={'schema':'3','region':region,'data_date':data_date,'built_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'source':'https://download.geofabrik.de/europe/poland.html','source_sha256':source_hash,'source_timestamp':source_timestamp or data_date,
               'license':'ODbL-1.0','attribution':'© OpenStreetMap contributors','attribution_url':'https://www.openstreetmap.org/copyright'}
+        meta.update(heading_metadata(source_hash));meta['short_heading_audit_sha256']=digest(audit_temporary)
         db.executemany('INSERT INTO metadata VALUES(?,?)',meta.items());db.commit();db.execute('ANALYZE');db.close()
         metadata,counts=validate(temporary)
+        os.replace(audit_temporary,heading_audit)
         os.replace(temporary,target)
-        manifest={'schema':2,'file':target.name,'sha256':digest(target),'bytes':target.stat().st_size,'metadata':metadata,'counts':counts}
+        manifest={'schema':3,'file':target.name,'sha256':digest(target),'bytes':target.stat().st_size,'metadata':metadata,'counts':counts}
         target.with_suffix('.manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
         print(json.dumps({'status':'ready','bytes':manifest['bytes'],'counts':counts}),flush=True)
     except BaseException:
+        audit.close()
+        if incidence is not None: incidence.close()
         db.close();raise
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('source',type=Path);p.add_argument('output',type=Path)
     p.add_argument('--region',default='Poland');p.add_argument('--data-date',required=True)
+    p.add_argument('--heading-audit',type=Path,help='Private source-way/node proof; defaults beside output, never publish')
     a=p.parse_args();datetime.date.fromisoformat(a.data_date)
-    build(a.source,a.output,a.region,a.data_date)
+    build(a.source,a.output,a.region,a.data_date,a.heading_audit)
 if __name__=='__main__':main()
