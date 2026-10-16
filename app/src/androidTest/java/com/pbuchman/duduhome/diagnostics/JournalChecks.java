@@ -7,12 +7,13 @@ import java.nio.file.Files;
 public final class JournalChecks {
     public static void run(Context context) {
         long id = 9876;
+        long observedWall = System.currentTimeMillis()-20;
         Diagnostics.beginAttempt(id);
-        Diagnostics.recordAttemptAt(context,id,"JOURNAL_OBSERVATION_TEST",42,17);
+        Diagnostics.recordAttemptAt(context,id,"JOURNAL_OBSERVATION_TEST",observedWall,17);
         if(!Diagnostics.awaitWrites())throw new AssertionError("journal drain");
         try {
             String journal=new String(Files.readAllBytes(new java.io.File(context.getNoBackupFilesDir(),"diagnostics.txt").toPath()),java.nio.charset.StandardCharsets.UTF_8);
-            if(journal.lines().noneMatch(line->line.startsWith("42 17 PROCESS=")
+            if(journal.lines().noneMatch(line->line.startsWith(observedWall+" 17 PROCESS=")
                     && line.endsWith("JOURNAL_OBSERVATION_TEST ID="+id)))
                 throw new AssertionError("observation must be durable before send without commit");
         }catch(java.io.IOException failed){throw new AssertionError(failed);}
