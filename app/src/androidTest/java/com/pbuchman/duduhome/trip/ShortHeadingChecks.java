@@ -50,8 +50,8 @@ final class ShortHeadingChecks {
                     && result.localitySource().equals("osm_admin_boundary"),"schema3 retains independent schema2 locality");
         }
         check(resolve(c,fix(10,true,270,true,3)).street().equals("Synthetic Main"),"reverse travel");
-        check(resolve(c,fix(10,true,0,true,3)).street().equals("Ulica bez nazwy"),"actual turn into unnamed road remains possible");
-        check(resolve(c,fix(10,true,180,true,3)).street().equals("Ulica bez nazwy"),"reverse unnamed travel");
+        check(resolve(c,fix(10,true,0,true,3)).streetQuality()==PlaceResult.Quality.UNNAMED,"actual turn into unnamed road remains possible");
+        check(resolve(c,fix(10,true,180,true,3)).streetQuality()==PlaceResult.Quality.UNNAMED,"reverse unnamed travel");
         for(TripFix f:new TripFix[]{fix(0,true,90,true,3),fix(2,true,90,true,3),fix(10,false,90,true,3),fix(10,true,0,false,3)})
             check(resolve(c,f).streetQuality()==PlaceResult.Quality.AMBIGUOUS,"stationary/no bearing/no speed keeps old ambiguity");
         check(!resolve(c,fix(10,true,90,true,30)).covered(),"poor GPS rejected");

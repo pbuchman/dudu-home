@@ -55,6 +55,7 @@ public final class OfflinePlaces implements AutoCloseable {
         try {
             int x = (int)Math.floor(fix.longitude()*100), y = (int)Math.floor(fix.latitude()*100);
             String street = "", roadCity = "";
+            boolean roadFound=false;
             double best = 55, second = Double.POSITIVE_INFINITY;
             double latitudeRadius = 75.0/111195;
             double longitudeRadius = latitudeRadius/Math.max(.1,Math.cos(Math.toRadians(fix.latitude())));
@@ -85,22 +86,21 @@ public final class OfflinePlaces implements AutoCloseable {
                         }
                     }
                     String name = c.getString(1); if (name.isEmpty()) name = c.getString(2);
-                    if (name.isEmpty()) name = "Ulica bez nazwy";
                     String taggedCity=c.getString(3);
                     if (!taggedCity.isEmpty()) roadAddresses.add(new RoadAddress(name,taggedCity,score));
                     if (score < best) {
-                        if (!street.isEmpty() && !name.equals(street)) second = best;
-                        best=score; street=name; roadCity=taggedCity;bestHeadingSource=headingSource;bestSupport=support;
-                    } else if (!name.equals(street)) second=Math.min(second,score);
+                        if (roadFound && !name.equals(street)) second = best;
+                        roadFound=true;best=score; street=name; roadCity=taggedCity;bestHeadingSource=headingSource;bestSupport=support;
+                    } else if (!roadFound || !name.equals(street)) second=Math.min(second,score);
                 }
             }
             boolean roadConflict = examined>2500 || second-best<Math.max(4,fix.accuracy()/2);
             roadMatch=new RoadMatch(street,best,second,Math.max(4,fix.accuracy()/2),examined,
-                    examined>2500 ? "QUERY_LIMIT" : roadConflict ? "MARGIN_AMBIGUOUS" : street.isEmpty() ? "NO_MATCH" : "MATCHED",
+                    examined>2500 ? "QUERY_LIMIT" : roadConflict ? "MARGIN_AMBIGUOUS" : !roadFound ? "NO_MATCH" : street.isEmpty() ? "UNNAMED" : "MATCHED",
                     supportedScored,bestHeadingSource,bestSupport,mapGeneration);
             if (roadConflict) { street=""; roadCity=""; }
             boolean roadAddressConflict=false;
-            if (!roadConflict) {
+            if (roadFound && !roadConflict) {
                 roadCity="";
                 for (RoadAddress address:roadAddresses) if (address.street.equals(street)
                         && address.score-best<Math.max(4,fix.accuracy()/2)) {
@@ -108,7 +108,7 @@ public final class OfflinePlaces implements AutoCloseable {
                     roadCity=address.city;
                 }
             }
-            PlaceResult.Quality streetQuality=roadConflict ? AMBIGUOUS : street.isEmpty() ? UNKNOWN : MATCHED;
+            PlaceResult.Quality streetQuality=roadConflict ? AMBIGUOUS : !roadFound ? UNKNOWN : street.isEmpty() ? UNNAMED : MATCHED;
 
             // Locality containment runs even in a parking area with no matched road.
             String city="", citySource="offline", contained="";
@@ -159,7 +159,7 @@ public final class OfflinePlaces implements AutoCloseable {
                 if (count>1000 || tie) { city=""; cityQuality=AMBIGUOUS; }
                 else if (!city.isEmpty()) { cityQuality=NEARBY; citySource=schema>=2 ? "offline_place_node" : "offline_legacy_point"; }
             }
-            return new PlaceResult(city,street,cityQuality,streetQuality,citySource,"offline_road",!city.isEmpty() || !street.isEmpty() || cityQuality==AMBIGUOUS || roadConflict);
+            return new PlaceResult(city,street,cityQuality,streetQuality,citySource,"offline_road",!city.isEmpty() || roadFound || cityQuality==AMBIGUOUS || roadConflict);
         } catch (Exception invalid) { status="invalid"; return PlaceResult.unknown(false); }
     }
     private static double east(double lon,double lat) { return lon*111195*Math.cos(Math.toRadians(lat)); }

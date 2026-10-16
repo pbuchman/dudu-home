@@ -62,24 +62,24 @@ final class TripOverlayChecks {
         i.waitForIdleSync();
         main(i,()->{
             if(phase.equals("seed")) checkAtEdge(overlay(panel[0]),false);
-            else checkAtEdge(overlay(panel[0]),true);
+            else checkAtEdge(overlay(panel[0]),false);
         });
         var opened=i.addMonitor(TripActivity.class.getName(),null,false);
         if(phase.equals("seed")) {
             int[] initial=new int[2];
             main(i,()->{
                 View view=overlay(panel[0]);view.getLocationOnScreen(initial);
-                dragBy(view.findViewById(R.id.trip_overlay_drag),-view.getWidth()/3f,view.getHeight()/2f);
+                dragBy(view.findViewById(R.id.trip_locality),-view.getWidth()/3f,view.getHeight()/2f);
             });
             i.waitForIdleSync();SystemClock.sleep(400);
             main(i,()->{
                 int[] moved=new int[2];overlay(panel[0]).getLocationOnScreen(moved);
-                ProgressChecks.check(moved[0]<initial[0]&&moved[1]>initial[1],
-                        "interior drag moves card left and down: initial="+initial[0]+","+initial[1]+" moved="+moved[0]+","+moved[1]);
+                ProgressChecks.check(moved[0]<initial[0]&&moved[1]==initial[1],
+                        "interior drag moves card horizontally only: initial="+initial[0]+","+initial[1]+" moved="+moved[0]+","+moved[1]);
             });
             ProgressChecks.check(opened.getHits()==0&&!TripActivity.visible,"interior drag release never opens full screen");
         }
-        main(i,()->dragToBottomRight(overlay(panel[0]).findViewById(R.id.trip_overlay_drag)));
+        main(i,()->dragToBottomRight(overlay(panel[0]).findViewById(R.id.trip_locality)));
         i.waitForIdleSync();SystemClock.sleep(400);
         ProgressChecks.check(opened.getHits()==0&&!TripActivity.visible,"drag release never opens full screen");i.removeMonitor(opened);
         main(i,()->panel[0].render(fixture(before,LONG_ROAD)));i.waitForIdleSync();
@@ -94,6 +94,11 @@ final class TripOverlayChecks {
         main(i,()->checkBounds(overlay(panel[0])));
         ProgressChecks.check(prefs.horizontal()==x && prefs.vertical()==y,"transient suppression preserves chosen position");
         if(phase.equals("seed")) {
+            main(i,()->panel[0].render(fixture(before,"Aleja Błękitnych Chmur Testowych")));i.waitForIdleSync();
+            ProgressChecks.capture(i,"trip-overlay-compact-named.png");
+            main(i,()->panel[0].render(fixture(before,"")));i.waitForIdleSync();
+            ProgressChecks.capture(i,"trip-overlay-compact-unnamed.png");
+            main(i,()->ProgressChecks.check(overlay(panel[0]).findViewById(R.id.trip_street).getVisibility()==View.GONE,"typed unnamed actual overlay hides street row"));
             main(i,()->overlay(panel[0]).findViewById(R.id.trip_overlay_close).performClick());
             main(i,()->{panel[0].render(before);ProgressChecks.check(overlay(panel[0])==null,"close remains hidden on next rendering");});
         }
@@ -101,6 +106,16 @@ final class TripOverlayChecks {
         ProgressChecks.check(after.state().equals(before.state())&&after.generation()==before.generation()&&after.meters()==before.meters(),"overlay controls preserve active counter, generation and nonzero total");
         ProgressChecks.check(receipt.edit().putInt("pid",android.os.Process.myPid()).putFloat("horizontal",prefs.horizontal()).putFloat("vertical",prefs.vertical()).commit(),"restart test receipt saved");
         main(i,panel[0]::close);
+        Class<?> trace=Class.forName("com.pbuchman.duduhome.trip.PlaceTrace");var writer=trace.getDeclaredField("writer");writer.setAccessible(true);
+        ((java.util.concurrent.ExecutorService)writer.get(null)).submit(()->{}).get(3,java.util.concurrent.TimeUnit.SECONDS);
+        boolean shown=false,hidden=false;
+        for(String line:java.nio.file.Files.readAllLines(new File(c.getNoBackupFilesDir(),"trip-place-trace.jsonl").toPath())) {
+            org.json.JSONObject row=new org.json.JSONObject(line);
+            if(!row.optString("event").equals("presentation")||!row.optString("surface").equals("trip_overlay"))continue;
+            shown|=row.optBoolean("visible")&&row.optString("title").equals("Miejscowość Testowa")&&row.optString("subtitle").equals(LONG_ROAD)&&row.isNull("fix_reference");
+            hidden|=!row.optBoolean("visible")&&row.optString("title").isEmpty()&&row.optString("subtitle").isEmpty();
+        }
+        ProgressChecks.check(shown&&hidden,"private trace records actual synthetic overlay labels/visibility without invented fix reference");
     }
     private static void main(Instrumentation i,Runnable action) {
         java.util.concurrent.atomic.AtomicReference<Throwable> failure=new java.util.concurrent.atomic.AtomicReference<>();
@@ -110,16 +125,19 @@ final class TripOverlayChecks {
     private static View overlay(TripPresentation panel) { return (View)ProgressChecks.field(panel,"overlay"); }
     private static TripController.Snapshot fixture(TripController.Snapshot before,String street) {
         return new TripController.Snapshot(before.state(),before.generation(),before.meters(),SystemClock.elapsedRealtime(),
-                new PlaceResult("Miejscowość Testowa",street,"offline",true,true),"",true);
+                street.isEmpty()?new PlaceResult("Miejscowość Testowa","",PlaceResult.Quality.CONTAINMENT,PlaceResult.Quality.UNNAMED,"offline_boundary","offline_road",true)
+                        :new PlaceResult("Miejscowość Testowa",street,"offline",true,true),"",true);
     }
     private static void dragToBottomRight(View handle) { dragBy(handle,10000,10000); }
     private static void dragBy(View handle,float dx,float dy) {
-        int[] at=new int[2];handle.getLocationOnScreen(at);
-        long time=SystemClock.uptimeMillis();float x=at[0]+handle.getWidth()/2f,y=at[1]+handle.getHeight()/2f;
+        View root=handle.getRootView();
+        int[] at=new int[2],origin=new int[2];handle.getLocationOnScreen(at);root.getLocationOnScreen(origin);
+        long time=SystemClock.uptimeMillis();float x=at[0]-origin[0]+handle.getWidth()/2f,y=at[1]-origin[1]+handle.getHeight()/2f;
+        int n=0;
         for(int action:new int[]{MotionEvent.ACTION_DOWN,MotionEvent.ACTION_MOVE,MotionEvent.ACTION_UP}) {
-            MotionEvent event=MotionEvent.obtain(time,time+16,action,action==MotionEvent.ACTION_DOWN?x:x+dx,
+            MotionEvent event=MotionEvent.obtain(time,time+(n++==0?0:400),action,action==MotionEvent.ACTION_DOWN?x:x+dx,
                     action==MotionEvent.ACTION_DOWN?y:y+dy,0);
-            handle.dispatchTouchEvent(event);event.recycle();
+            root.dispatchTouchEvent(event);event.recycle();
         }
     }
     private static void checkAtEdge(View view,boolean bottom) {
@@ -140,13 +158,14 @@ final class TripOverlayChecks {
     }
     private static void checkBounds(View view) {
         ProgressChecks.check(view!=null,"overlay present for geometry check");
+        ProgressChecks.check(view.getWidth()<=Math.round(286*view.getResources().getDisplayMetrics().density),"location card maximum286dp");
         WindowManager wm=view.getContext().getSystemService(WindowManager.class);
         Rect bounds=wm.getCurrentWindowMetrics().getBounds();
         Insets inset=wm.getCurrentWindowMetrics().getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());
         Rect safe=new Rect(inset.left,inset.top,bounds.width()-inset.right,bounds.height()-inset.bottom);
         int[] at=new int[2];view.getLocationOnScreen(at);
         ProgressChecks.check(safe.contains(at[0],at[1],at[0]+view.getWidth(),at[1]+view.getHeight()),"whole moved long-name card stays within current bars/cutout bounds: safe="+safe+" card="+geometry(view));
-        for(int id:new int[]{R.id.trip_overlay_close,R.id.trip_overlay_drag}) {
+        for(int id:new int[]{R.id.trip_overlay_close}) {
             View control=view.findViewById(id);Rect visible=new Rect();
             boolean shown=control.getGlobalVisibleRect(visible);
             ProgressChecks.check(shown&&visible.height()==control.getHeight()&&visible.width()==control.getWidth(),

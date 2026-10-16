@@ -31,8 +31,8 @@ public final class NationalMapChecks {
                     TripFix fix=new TripFix(now,now,(c.getDouble(0)+c.getDouble(2))/2,(c.getDouble(1)+c.getDouble(3))/2,3,10,true,0,false,false);
                     long start=SystemClock.elapsedRealtime();PlaceResult result=resolver.resolve(fix);
                     durations[n]=SystemClock.elapsedRealtime()-start;if(result.covered())covered++;
-                    String expected=!c.getString(4).isEmpty()?c.getString(4):!c.getString(5).isEmpty()?c.getString(5):"Ulica bez nazwy";
-                    if(expected.equals(result.street()))matched++;
+                    String expected=!c.getString(4).isEmpty()?c.getString(4):!c.getString(5).isEmpty()?c.getString(5):"";
+                    if(expected.equals(result.street())&&(expected.isEmpty()?result.streetQuality()==PlaceResult.Quality.UNNAMED:result.streetQuality()==PlaceResult.Quality.MATCHED))matched++;
                     else if(!result.street().isEmpty())wrong++;
                 }
             }

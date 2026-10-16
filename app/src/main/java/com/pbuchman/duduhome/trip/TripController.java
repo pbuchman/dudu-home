@@ -9,16 +9,15 @@ import java.util.concurrent.atomic.*;
 /** Process owner. Disk/counter and resolver have separate serial workers; UI only reads snapshots. */
 public final class TripController {
     public record Snapshot(String state, long generation, double meters, long fixTime,
-            PlaceResult place, String error, boolean loaded, long millis, boolean partialTime, long streetDeadline) {
+            PlaceResult place, String error, boolean loaded, long millis, boolean partialTime, long placeGeneration, TripFix sourceFix) {
         public Snapshot(String state, long generation, double meters, long fixTime, PlaceResult place, String error, boolean loaded) {
-            this(state, generation, meters, fixTime, place, error, loaded, 0, false, 0);
+            this(state, generation, meters, fixTime, place, error, loaded, 0, false);
         }
-        public Snapshot(String state, long generation, double meters, long fixTime, PlaceResult place, String error, boolean loaded, long millis, boolean partialTime) {
-            this(state, generation, meters, fixTime, place, error, loaded, millis, partialTime, 0);
+        public Snapshot(String state,long generation,double meters,long fixTime,PlaceResult place,String error,boolean loaded,long millis,boolean partialTime) {
+            this(state,generation,meters,fixTime,place,error,loaded,millis,partialTime,-1,null);
         }
-        @Override public PlaceResult place() { return place.atStreetDeadline(streetDeadline, SystemClock.elapsedRealtime()); }
         public boolean active() { return "ACTIVE".equals(state); }
-        public boolean fresh() { return active() && fixTime > 0 && SystemClock.elapsedRealtime() - fixTime <= 10000; }
+        public boolean fresh() { return active() && fixTime > 0 && SystemClock.elapsedRealtime() >= fixTime && SystemClock.elapsedRealtime() - fixTime <= 10000; }
         public String title() { return fresh() ? place().title() : active() ? "Brak sygnału GPS" : "Gdzie jestem"; }
         public String subtitle() { return fresh() ? place().subtitle() : active() ? "Oczekiwanie na lokalizację" : ""; }
     }
@@ -51,7 +50,7 @@ public final class TripController {
     private PlaceStabilizer stabilizer = new PlaceStabilizer();
     private boolean loaded, storageFailed;
     private TripFix currentFix, resolvedFix, enrichmentFix;
-    private PlaceResult rawLocal = PlaceResult.unknown(false), onlineEvidence;
+    private volatile PlaceResult rawLocal = PlaceResult.unknown(false), onlineEvidence;
     private long placeGeneration;
     private volatile Snapshot snapshot = new Snapshot("PAUSED", 0, 0, 0, PlaceResult.unknown(false), "", false);
     private TripController(Context context) {
@@ -77,6 +76,10 @@ public final class TripController {
         }, 1, 1, TimeUnit.SECONDS);
     }
     public Snapshot snapshot() { return snapshot; }
+    /** Records only what a presentation surface rendered; it cannot change session state. */
+    public void presented(String surface,boolean visible,Snapshot rendered,String title,String subtitle) {
+        trace.presentation(surface,visible,visible?title:"",visible?subtitle:"",rendered.placeGeneration(),visible&&rendered.fresh()?rendered.sourceFix():null);
+    }
     public void command(String command) {
         if (!java.util.Set.of("START", "PAUSE", "RESET").contains(command)) return;
         long boundary=SystemClock.elapsedRealtime();observationFloor.set(boundary); inputEpoch.incrementAndGet();
@@ -92,24 +95,25 @@ public final class TripController {
                 store.write(next, generation + 1, nextMeters, nextMillis, nextPartial);
                 state = next; generation++; distance = new TripDistance(nextMeters); time = new TripTime(nextMillis,radioTimeGate);
                 partialTime = nextPartial; savedAt = SystemClock.elapsedRealtime();
-                invalidate();
+                invalidate(command.toLowerCase(java.util.Locale.ROOT));
             } catch (Exception failed) { storageFailure(); }
             publish();
         });
     }
-    private void invalidate() {
+    private void invalidate(String reason) {
         distance.breakSegment(); if(storageFailed)time.discardPending();else time.breakSegment(); fixes.clear(); gap.set(false);
-        clearPlaces();
+        clearPlaces(reason);
     }
-    private void clearPlaces() {
+    private void clearPlaces(String reason) {
         placeGeneration++; resolver.invalidate(placeGeneration);
         currentFix = null; resolvedFix = null; enrichmentFix = null; fixTime = 0;
         rawLocal = PlaceResult.unknown(false); onlineEvidence = null;
         stabilizer = new PlaceStabilizer(); place = PlaceResult.unknown(false);
+        trace.presentation("controller_reset_"+reason,false,"","",placeGeneration,null);
     }
     public void breakSegment() {
         long boundary=SystemClock.elapsedRealtime();observationFloor.set(boundary); inputEpoch.incrementAndGet(); gap.set(true);
-        counter.execute(() -> { radioTimeGate.boundary(boundary);generation++; invalidate(); publish(); });
+        counter.execute(() -> { radioTimeGate.boundary(boundary);generation++; invalidate("segment"); publish(); });
     }
     public void observePower(com.pbuchman.duduhome.routebook.PowerEvent event,RadioProfile.State observed) {
         long epoch=inputEpoch.get();
@@ -139,15 +143,13 @@ public final class TripController {
                 if (!state.equals("ACTIVE") || storageFailed || input.epoch() != inputEpoch.get()) continue;
                 TripFix fix = input.fix();
                 if (fix.elapsed() < observationFloor.get()) continue;
-                if (gap.getAndSet(false)) { distance.breakSegment(); time.breakSegment(); clearPlaces(); }
-                if (!time.accept(fix, input.uptime())) { distance.breakSegment(); clearPlaces(); }
+                if (gap.getAndSet(false)) { distance.breakSegment(); time.breakSegment(); }
+                if (!time.accept(fix, input.uptime())) distance.breakSegment();
                 distance.accept(fix);
-                if (!fix.valid()) { clearPlaces(); continue; }
+                expirePlaces(SystemClock.elapsedRealtime());
+                if (!fix.valid()) continue;
                 if (currentFix != null && fix.elapsed() <= currentFix.elapsed()) continue;
                 currentFix = fix; fixTime = fix.elapsed();
-                if (resolvedFix == null || resolvedFix.distance(fix) > 60) {
-                    place = PlaceResult.unknown(false); stabilizer = new PlaceStabilizer();
-                }
                 resolver.offer(new PlaceResolver.Job(placeGeneration, fix));
             }
         } finally {
@@ -157,6 +159,7 @@ public final class TripController {
     }
     private void postPlace(PlaceResolver.Job job, PlaceResult result, boolean online, TripFix evidenceFix) {
         counter.execute(() -> {
+            expirePlaces(SystemClock.elapsedRealtime());
             if (!state.equals("ACTIVE") || storageFailed || placeGeneration != job.generation() || currentFix == null) {
                 trace.record("discard_session", job, result, null, 0, null); return;
             }
@@ -185,23 +188,26 @@ public final class TripController {
         catch (Exception failed) { storageFailure(); }
     }
     private void storageFailure() {
-        storageFailed = true; inputEpoch.incrementAndGet(); generation++; invalidate();
+        storageFailed = true; inputEpoch.incrementAndGet(); generation++; invalidate("storage_failure");
         error = "Błąd zapisu sesji. Pomiar zatrzymany";
     }
+    private void expirePlaces(long now) {
+        if (fixTime>0 && now-fixTime>10000) {
+            clearPlaces("gps_expired");
+        }
+    }
     private void publish() {
-        PlaceResult before = place;
-        place = stabilizer.current(SystemClock.elapsedRealtime(), currentFix);
-        if (before != place && currentFix != null)
-            trace.record("expired", new PlaceResolver.Job(placeGeneration, currentFix), rawLocal, place, 0, null);
+        expirePlaces(SystemClock.elapsedRealtime());
+        place=stabilizer.current();
         snapshot = new Snapshot(state, generation, distance.meters(), fixTime, place, error, loaded,
-                time.millis(), partialTime, stabilizer.streetDeadline());
+                time.millis(), partialTime, placeGeneration, currentFix);
     }
     public String diagnostic() {
-        Snapshot s = snapshot;
+        Snapshot s = snapshot;PlaceResult raw=rawLocal;
         return "trip_state=" + s.state() + " loaded=" + s.loaded() + " gps_fresh=" + s.fresh()
                 + " map=" + offline.status() + " map_schema=" + offline.schemaVersion()
-                + " locality_quality=" + s.place().localityQuality() + " street_quality=" + s.place().streetQuality()
-                + " locality_source=" + s.place().localitySource() + " street_source=" + s.place().streetSource()
+                + " locality_quality=" + s.place().localityQuality() + " street_quality=" + raw.streetQuality() + " display_street_quality=" + s.place().streetQuality()
+                + " locality_source=" + s.place().localitySource() + " street_source=" + raw.streetSource() + " display_street_source=" + s.place().streetSource()
                 + " storage_ok=" + s.error().isEmpty();
     }
 }
