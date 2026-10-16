@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { day, latest, range, dayBounds } from '../src/derive.js';
-import { envelope, record, uuid, validPoint, samePoint } from '../src/validation.js';
+import { envelope, record, uuid, validPoint, samePoint, validObservation, sameObservation } from '../src/validation.js';
 import { HttpError, type Envelope, type Snapshot, type Store, type StoredPoint, type Result } from '../src/types.js';
 export const fixtures=JSON.parse(await readFile(resolve(process.env.ROUTEBOOK_FIXTURES??'../contract/fixtures.json'),'utf8'));
 export const token='synthetic_test_token_abcdefghijklmnopqrstuvwxyz';
@@ -14,12 +14,12 @@ export class MemoryStore implements Store {
   async latestSnapshot(id:string){const s=await this.snapshot(id);s.points=s.points.sort((a,b)=>a.measured_at.localeCompare(b.measured_at)||a.event_id.localeCompare(b.event_id)).slice(-1);return s;}
   async snapshot(id:string){const s=this.states.get(id);if(!s)throw new HttpError(404,'unknown_device');return structuredClone(s);}
   async ingest(e:Envelope,receivedAt:string){const s=await this.snapshot(e.device_id),results:Result[]=[];let added=0;
-    e.points.forEach((p,index)=>{const event_id=record(p)&&uuid(p.event_id)?p.event_id:null;
+    if(e.version===2){for(let index=0;index<e.events.length;index++){const p=e.events[index],event_id=record(p)&&uuid(p.event_id)?p.event_id:null;if(!validObservation(p,receivedAt)){results.push({index,event_id,status:'rejected',code:'invalid_observation'});continue;}s.observations??=[];const old=s.observations.find(x=>x.event_id===p.event_id);if(old){const same=sameObservation(old,p);results.push({index,event_id,status:same?'duplicate':'rejected',code:same?null:'event_conflict'});continue;}s.observations.push({...p,device_id:e.device_id,received_at:receivedAt});added++;results.push({index,event_id,status:'accepted',code:null});}}else e.points.forEach((p,index)=>{const event_id=record(p)&&uuid(p.event_id)?p.event_id:null;
       if(!validPoint(p,receivedAt)){results.push({index,event_id,status:'rejected',code:'invalid_point'});return;}
       const old=s.points.find(x=>x.event_id===p.event_id);if(old){const same=samePoint(old,p);results.push({index,event_id,status:same?'duplicate':'rejected',code:same?null:'event_conflict'});return;}
       s.points.push({...p,device_id:e.device_id,received_at:receivedAt});added++;results.push({index,event_id,status:'accepted',code:null});
     });if(this.failCommit)throw Error('commit failed');if(added)s.revision++;this.states.set(e.device_id,s);
-    return {ack:{version:1 as const,device_id:e.device_id,revision:s.revision,received_at:receivedAt,results},event:added?{snapshot:s,affected_dates:['2026-10-05']}:null};
+    return {ack:{version:e.version,device_id:e.device_id,revision:s.revision,received_at:receivedAt,results},event:added?{snapshot:s,affected_dates:['2026-10-05']}:null};
   }
 }
 function meters(actual:number,expected:number){assert.ok(Math.abs(actual-expected)<=fixtures.meter_tolerance,`${actual} != ${expected}`);}

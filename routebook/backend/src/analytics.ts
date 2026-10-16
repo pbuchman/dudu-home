@@ -1,3 +1,4 @@
+import { correctionFor, correctionMetrics, correctionMetadata, correctionIntervals } from './in-car-time.js';
 import { recordedDays, recordedTimeDerivation } from './recorded-time.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { connected, dates, dayBounds, derive, haversine, localDate, sortPoints, timezone } from './derive.js';
@@ -33,12 +34,12 @@ function metrics(intervals:Interval[],speeds:SpeedSample[],complete:boolean):Met
   return averages(m,complete);
 }
 function provenance(s:AnalyticsSnapshot,from:string,to:string):AnalyticsProvenance {
-  return {version:1,device_id:s.device_id,source_revision:s.revision,metadata_revision:s.metadata_revision,
+  return {...correctionMetadata(correctionFor(s)),version:1,device_id:s.device_id,source_revision:s.revision,metadata_revision:s.metadata_revision,
     algorithm_version:analyticsVersion,timezone,from,to,context:{...analyticsBounds(from,to),max_days:analyticsLimits.max_days,max_points:analyticsLimits.max_points}};
 }
 function build(s:AnalyticsSnapshot,from:string,to:string,cfg:Derivation) {
   const bounds=analyticsBounds(from,to);if(s.points.length>analyticsLimits.max_points)throw new HttpError(422,'analytics_limit');
-  const points=sortPoints(s.points);
+  const points=sortPoints(s.points),correction=correctionFor(s);
   const derived=derive(points,cfg),indices=new Map(points.map((p,i)=>[p.event_id,i]));
   const visits:Visit[]=derived.stops.map(({stop_id,...stop})=>({visit_id:stop_id,...stop,place:matchPlace(stop,s.places),overlap_seconds:0}));
   const timeIndices=new Map<string,number>();points.forEach((p,i)=>{const key=p.segment_id+':'+p.measured_at;if(!timeIndices.has(key))timeIndices.set(key,i);});
@@ -67,7 +68,7 @@ function build(s:AnalyticsSnapshot,from:string,to:string,cfg:Derivation) {
     const first=slice[0],last=slice.at(-1)!;
     while(visitCursor<visits.length&&visits[visitCursor].start_at<first.measured_at)visitCursor++;
     const stops:Visit[]=[];for(let at=visitCursor;at<visits.length&&visits[at].start_at<=last.measured_at;at++)if(visits[at].end_at<=last.measured_at)stops.push({...visits[at],overlap_seconds:visits[at].duration_seconds});
-    const journey:Journey={...metrics(parts,samples,complete),journey_id:first.event_id,start_at:first.measured_at,end_at:last.measured_at,
+    const journey:Journey={...metrics(parts,samples,complete),...correctionMetrics(correction,Date.parse(first.measured_at),Date.parse(last.measured_at)),journey_id:first.event_id,start_at:first.measured_at,end_at:last.measured_at,
       point_count:slice.length,stop_count:stops.length,complete,start_boundary,end_boundary,
       start:{lat:first.lat,lon:first.lon,place:matchPlace(first,s.places)},end:{lat:last.lat,lon:last.lon,place:matchPlace(last,s.places)},
       departure_hour:Temporal.Instant.from(first.measured_at).toZonedDateTimeISO(timezone).hour};
@@ -85,30 +86,34 @@ function build(s:AnalyticsSnapshot,from:string,to:string,cfg:Derivation) {
   const selectedStart=dayBounds(from).start,selectedEnd=dayBounds(to).end;
   const selected=detailed.filter(d=>Date.parse(d.journey.end_at)>selectedStart&&Date.parse(d.journey.start_at)<selectedEnd);
   const selectedVisits=visits.flatMap(v=>{const overlap=(Math.min(selectedEnd,Date.parse(v.end_at))-Math.max(selectedStart,Date.parse(v.start_at)))/1000;return overlap>0?[{...v,overlap_seconds:overlap}]:[];});
-  return {bounds,selected,selectedVisits,derived};
+  return {bounds,selected,selectedVisits,derived,correction};
 }
 const mean=(values:number[])=>values.reduce((a,b)=>a+b,0)/values.length;
 function median(values:number[]) {const sorted=[...values].sort((a,b)=>a-b),mid=Math.floor(sorted.length/2);return sorted.length%2?sorted[mid]:(sorted[mid-1]+sorted[mid])/2;}
 function comparisons(journeys:Journey[]):DirectionalComparison[] {
   const groups=new Map<string,Journey[]>();for(const j of journeys){const a=j.start.place,b=j.end.place;if(!a||!b)continue;const key=a.place_id+':'+b.place_id;const g=groups.get(key)??[];g.push(j);groups.set(key,g);}
-  return [...groups.values()].map(group=>({from_place:group[0].start.place!,to_place:group[0].end.place!,count:group.length,complete_count:group.filter(j=>j.complete).length,
+  return [...groups.values()].map(group=>({correction_algorithm_version:group[0].correction_algorithm_version,correction_computed_at:group[0].correction_computed_at,correction_next_refresh_at:group[0].correction_next_refresh_at,
+    mean_recorded_seconds:mean(group.map(j=>j.recorded_seconds)),median_recorded_seconds:median(group.map(j=>j.recorded_seconds)),
+    mean_in_car_seconds:mean(group.map(j=>j.in_car_seconds)),median_in_car_seconds:median(group.map(j=>j.in_car_seconds)),
+    mean_excluded_tail_seconds:mean(group.map(j=>j.excluded_tail_seconds)),median_excluded_tail_seconds:median(group.map(j=>j.excluded_tail_seconds)),
+    confirmed_excluded_seconds:group.reduce((n,j)=>n+j.confirmed_excluded_seconds,0),estimated_excluded_seconds:group.reduce((n,j)=>n+j.estimated_excluded_seconds,0),provisional_excluded_seconds:group.reduce((n,j)=>n+j.provisional_excluded_seconds,0),from_place:group[0].start.place!,to_place:group[0].end.place!,count:group.length,complete_count:group.filter(j=>j.complete).length,
     mean_seconds:mean(group.map(j=>j.elapsed_seconds)),mean_meters:mean(group.map(j=>j.meters)),mean_stop_count:mean(group.map(j=>j.stop_count)),
     median_seconds:median(group.map(j=>j.elapsed_seconds)),median_meters:median(group.map(j=>j.meters)),median_stop_count:median(group.map(j=>j.stop_count)),
     min_seconds:Math.min(...group.map(j=>j.elapsed_seconds)),max_seconds:Math.max(...group.map(j=>j.elapsed_seconds)),
-    departures:Array.from({length:24},(_,hour)=>{const g=group.filter(j=>j.departure_hour===hour);return {hour,g};}).filter(x=>x.g.length).map(({hour,g})=>({hour,count:g.length,mean_seconds:mean(g.map(j=>j.elapsed_seconds)),mean_meters:mean(g.map(j=>j.meters)),median_seconds:median(g.map(j=>j.elapsed_seconds)),median_meters:median(g.map(j=>j.meters))}))}));
+    departures:Array.from({length:24},(_,hour)=>{const g=group.filter(j=>j.departure_hour===hour);return {hour,g};}).filter(x=>x.g.length).map(({hour,g})=>({hour,count:g.length,mean_in_car_seconds:mean(g.map(j=>j.in_car_seconds)),median_in_car_seconds:median(g.map(j=>j.in_car_seconds)),mean_seconds:mean(g.map(j=>j.elapsed_seconds)),mean_meters:mean(g.map(j=>j.meters)),median_seconds:median(g.map(j=>j.elapsed_seconds)),median_meters:median(g.map(j=>j.meters))}))}));
 }
 function aggregate(days:PeriodSummary[],key:(d:string)=>string):PeriodSummary[] {
-  const groups=new Map<string,PeriodSummary>(),complete=new Map<string,boolean>();for(const d of days){const period=key(d.period),m=groups.get(period)??{...empty(),recorded_seconds:0,point_count:0,period,journey_count:0,complete_journey_count:0,stop_count:0};
-    for(const k of ['meters','moving_meters','moving_seconds','stopped_seconds','unknown_seconds','recorded_seconds','point_count','journey_count','complete_journey_count','stop_count'] as const)m[k]+=d[k];
+  const groups=new Map<string,PeriodSummary>(),complete=new Map<string,boolean>();for(const d of days){const period=key(d.period),m=groups.get(period)??{...empty(),correction_algorithm_version:d.correction_algorithm_version,correction_computed_at:d.correction_computed_at,correction_next_refresh_at:d.correction_next_refresh_at,in_car_seconds:0,excluded_tail_seconds:0,confirmed_excluded_seconds:0,estimated_excluded_seconds:0,provisional_excluded_seconds:0,recorded_seconds:0,point_count:0,period,journey_count:0,complete_journey_count:0,stop_count:0};
+    for(const k of ['meters','moving_meters','moving_seconds','stopped_seconds','unknown_seconds','recorded_seconds','in_car_seconds','excluded_tail_seconds','confirmed_excluded_seconds','estimated_excluded_seconds','provisional_excluded_seconds','point_count','journey_count','complete_journey_count','stop_count'] as const)m[k]+=d[k];
     if(d.elapsed_seconds>0&&d.overall_average_mps===null)complete.set(period,false);
     if(d.observed_max_mps!==null)m.observed_max_mps=Math.max(m.observed_max_mps??0,d.observed_max_mps);groups.set(period,m);}
   return [...groups.values()].map(m=>({...averages(m,complete.get(m.period)!==false)}));
 }
 export function analytics(s:AnalyticsSnapshot,from:string,to:string,cfg:Derivation=defaults):AnalyticsResponse {
-  const {selected,selectedVisits}=build(s,from,to,cfg);
+  const {selected,selectedVisits,correction}=build(s,from,to,cfg);
   const windows=dates(from,to).map(date=>({date,...dayBounds(date)})),selectedStart=windows[0].start,selectedEnd=windows.at(-1)!.end;
   const recorded=recordedDays(s,from,to);
-  const days=new Map(windows.map(({date:period})=>[period,{...empty(),recorded_seconds:recorded[period],point_count:0,period,journey_count:0,complete_journey_count:0,stop_count:0} as PeriodSummary]));
+  const days=new Map(windows.map(({date:period})=>[period,{...empty(),...correctionMetrics(correction,dayBounds(period).start,dayBounds(period).end),recorded_seconds:recorded[period],point_count:0,period,journey_count:0,complete_journey_count:0,stop_count:0} as PeriodSummary]));
   const incompleteDays=new Set<string>();
   // At most 31 calendar windows; avoid invoking timezone parsing for every stored sample.
   const windowIndex=(time:number)=>{let low=0,high=windows.length;while(low<high){const mid=(low+high)>>>1;if(windows[mid].end<=time)low=mid+1;else high=mid;}return low<windows.length&&windows[low].start<=time?low:-1;};
@@ -136,8 +141,8 @@ export function analytics(s:AnalyticsSnapshot,from:string,to:string,cfg:Derivati
   return {...provenance(s,from,to),recorded_time_derivation:recordedTimeDerivation,totals,journeys:selected.map(d=>d.journey),days:list,weeks,months,visits:selectedVisits,places:s.places,comparisons:comparisons(selected.map(d=>d.journey))};
 }
 export function journeyDetail(s:AnalyticsSnapshot,from:string,to:string,id:string,cfg:Derivation=defaults):JourneyDetailResponse {
-  const {selected}=build(s,from,to,cfg),d=selected.find(d=>d.journey.journey_id===id);if(!d)throw new HttpError(404,'journey_not_found');
+  const {selected,correction}=build(s,from,to,cfg),d=selected.find(d=>d.journey.journey_id===id);if(!d)throw new HttpError(404,'journey_not_found');
   if(d.points.length>analyticsLimits.max_detail_points)throw new HttpError(422,'analytics_limit');
-  return {...provenance(s,from,to),journey:d.journey,points:d.points,segments:derive(d.points,cfg).runs.map(run=>({run_id:run[0].event_id,points:run})),
+  return {...provenance(s,from,to),journey:d.journey,correction_intervals:correctionIntervals(correction,Date.parse(d.journey.start_at),Date.parse(d.journey.end_at)),points:d.points,segments:derive(d.points,cfg).runs.map(run=>({run_id:run[0].event_id,points:run})),
     timeline:d.intervals.map(({end_id,...i})=>i),speed_samples:d.speeds,visits:d.visits};
 }

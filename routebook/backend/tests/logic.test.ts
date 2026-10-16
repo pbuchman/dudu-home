@@ -18,7 +18,7 @@ test('point validation covers calendar, types, bounds, keys, old history and fut
 });
 test('empty device, zero days/months and invalid range/date',()=>{
   const s={device_id:fixtureDevice,revision:0,points:[]};assert.equal(latest(s,'2026-10-05T08:00:00.000Z').clock_state,'empty');
-  const r=range(s,'2026-09-30','2026-10-02');assert.equal(r.days.length,3);assert.deepEqual(r.months,[{month:'2026-09',meters:0,recorded_seconds:0},{month:'2026-10',meters:0,recorded_seconds:0}]);
+  const r=range(s,'2026-09-30','2026-10-02');assert.equal(r.days.length,3);assert.deepEqual(r.months.map(({month,meters,recorded_seconds})=>({month,meters,recorded_seconds})),[{month:'2026-09',meters:0,recorded_seconds:0},{month:'2026-10',meters:0,recorded_seconds:0}]);
   assert.throws(()=>range(s,'2026-10-02','2026-10-01'));assert.throws(()=>range(s,'2025-01-01','2026-01-02'));assert.throws(()=>day(s,'2026-02-30'));
 });
 test('equal-time UUID sorting breaks continuity; speed and source changes split runs',()=>{

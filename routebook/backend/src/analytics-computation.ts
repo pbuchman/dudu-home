@@ -1,3 +1,4 @@
+import { correctionFor } from './in-car-time.js';
 import { Worker } from 'node:worker_threads';
 import { HttpError,type Derivation } from './types.js';
 import type { AnalyticsSnapshot } from './analytics.js';
@@ -5,6 +6,7 @@ import type { AnalyticsResponse,JourneyDetailResponse } from '../../contract/ana
 /** CPU derivation stays off the ingest/SSE event loop, with one bounded job per listener. */
 export async function computeAnalytics(snapshot:AnalyticsSnapshot,from:string,to:string,derivation:Derivation,journey_id?:string,signal?:AbortSignal):Promise<AnalyticsResponse|JourneyDetailResponse> {
   if(signal?.aborted)throw new HttpError(503,'analytics_unavailable');
+  try{snapshot={...snapshot,correction:correctionFor(snapshot)};}catch{throw new HttpError(503,'analytics_unavailable');}
   const source=import.meta.url.endsWith('.ts');
   const worker=new Worker(new URL(source?'./analytics-worker.ts':'./analytics-worker.js',import.meta.url),{
     workerData:{snapshot,from,to,derivation,journey_id},

@@ -7,9 +7,10 @@ async function main() {
   const config=await loadConfig(path);
   const pool=new pg.Pool({connectionString:config.database_url,max:8,connectionTimeoutMillis:5000,idleTimeoutMillis:30000,statement_timeout:10000});
   pool.on('error',()=>{process.stderr.write('Database connection unavailable\n');});
-  const store=new PgStore(pool,config.derivation);
+  const store=new PgStore(pool,config.derivation,config.power_profiles);
   await store.assertDurability();
   if(process.argv.includes('--bootstrap')){try{await store.bootstrap(config.devices.map(d=>d.device_id));}finally{await pool.end();}return;}
+  await store.assertPowerProfiles();
   await store.health();
   const {publicApp,privateApp}=createServers(store,config);
   await publicApp.listen(config.public);await privateApp.listen(config.private);

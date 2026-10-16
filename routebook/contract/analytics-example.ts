@@ -6,7 +6,10 @@ export const analyticsExample = {
   "source_revision": 3,
   "metadata_revision": 2,
   "algorithm_version": "routebook-analytics-1",
-  "recorded_time_derivation": {"algorithm_version":"routebook-recorded-time-1","gap_seconds":30},
+  "recorded_time_derivation": {
+    "algorithm_version": "routebook-recorded-time-1",
+    "gap_seconds": 30
+  },
   "timezone": "Europe/Warsaw",
   "from": "2026-10-05",
   "to": "2026-10-05",
@@ -27,7 +30,15 @@ export const analyticsExample = {
     "elapsed_seconds": 105,
     "moving_average_mps": 10.007543398010288,
     "overall_average_mps": 10.007543398010288,
-    "observed_max_mps": 10
+    "observed_max_mps": 10,
+    "correction_algorithm_version": "routebook-in-car-1",
+    "correction_computed_at": "2026-10-06T12:00:00.000Z",
+    "correction_next_refresh_at": null,
+    "in_car_seconds": 1305,
+    "excluded_tail_seconds": 0,
+    "confirmed_excluded_seconds": 0,
+    "estimated_excluded_seconds": 0,
+    "provisional_excluded_seconds": 0
   },
   "journeys": [
     {
@@ -70,7 +81,16 @@ export const analyticsExample = {
           "radius_m": 100
         }
       },
-      "departure_hour": 10
+      "departure_hour": 10,
+      "recorded_seconds": 105,
+      "correction_algorithm_version": "routebook-in-car-1",
+      "correction_computed_at": "2026-10-06T12:00:00.000Z",
+      "correction_next_refresh_at": null,
+      "in_car_seconds": 105,
+      "excluded_tail_seconds": 0,
+      "confirmed_excluded_seconds": 0,
+      "estimated_excluded_seconds": 0,
+      "provisional_excluded_seconds": 0
     }
   ],
   "days": [
@@ -89,7 +109,15 @@ export const analyticsExample = {
       "period": "2026-10-05",
       "journey_count": 1,
       "complete_journey_count": 1,
-      "stop_count": 2
+      "stop_count": 2,
+      "correction_algorithm_version": "routebook-in-car-1",
+      "correction_computed_at": "2026-10-06T12:00:00.000Z",
+      "correction_next_refresh_at": null,
+      "in_car_seconds": 1305,
+      "excluded_tail_seconds": 0,
+      "confirmed_excluded_seconds": 0,
+      "estimated_excluded_seconds": 0,
+      "provisional_excluded_seconds": 0
     }
   ],
   "weeks": [
@@ -108,7 +136,15 @@ export const analyticsExample = {
       "period": "2026-10-05",
       "journey_count": 1,
       "complete_journey_count": 1,
-      "stop_count": 2
+      "stop_count": 2,
+      "correction_algorithm_version": "routebook-in-car-1",
+      "correction_computed_at": "2026-10-06T12:00:00.000Z",
+      "correction_next_refresh_at": null,
+      "in_car_seconds": 1305,
+      "excluded_tail_seconds": 0,
+      "confirmed_excluded_seconds": 0,
+      "estimated_excluded_seconds": 0,
+      "provisional_excluded_seconds": 0
     }
   ],
   "months": [
@@ -127,7 +163,15 @@ export const analyticsExample = {
       "period": "2026-10",
       "journey_count": 1,
       "complete_journey_count": 1,
-      "stop_count": 2
+      "stop_count": 2,
+      "correction_algorithm_version": "routebook-in-car-1",
+      "correction_computed_at": "2026-10-06T12:00:00.000Z",
+      "correction_next_refresh_at": null,
+      "in_car_seconds": 1305,
+      "excluded_tail_seconds": 0,
+      "confirmed_excluded_seconds": 0,
+      "estimated_excluded_seconds": 0,
+      "provisional_excluded_seconds": 0
     }
   ],
   "visits": [
@@ -213,9 +257,26 @@ export const analyticsExample = {
           "mean_seconds": 105,
           "mean_meters": 1050.7920567910803,
           "median_seconds": 105,
-          "median_meters": 1050.7920567910803
+          "median_meters": 1050.7920567910803,
+          "mean_in_car_seconds": 105,
+          "median_in_car_seconds": 105
         }
-      ]
+      ],
+      "correction_algorithm_version": "routebook-in-car-1",
+      "correction_computed_at": "2026-10-06T12:00:00.000Z",
+      "correction_next_refresh_at": null,
+      "mean_recorded_seconds": 105,
+      "median_recorded_seconds": 105,
+      "mean_in_car_seconds": 105,
+      "median_in_car_seconds": 105,
+      "mean_excluded_tail_seconds": 0,
+      "median_excluded_tail_seconds": 0,
+      "confirmed_excluded_seconds": 0,
+      "estimated_excluded_seconds": 0,
+      "provisional_excluded_seconds": 0
     }
-  ]
+  ],
+  "correction_algorithm_version": "routebook-in-car-1",
+  "correction_computed_at": "2026-10-06T12:00:00.000Z",
+  "correction_next_refresh_at": null
 } satisfies AnalyticsResponse;

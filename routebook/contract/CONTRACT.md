@@ -266,7 +266,7 @@ All UUIDs are canonical lowercase. `sequence` and `elapsed_realtime_ms` are nonn
 integers. `observed_at` has the same UTC/range/future-clock validation as measured_at.
 Raw states are null or signed 32-bit integers. Identifier fields match `[A-Za-z0-9._:-]+`
 (profile 1..80, firmware 1..120). Android firmware_id is `sha256:` plus the lowercase SHA-256
-of its exact Build.FINGERPRINT UTF-8. Kinds are snapshot, transition and observer_lost.
+of the exact firmware/vendor version/signing identity recipe documented in docs/RADIO_POWER.md. Kinds are snapshot, transition and observer_lost.
 No sender-supplied interpreted state is accepted. Observer epochs change on process/rebind
 restart and boot_id changes on full boot. First snapshots establish only a current baseline.
 
@@ -280,7 +280,10 @@ Production has **no trusted interpretation profile by default**. Optional privat
 `power_profiles` entries bind `profile_id`, exact `firmware_id`, `validation_id`,
 `validated_at` and nonempty `states:[{acc_state,module1_state,state:'on'|'off'}]`.
 The validation ID is an immutable owner-held physical evidence reference. Diagnostic profiles
-cannot be enabled. Both Android and server require independent explicit audited registration;
+cannot be enabled; OFF mappings with null module1_state (ACC-only) are rejected. Profile
+registrations are persisted in a write-once audit table: a changed body requires a new ID;
+bootstrap and startup reject reused IDs with different mappings/evidence. Removal from the
+private runtime configuration revokes trust while preserving the audit record. Both Android and server require independent explicit audited registration;
 sender profile claims never grant trust. No physical ON/OFF mapping is currently validated.
 
 Correction metrics in analytics.d.ts are additive on day/range responses and each day/month
@@ -292,8 +295,10 @@ Confirmed + estimated equals excluded; provisional is a subset of estimated. Met
 algorithm version, computation UTC and next clock-only maturity refresh (or null). Clients must
 refetch at maturity even when no ingest/SSE event occurs. Missing fields mean unavailable.
 
-The canonical correction reads the **full raw archive** in the same snapshot/revision as
-bounded map/analytics geometry. It unions exclusion intervals, intersects recorded coverage,
+The canonical correction reads **full-resolution raw archive context** in the same snapshot/
+revision as bounded map/analytics geometry. Indexed seeds expand to complete relevant source
+segments plus their next global samples; the tail, prior motion and original stop anchor are
+never clipped to a selected day or journey window. Unrelated source segments need not be read. It unions exclusion intervals, intersects recorded coverage,
 and only then clips to half-open Europe/Warsaw days, including DST. Late GPS or radio data
 can undo an earlier estimate. Detail returns clipped correction_intervals and reason categories.
 
@@ -307,10 +312,12 @@ coverage; no unbounded carry and no time before the first snapshot is reconstruc
 
 Without trusted telemetry a historical tail qualifies only with observed stop span
 270 <= seconds <330 at segment end and a following measured gap >=600 s, or archive end
-at least600 s old by BOTH measurement and server-receipt clocks. It needs >=40 points,
+at least600 s old by BOTH measurement and latest tail-observation server-receipt clocks. It needs >=40 points,
 all speeds present <=0.7, all accuracy <=25, >=90% speeds <=0.3, median accuracy <=10,
 all points <=15 m from its first point, every sample interval <=15 s, and >=2 good moving
-points (speed >=2, accuracy <=15) in the SAME segment in the preceding120 s.
+points (speed >=2, accuracy <=15) in the SAME segment in the preceding120 s,
+belonging to accepted positive-distance moving geometry edges (fixed-position speed spikes
+are insufficient).
 Remove min(300,span) from the END, intersected with recorded coverage. This remains estimated;
 open archive ends are provisional. No95% accuracy claim is established without independent
 100-case evaluation.
