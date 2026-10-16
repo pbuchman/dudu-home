@@ -11,8 +11,14 @@ import sys
 
 PACKAGE = 'com.pbuchman.duduhome'
 ROOT = Path(__file__).resolve().parents[1]
-LIMIT = 140 * 1024
-LINE = re.compile(r'([0-9]+) ([0-9]+) ([A-Z0-9_ =:.-]{1,300})')
+LIMIT = 1024 * 1024
+LINE = re.compile(r'([0-9]+) ([0-9]+) ([A-Z0-9_ =:.-]{1,480})')
+BLOCK_CAUSES = ('RESOURCE_CLEANUP', 'ACTIVE_OPERATION', 'UI_REQUEST_PENDING', 'PRESENTATION_BUSY',
+                'MENU_VISIBLE', 'GATE_PRECONDITION', 'PRIORITY', 'YANOSIK_GRACE')
+JOURNAL_NAMES = ('diagnostics.txt', 'diagnostics.previous.txt', *(f'diagnostics.previous.txt.{i}' for i in range(2, 8)))
+NUMERIC_FIELDS = {'PROCESS', 'SCHEMA', 'SEQ', 'ID', 'STARTUP', 'GENERATION', 'CYCLE', 'ELIGIBLE',
+                  'FIXES', 'POOR', 'HOME', 'FLAGS', 'BLOCKS', 'ELAPSED_MS', 'BLOCKER_ID', 'WAIT_MS', 'VENDOR_CYCLE'}
+ENUM_FIELDS = {'ACCURACY', 'AGE', 'SPEED', 'STATE', 'REASON', 'ACTION', 'BLOCKER_ACTION'}
 DUMP_KEYS = {'monitor_running', 'action_busy', 'startup', 'departure_cycle', 'departure_reason',
              'gps_accuracy', 'diagnostic_pending', 'trip_state', 'queue_home_waiting'}
 
@@ -23,6 +29,19 @@ def journal(data):
     lines = data.decode('ascii', errors='strict').splitlines()
     if any(not LINE.fullmatch(line) for line in lines):
         raise ValueError('JOURNAL_CATEGORY_FORMAT_REJECTED')
+    for line in lines:
+        body = LINE.fullmatch(line).group(3)
+        if 'SCHEMA=2' not in body:
+            continue  # Older category-only journals keep their historical grammar.
+        for word in body.split():
+            if '=' not in word:
+                continue
+            key, value = word.split('=', 1)
+            if key in NUMERIC_FIELDS and re.fullmatch(r'-?[0-9]{1,18}', value):
+                continue
+            if key in ENUM_FIELDS and re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', value):
+                continue
+            raise ValueError('JOURNAL_FIELD_REJECTED')
     return '\n'.join(lines) + ('\n' if lines else '')
 
 
@@ -69,17 +88,18 @@ def collect(serial, output):
     if status or current.strip() != b'device':
         raise ValueError('AUTHORIZED_DEVICE_UNAVAILABLE')
     # Reading this app's categories only avoids firmware logcat, private configs and route DBs.
-    status, current = adb(serial, 'exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/diagnostics.txt')
-    if status:
+    journals = {}
+    for name in JOURNAL_NAMES:
+        status, data = adb(serial, 'exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/' + name)
+        if not status:
+            journals[name] = journal(data)
+    if not journals:
         raise ValueError('APP_JOURNAL_UNAVAILABLE')
-    current = journal(current)
-    status, previous = adb(serial, 'exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/diagnostics.previous.txt')
-    previous = journal(previous) if not status else ''
     status, dump = adb(serial, 'shell', 'dumpsys', 'activity', 'service', PACKAGE + '/.location.HomeMonitorService')
     dump = service_dump(dump) if not status else ''
     destination = private_destination(output)
-    write_private(destination / 'diagnostics.txt', current)
-    write_private(destination / 'diagnostics.previous.txt', previous)
+    for name, data in journals.items():
+        write_private(destination / name, data)
     write_private(destination / 'monitor.txt', dump)
     write_private(destination / 'summary.txt', summarize(destination))
     return destination
@@ -90,7 +110,7 @@ def summarize(directory):
     categories = Counter()
     attempts = defaultdict(list)
     observations = []
-    for name in ('diagnostics.previous.txt', 'diagnostics.txt'):
+    for name in reversed(JOURNAL_NAMES):
         file = directory / name
         if not file.exists():
             continue
@@ -118,6 +138,19 @@ def summarize(directory):
         result.append(f'PROCESS={process} ID={attempt}')
         for _, elapsed, body in sorted(entries):
             result.append(f'  ELAPSED={elapsed} {body}')
+    result.append('Queue blockers (persisted observations, not proof of physical activity):')
+    blockers = Counter()
+    for _, _, body in observations:
+        if 'QUEUE_STATE ' in body:
+            values = dict(re.findall(r'\b([A-Z_]+)=([A-Z0-9_.:-]+)', body))
+            if values.get('STATE') == 'WAITING':
+                mask = int(values.get('BLOCKS', '0'))
+                reasons = [reason for bit, reason in enumerate(BLOCK_CAUSES) if mask & (1 << bit)]
+                for reason in reasons or [values.get('REASON', 'UNKNOWN')]:
+                    blockers[(values.get('ACTION', 'UNKNOWN'), reason,
+                              values.get('BLOCKER_ACTION', 'NONE'))] += 1
+    result.extend(f'{action}: {reason}; blocker={blocker}; observations={count}'
+                  for (action, reason, blocker), count in sorted(blockers.items()))
     result.append('Category counts:')
     result.extend(f'{category}={count}' for category, count in sorted(categories.items()))
     return '\n'.join(result) + '\n'

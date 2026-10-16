@@ -45,8 +45,15 @@ public final class HomeActions {
     }
     public record Request(HomeAction action, long attempt) { }
     private static boolean busy;
+    private static long busyAttempt;
+    private static HomeAction busyAction;
     public static synchronized boolean begin() { if (busy) return false; busy = true; schedulingChanged(); return true; }
-    public static synchronized void end() { busy = false; schedulingChanged(); }
+    public static synchronized boolean begin(long attempt,HomeAction action) {
+        if(!begin())return false;busyAttempt=attempt;busyAction=action;return true;
+    }
+    public static synchronized long busyAttempt() { return busyAttempt; }
+    public static synchronized String busyAction() { return busyAction==null ? "NONE" : busyAction.name(); }
+    public static synchronized void end() { busy = false;busyAttempt=0;busyAction=null;schedulingChanged(); }
     public static synchronized boolean busy() { return busy; }
     private static WeakReference<MainActivity> visible = new WeakReference<>(null);
     private static WeakReference<MainActivity> screen = new WeakReference<>(null);
@@ -59,6 +66,22 @@ public final class HomeActions {
         MainActivity activity = screen.get();
         boolean pending = pendingToken != null && SystemClock.elapsedRealtime() - pendingSince < 5000;
         return !busy() && !pending && (activity == null || activity.allowsExternalLaunch());
+    }
+
+    /** Diagnostic observation only; never relaxes the existing launch predicates. */
+    public static String launchBlocker(boolean media) {
+        if (busy()) {
+            long owner=busyAttempt();
+            boolean active = ProgressBus.snapshot().stream().anyMatch(s -> (owner==0 || s.id()==owner) && !ProgressModel.terminal(s.phase())
+                    && s.phase() != Phase.CANCELLING && (s.phase() == Phase.STARTED || s.phase() == Phase.ACCEPTED));
+            return active ? "ACTIVE_OPERATION" : "RESOURCE_CLEANUP";
+        }
+        if (pendingToken != null && SystemClock.elapsedRealtime()-pendingSince<5000) return "UI_REQUEST_PENDING";
+        MainActivity activity=screen.get();
+        if (activity!=null && !activity.allowsExternalLaunch()) return "PRESENTATION_BUSY";
+        activity=visible.get();
+        if (media && activity!=null && !activity.isFinishing() && !activity.isDestroyed()) return "MENU_VISIBLE";
+        return "NONE";
     }
 
     public static boolean callsGate(HomeEvent event) {

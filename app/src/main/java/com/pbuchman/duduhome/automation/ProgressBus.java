@@ -67,7 +67,7 @@ public final class ProgressBus {
             if (c == null || c.cancelled || c.finalized || c.sent || !c.admission.getAsBoolean()) return false;
             if (!c.reservation.getAsBoolean() || !ownReservation.getAsBoolean()) return false;
             c.sent = true;
-            Diagnostics.commitAttempt(context, id);
+            Diagnostics.recordAttempt(context,id,"COMMAND_DISPATCH STATE=SENDING REASON=NONE");
             return true;
         }
     }
@@ -82,6 +82,7 @@ public final class ProgressBus {
             if (c == null || c.cancelled || c.finalized) return false;
             c.cancelled = true;
         }
+        Diagnostics.recordAttempt(token.id(),"ATTEMPT_CANCEL STATE=CANCELLING REASON="+((c.sent || c.groupSent) ? "COMMAND_SENT" : "USER_CANCELLED"));
         model.cancelByUser(token.id(), (c.sent || c.groupSent) ? Reason.COMMAND_SENT : Reason.USER_CANCELLED, true, SystemClock.elapsedRealtime());
         cancellationListener.accept(state);
         boolean pending = false;
@@ -95,6 +96,7 @@ public final class ProgressBus {
         if (Looper.myLooper() != Looper.getMainLooper()) { main.post(() -> finishCancellation(id)); return; }
         Control c;
         synchronized (controls) { c = controls.get(id); if (c == null || !c.cancelled) return; c.finalized = true; }
+        Diagnostics.recordAttempt(id,"ATTEMPT_CANCEL STATE=CANCELLED REASON="+((c.sent || c.groupSent) ? "COMMAND_SENT" : "USER_CANCELLED"));
         model.cancelByUser(id, (c.sent || c.groupSent) ? Reason.COMMAND_SENT : Reason.USER_CANCELLED, false, SystemClock.elapsedRealtime());
         notifyObservers();
     }

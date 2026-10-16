@@ -145,12 +145,18 @@ public final class AutomationRuntime {
         }
         long now = SystemClock.elapsedRealtime();
         for (Job j : queue.expire(now, day())) {
+            Diagnostics.queueState(context,j.id(),j.type().name(),"EXPIRED","EXPIRED",0,"NONE");
             Diagnostics.recordAttempt(context, j.id(), "QUEUE_" + j.type() + "_EXPIRED ID=" + j.id());
             ProgressBus.update(context, j.id(), Phase.SKIPPED, Reason.EXPIRED);
         }
+        observeQueue(now);
         if (spotify != null) spotify.priorityChanged();
-        Job job = queue.next(now, HomeActions.allowsExternalLaunch(), spotify == null && mediaReady());
+        boolean homeReady=HomeActions.allowsExternalLaunch(), mediaReady=spotify == null && mediaReady();
+        // Observation fsync may take time: an earlier clock sample must never extend a queued deadline.
+        now=SystemClock.elapsedRealtime();
+        Job job = queue.next(now, homeReady, mediaReady);
         if (job != null) {
+            Diagnostics.queueState(context,job.id(),job.type().name(),"STARTED","NONE",0,"NONE");
             Diagnostics.recordAttempt(context, job.id(), "QUEUE_" + job.type() + "_STARTED ID=" + job.id());
             if (job.type() == Type.GATE || job.type() == Type.CLEANING) {
                 dispatchedHomeAttempt = job.id();
@@ -159,6 +165,8 @@ public final class AutomationRuntime {
                 ProgressBus.update(context, job.id(), Phase.STARTED, Reason.NONE);
                 YanosikLauncher.Result result = yanosik.launchReserved(() -> ProgressBus.claimSend(context, job.id()));
                 Diagnostics.recordAttempt(context, job.id(), "YANOSIK_" + (result == YanosikLauncher.Result.REQUESTED ? "LAUNCH_REQUESTED" : result) + " ID=" + job.id());
+                if (result == YanosikLauncher.Result.FAILED)
+                    Diagnostics.queueState(context,job.id(),"YANOSIK","FAILED","FAILURE",0,"NONE");
                 if (result == YanosikLauncher.Result.REQUESTED) queue.yanosikLaunched(now);
                 Reason reason = switch (result) {
                     case REQUESTED -> Reason.NONE;
@@ -176,6 +184,28 @@ public final class AutomationRuntime {
             if (next != Long.MAX_VALUE) handler.postDelayed(drain, Math.max(1, next - now));
         }
     }
+    private void observeQueue(long now) {
+        Job head=queue.head();
+        for (Job job:queue.snapshot()) {
+            boolean media=job.type()==Type.YANOSIK || job.type()==Type.SPOTIFY;
+            var causes=new com.pbuchman.duduhome.diagnostics.QueueBlockers();
+            causes.add(HomeActions.launchBlocker(media));
+            if (head!=null && head.id()!=job.id()) causes.add("PRIORITY");
+            if (media && !gateAllowsMedia()) causes.add("GATE_PRECONDITION");
+            if (media && spotify!=null) causes.add("ACTIVE_OPERATION");
+            if (media && queue.hasHomeWaiting()) causes.add("PRIORITY");
+            if (media && now<queue.mediaNotBefore()) causes.add("YANOSIK_GRACE");
+            String reason=causes.reason(),blocker="NONE";
+            long blockerId=0;
+            if (reason.equals("RESOURCE_CLEANUP") || reason.equals("ACTIVE_OPERATION")) {
+                blockerId=HomeActions.busyAttempt();blocker=HomeActions.busyAction();
+                if (blockerId==0 && spotify!=null) { blockerId=spotifyAttempt;blocker="SPOTIFY"; }
+            } else if (reason.equals("PRIORITY") && head!=null) { blockerId=head.id();blocker=head.type().name(); }
+            else if (reason.equals("GATE_PRECONDITION")) blocker="GATE";
+            else if (reason.equals("YANOSIK_GRACE")) blocker="YANOSIK";
+            Diagnostics.queueState(context,job.id(),job.type().name(),causes.state(),reason,blockerId,blocker,causes.mask());
+        }
+    }
     private boolean queueContainsOrRunning(long id) {
         return (spotify != null && spotifyAttempt == id) || ProgressBus.active(id);
     }
@@ -188,6 +218,8 @@ public final class AutomationRuntime {
                     if (!queue.current(job) || closed || ProgressBus.cancelled(job.id())) return;
                     spotify = null; spotifyAttempt = 0;
                     Diagnostics.recordAttempt(context, job.id(), "SPOTIFY_" + result + " ID=" + job.id());
+                    if (result != SpotifyController.Result.PLAYING)
+                        Diagnostics.queueState(context,job.id(),"SPOTIFY","FAILED","FAILURE",0,"NONE");
                     Reason reason = switch (result) {
                         case PLAYING -> Reason.NONE;
                         case NO_ACCESS -> Reason.MEDIA_NO_ACCESS;

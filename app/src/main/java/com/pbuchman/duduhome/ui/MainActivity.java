@@ -359,7 +359,7 @@ public final class MainActivity extends Activity {
         }
 
         int generation = ++uiGeneration;
-        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        if (!HomeActions.begin(actionAttempt,currentAction)) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
         final Runnable gateSuccess = HomeActions.gateSuccessCallback();
         final java.util.concurrent.atomic.AtomicBoolean gateCleaned = new java.util.concurrent.atomic.AtomicBoolean();
@@ -679,7 +679,7 @@ public final class MainActivity extends Activity {
             return;
         }
         RoborockCredentials selected = credentials.forAction(currentAction);
-        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        if (!HomeActions.begin(actionAttempt,currentAction)) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
         final HomeAction executing = currentAction;
         final Context application = getApplicationContext();

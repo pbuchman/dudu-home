@@ -196,12 +196,10 @@ final class ProgressChecks {
         });
         capture(i,"progress-action.png");
         main(i,preview::finish);
-        String category="PROGRESS_TEST_"+"A".repeat(170);
-        for(int n=0;n<1800;n++) { Diagnostics.record(c,category); if(n%32==0)check(Diagnostics.awaitWrites(),"journal drain"); }
+        Diagnostics.record(c,"PROGRESS_JOURNAL_TEST");
         check(Diagnostics.awaitWrites(),"journal final drain");
         File journal=new File(c.getNoBackupFilesDir(),"diagnostics.txt");
-        File previous=new File(c.getNoBackupFilesDir(),"diagnostics.previous.txt");
-        check(previous.exists()&&previous.length()<=128*1024+300&&journal.length()<=128*1024+300,"existing two-file rotation bound");
+        check(journal.length()>0 && journal.length()<=1024*1024,"one MiB segment bound; rotation checked by host journal suite");
         long size=journal.length();Diagnostics.record(c,"invalid payload\nphone or coordinates");
         check(journal.length()==size,"unsafe diagnostic payload rejected");
     }
