@@ -22,6 +22,10 @@ final class TripSessionChecks {
     private static void close(TripController c)throws Exception {
         ((ExecutorService)field(c,"counter")).shutdownNow();((ExecutorService)field(c,"resolver")).shutdownNow();
     }
+    private static com.pbuchman.duduhome.routebook.PowerEvent power(String kind){
+        return new com.pbuchman.duduhome.routebook.PowerEvent(new java.util.UUID(1,1).toString(),new java.util.UUID(1,2).toString(),0,
+                "2026-10-16T10:00:00.000Z",SystemClock.elapsedRealtime(),new java.util.UUID(1,3).toString(),kind,0,0,"synthetic-audit-v1","synthetic-build");
+    }
     static void run(Context context)throws Exception {
         File directory=new File(context.getCacheDir(),"trip-session-checks");directory.mkdirs();
         Context isolated=new ContextWrapper(context) { @Override public File getNoBackupFilesDir(){return directory;} };
@@ -58,11 +62,13 @@ final class TripSessionChecks {
             location.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());controller.offer(location);
             long oldGeneration=controller.snapshot().generation();
             long oldEpoch=((java.util.concurrent.atomic.AtomicLong)field(controller,"inputEpoch")).get();
+            controller.observePower(power("snapshot"),RadioProfile.State.OFF);
             controller.command("RESET");
             check(controller.snapshot().meters()==1200 && controller.snapshot().millis()==60000,"pending reset cannot claim success before disk");
             release.countDown();settle(controller);
             check(controller.snapshot().active() && controller.snapshot().meters()==0 && controller.snapshot().millis()==0
                     && !controller.snapshot().partialTime() && memory.saved.meters()==0 && memory.saved.millis()==0,"active reset durable and queued sample discarded");
+            check(((RadioTimeGate)field(controller,"radioTimeGate")).state(SystemClock.elapsedRealtime())==RadioProfile.State.UNKNOWN,"queued OFF from previous generation cannot alter reset session");
             // A producer that captured an old epoch can finish enqueueing after Reset clears the queue.
             Class<?> inputType=Class.forName(TripController.class.getName()+"$Input");
             Constructor<?> inputConstructor=inputType.getDeclaredConstructors()[0];inputConstructor.setAccessible(true);
@@ -86,6 +92,8 @@ final class TripSessionChecks {
                     && controller.snapshot().meters()==0 && controller.snapshot().millis()==0,"stale resolver cannot restore pre-reset state");
             controller.command("PAUSE");settle(controller);controller.command("RESET");settle(controller);
             check(!controller.snapshot().active() && memory.saved.state().equals("PAUSED"),"paused reset retains paused");
+            controller.observePower(power("snapshot"),RadioProfile.State.ON);settle(controller);
+            check(!controller.snapshot().active()&&controller.snapshot().millis()==0,"known ON never resumes explicitly paused manual session");
             controller.command("START");settle(controller);check(controller.snapshot().active(),"Start after Pause");
         } finally {close(controller);}
         for(String command:new String[]{"RESET","PAUSE"}) {

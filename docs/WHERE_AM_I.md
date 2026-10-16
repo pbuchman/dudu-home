@@ -87,7 +87,22 @@ or after the last observation. Receive elapsed-realtime and uptime clocks are ca
 queueing; interval time uses the smaller received/awake monotonic delta, while the GPS measurement
 delta validates ordering and continuity. Receive jitter is not repeatedly discarded. Deep-sleep
 clock divergence breaks continuity, and suspended time is never included. System wall time
-is not an input. The result measures observed session time, not ignition or driver presence.
+is not an input. The result measures observed session time, not driver presence.
+
+A separate passive vendor observer can remove confirmed radio-OFF stationary intervals
+from time only. The default production profile is diagnostic **UNKNOWN**, so the candidate
+ACC/MCU values do not yet change totals. After explicit physical validation for the exact
+firmware, OFF needs three stable seconds and two qualified stationary fixes at most fifteen
+seconds apart (speed <=0.7 m/s, accuracy <=25 m, displacement <=15 m). Motion contradicts OFF
+and requires a fresh OFF observation. ACC OFF or screen OFF alone cannot cut time; waiting
+with the radio ON counts. Freshness expires after forty-five seconds. An active manual
+session resumes counting with known ON; a user-paused session stays paused.
+
+The three-second decision is provisional in RAM: durable totals never need retrospective
+subtraction. A brief false OFF counts normally. Pause/continuity boundaries conservatively
+count unsettled evidence; Reset and input-generation guards prevent an old OFF from changing
+a new session. Distance and the v1 GPS archive remain independent. Restart starts UNKNOWN
+without bridging power history. [Observer, profile activation and separate v2 outbox](RADIO_POWER.md).
 
 Pause, Reset, GPS loss, service shutdown, verified wake and process restart begin fresh
 segments. Queued fixes carry an input epoch; stale work and asynchronous place results cannot

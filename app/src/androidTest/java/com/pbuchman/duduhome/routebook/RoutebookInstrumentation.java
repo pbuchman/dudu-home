@@ -39,6 +39,7 @@ public final class RoutebookInstrumentation extends Instrumentation {
         check(db.pending(true,1).isEmpty(),"queue drained");
     }
     private void checks() throws Exception {
+        powerChecks();
         try(Outbox db=fresh("storage")) {
             Point a=point(0),b=point(1);db.insert(a);db.insert(b);
             check(db.pending(true,1).get(0).eventId.equals(b.eventId),"newest order");
@@ -124,6 +125,100 @@ public final class RoutebookInstrumentation extends Instrumentation {
             check(db.counts().contains("REJECTED_INVALID=2"),"rejection retained in SQLite");
         }
     }
+    private PowerEvent power(int n){return new PowerEvent(new UUID(1,n+1).toString(),new UUID(1,999).toString(),n,
+            Point.TIME.format(Instant.ofEpochMilli(1791187200000L+n*1000L)),n*1000L,new UUID(1,998).toString(),"snapshot",0,1,"diagnostic-v1","synthetic-build");}
+    private PowerOutbox freshPower(String name,String device){
+        File file=new File(getTargetContext().getNoBackupFilesDir(),"routebook-power-test-"+name+".sqlite");
+        android.database.sqlite.SQLiteDatabase.deleteDatabase(file);return new PowerOutbox(file,device);
+    }
+    private String powerAck(Map<?,?> envelope,String status,String code){
+        StringJoiner rows=new StringJoiner(",");int index=0;
+        for(Object value:(List<?>)envelope.get("events")){Map<?,?> event=(Map<?,?>)value;
+            rows.add("{\"index\":"+index+++",\"event_id\":"+Json.quote((String)event.get("event_id"))+",\"status\":"+Json.quote(status)+",\"code\":"+(code==null?"null":Json.quote(code))+"}");}
+        return "{\"version\":2,\"device_id\":"+Json.quote((String)envelope.get("device_id"))+",\"received_at\":\"2026-10-16T10:00:00.000Z\",\"revision\":1,\"results\":["+rows+"]}";
+    }
+    private void waitPowerEmpty(PowerOutbox db)throws Exception{
+        long end=System.nanoTime()+TimeUnit.SECONDS.toNanos(12);while(!db.pending(true,1).isEmpty()&&System.nanoTime()<end)Thread.sleep(20);
+        check(db.pending(true,1).isEmpty(),"power queue drained");
+    }
+    private void powerChecks()throws Exception{
+        File legacy=new File(getTargetContext().getNoBackupFilesDir(),"routebook-test-power-rollback.sqlite");
+        String device;
+        try(Outbox gps=fresh("power-rollback")){device=gps.device();gps.insert(point(0));
+            try(PowerOutbox power=freshPower("rollback",device)){power.insert(power(0));check(power.device().equals(device),"same device UUID in separate power database");}
+        }
+        try(Outbox oldApk=new Outbox(legacy)){check(oldApk.device().equals(device)&&oldApk.pending(true,1).get(0).json().equals(point(0).json()),"unchanged old v1 GPS queue reopens after new power database");
+            check(((android.database.sqlite.SQLiteDatabase)get(oldApk,"db")).getVersion()==1,"GPS SQLite schema stays v1");}
+        File recovery=new File(getTargetContext().getCacheDir(),"routebook-power-test-isolation");check(recovery.mkdirs()||recovery.isDirectory(),"isolated power startup directory");
+        File gpsFile=new File(recovery,"routebook.sqlite"),powerFile=new File(recovery,"radio-power.sqlite");
+        android.database.sqlite.SQLiteDatabase.deleteDatabase(gpsFile);android.database.sqlite.SQLiteDatabase.deleteDatabase(powerFile);
+        try(Outbox broken=new Outbox(gpsFile)){device=broken.device();((android.database.sqlite.SQLiteDatabase)get(broken,"db")).setVersion(2);}
+        try(PowerOutbox established=new PowerOutbox(powerFile,device)){established.insert(power(0));}
+        android.content.Context isolated=new android.content.ContextWrapper(getTargetContext()){
+            @Override public android.content.Context getApplicationContext(){return this;}
+            @Override public File getNoBackupFilesDir(){return recovery;}
+        };
+        Routebook independent=new Routebook(isolated);
+        try{
+            long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(3);
+            while(get(independent,"power")==null&&System.nanoTime()<deadline)Thread.sleep(10);
+            Object archive=get(independent,"power");check(archive!=null&&get(independent,"filter")==null,"established power identity starts despite unavailable GPS schema");
+            while(get(archive,"db")==null&&System.nanoTime()<deadline)Thread.sleep(10);
+            PowerOutbox power=(PowerOutbox)get(archive,"db");check(power!=null,"independent power SQLite opened");
+            CountDownLatch blocked=new CountDownLatch(1),release=new CountDownLatch(1);
+            ((ExecutorService)get(independent,"disk")).execute(()->{blocked.countDown();try{release.await(3,TimeUnit.SECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}});
+            check(blocked.await(2,TimeUnit.SECONDS),"GPS worker held synthetically");
+            independent.offerPower(power(1));deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(2);
+            while(power.pending(false,200).size()<2&&System.nanoTime()<deadline)Thread.sleep(10);
+            check(power.pending(false,200).size()==2,"blocked GPS disk worker cannot starve power persistence");release.countDown();
+        }finally{independent.close();}
+        try(Outbox gps=fresh("power-full");PowerOutbox power=freshPower("full",gps.device())){
+            var sqlite=(android.database.sqlite.SQLiteDatabase)get(power,"db");long pages;
+            try(var c=sqlite.rawQuery("PRAGMA page_count",null)){c.moveToFirst();pages=c.getLong(0);}
+            try(var c=sqlite.rawQuery("PRAGMA max_page_count="+pages,null)){c.moveToFirst();}
+            boolean full=false;for(int n=0;n<10000;n++)try{power.insert(power(n));}catch(android.database.sqlite.SQLiteException expected){full=true;break;}
+            check(full,"synthetic power database full fails durably");gps.insert(point(0));check(gps.pending(true,1).size()==1,"power database full cannot damage GPS queue");
+        }
+        try(Outbox gps=fresh("power-independent");PowerOutbox power=freshPower("independent",gps.device())){
+            gps.insert(point(0));power.insert(power(0));power.insert(power(1));CountDownLatch blocked=new CountDownLatch(1);
+            try(Uploader gpsUpload=new Uploader(gps,config(gps.device()),(cfg,body)->{blocked.countDown();return new Uploader.Response(422,"",0);},c->{});
+                PowerUploader powerUpload=new PowerUploader(power,config(gps.device()),(cfg,body)->new Uploader.Response(200,powerAck((Map<?,?>)Json.parse(new String(body,StandardCharsets.UTF_8)),"accepted",null),0),c->{})){
+                gpsUpload.kick();powerUpload.kick();check(blocked.await(2,TimeUnit.SECONDS),"GPS failure attempted");waitPowerEmpty(power);
+                check(gps.pending(true,1).size()==1,"GPS HTTP failure cannot block power-only queue");
+            }
+            gps.apply(List.of(new Protocol.Result(point(0).eventId,"accepted",null)));
+            power.insert(power(2));
+            try(Uploader gpsUpload=new Uploader(gps,config(gps.device()),(cfg,body)->new Uploader.Response(200,ack((Map<?,?>)Json.parse(new String(body,StandardCharsets.UTF_8)),"accepted",null),0),c->{});
+                PowerUploader powerUpload=new PowerUploader(power,config(gps.device()),(cfg,body)->new Uploader.Response(422,"",0),c->{})){
+                gps.insert(point(1));gpsUpload.kick();powerUpload.kick();waitEmpty(gps);check(power.pending(true,1).size()==1,"power failure cannot block GPS lane");
+            }
+        }
+        try(Outbox gps=fresh("power-lost");PowerOutbox power=freshPower("lost",gps.device())){
+            power.insert(power(0));List<String> ids=new CopyOnWriteArrayList<>();
+            try(PowerUploader up=new PowerUploader(power,config(gps.device()),(cfg,bytes)->{
+                Map<?,?> body=(Map<?,?>)Json.parse(new String(bytes,StandardCharsets.UTF_8));ids.add((String)((Map<?,?>)((List<?>)body.get("events")).get(0)).get("event_id"));
+                if(ids.size()==1)throw new IOException("synthetic lost response");return new Uploader.Response(200,powerAck(body,"duplicate",null),0);
+            },c->{})){up.kick();waitPowerEmpty(power);}check(ids.size()==2&&ids.get(0).equals(ids.get(1)),"power lost ACK preserves immutable event ID");
+        }
+        try(Outbox gps=fresh("power-fair");PowerOutbox power=freshPower("fair",gps.device())){
+            for(int n=0;n<240;n++)power.insert(power(n));List<String> lanes=new CopyOnWriteArrayList<>();List<Integer> sizes=new CopyOnWriteArrayList<>();AtomicInteger count=new AtomicInteger();
+            try(PowerUploader up=new PowerUploader(power,config(gps.device()),(cfg,bytes)->{
+                Map<?,?> body=(Map<?,?>)Json.parse(new String(bytes,StandardCharsets.UTF_8));lanes.add((String)body.get("lane"));sizes.add(((List<?>)body.get("events")).size());
+                int n=count.incrementAndGet();if(n<=3)power.insert(power(300+n));return new Uploader.Response(200,powerAck(body,"accepted",null),0);
+            },c->{})){up.kick();waitPowerEmpty(power);}
+            check(lanes.get(0).equals("latest")&&lanes.get(1).equals("backfill")&&lanes.get(2).equals("latest")&&lanes.get(3).equals("backfill"),"latest and backlog alternate despite continuous arrivals");
+            check(sizes.get(1)==200,"power backfill bounded to 200");
+        }
+        try(Outbox gps=fresh("power-ack");PowerOutbox power=freshPower("ack",gps.device())){
+            power.insert(power(0));power.insert(power(1));CountDownLatch invalid=new CountDownLatch(1);
+            try(PowerUploader up=new PowerUploader(power,config(gps.device()),(cfg,bytes)->{invalid.countDown();return new Uploader.Response(200,"{}",0);},c->{})){
+                up.kick();check(invalid.await(2,TimeUnit.SECONDS),"invalid power ACK attempted");Thread.sleep(100);check(power.pending(false,200).size()==2,"invalid power ACK leaves all rows queued");
+            }
+            AtomicInteger count=new AtomicInteger();
+            try(PowerUploader up=new PowerUploader(power,config(gps.device()),(cfg,bytes)->new Uploader.Response(200,powerAck((Map<?,?>)Json.parse(new String(bytes,StandardCharsets.UTF_8)),count.incrementAndGet()==1?"rejected":"accepted",count.get()==1?"invalid_observation":null),0),c->{})){up.kick();waitPowerEmpty(power);}
+            check(power.counts().contains("POWER_REJECTED=1"),"only rejected event quarantined, older valid event drains");
+        }
+    }
     private static void set(Object object,String field,Object value) throws Exception {
         var f=object.getClass().getDeclaredField(field);f.setAccessible(true);f.set(object,value);
     }
@@ -150,7 +245,7 @@ public final class RoutebookInstrumentation extends Instrumentation {
         check(com.pbuchman.duduhome.location.HomeMonitorService.ready(ctx),"existing service permission guards");
         var trip=com.pbuchman.duduhome.trip.TripController.get(ctx);
         while(!trip.snapshot().loaded())Thread.sleep(10);
-        check(trip.snapshot().state().equals("OFF"),"manual trip off");
+        check(trip.snapshot().state().equals("PAUSED"),"manual trip initially paused");
         set(service,"routebook",collector);set(service,"trip",trip);
         AtomicReference<com.pbuchman.duduhome.automation.AutomationRuntime> automation=new AtomicReference<>();
         runOnMainSync(()-> {
@@ -191,9 +286,11 @@ public final class RoutebookInstrumentation extends Instrumentation {
             if(phase.equals("seed")) {
                 android.database.sqlite.SQLiteDatabase.deleteDatabase(file);
                 try(Outbox db=new Outbox(file)) {db.insert(point(7));check(db.pending(true,1).size()==1,"seed");
+                    try(PowerOutbox power=freshPower("restart",db.device())){power.insert(power(7));}
                     getTargetContext().getSharedPreferences("routebook-test",0).edit().putString("device",db.device()).commit();}
             } else if(phase.equals("resume")) {
                 try(Outbox db=new Outbox(file)) {check(db.device().equals(getTargetContext().getSharedPreferences("routebook-test",0).getString("device","")),"identity survives process restart");
+                    try(PowerOutbox power=new PowerOutbox(new File(getTargetContext().getNoBackupFilesDir(),"routebook-power-test-restart.sqlite"),db.device())){check(power.pending(true,1).get(0).equals(power(7)),"power ID/epoch/sequence/raw body survive process restart");}
                     check(db.pending(true,1).get(0).json().equals(point(7).json()),"pending ID and payload survive process restart");}
             } else if(phase.equals("integration")) integration();
             else if(phase.equals("staged")) {
