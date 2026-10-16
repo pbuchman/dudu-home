@@ -15,15 +15,19 @@ Physical acceptance is separate from the local checks described here.
 
 ## Presentation
 
-One initially top-centred banner, maximum 480 dp, at least 16 dp from available window edges.
+The floating banner starts top-centred, is at most 350 dp wide and at least 91 dp high,
+with 16 dp margins inside the available screen bounds. Its title is 19 sp, detail 14 sp,
+and the short **Anuluj** button has a minimum 48 dp touch target.
 Hold a non-button area for 350 ms to move its floating instance horizontally; the bounded
 position is saved separately from the location card. Inline menu presentation does not drag.
-WindowManager fits normal system bars; no fullscreen/layout-no-limits flags. Wrap-content
-supports larger text. Title 22 sp, detail 18 sp, current platform font and dark background.
+WindowManager placement explicitly excludes system bars and display cutouts; no
+layout-no-limits flag is used. Wrap-content supports larger text.
 Sand identifies gate events, mint cleaning, blue navigation. Icon and text accompany colour.
-No percentages, sound, flashing, focus or screen wake. A visible **Anuluj tę próbę** button
-has a minimum 76 dp touch target and immediately disables after a tap. An open, focused menu hosts
-the same layout inline. Only one host owns it at a time.
+There is no separate drag handle. Holding gives visual feedback. The gesture never transfers
+to a button underneath it on release. No percentages, sound, flashing, focus or screen wake.
+Cancellation immediately disables after a tap. An open, focused menu keeps its existing
+480 dp inline layout, title 22 sp, detail 18 sp and 76 dp cancellation target. Only one host
+owns the presentation at a time; both variants use the same cancellation contract.
 
 | Detection | Title | Detail | Evidence |
 |---|---|---|---|
@@ -96,7 +100,7 @@ daily-limit-or-storage and busy-or-maintenance cannot be presented as a more spe
 
 ## Cancellation and concurrency
 
-The explicit **Anuluj tę próbę** control is available during detection, queue wait and execution,
+The explicit cancellation control (**Anuluj** on the floating card) is available during detection, queue wait and execution,
 in the banner or existing action screen. Yanosik and Spotify are one cancellation group.
 An immutable token includes process session and attempt ID; stale or terminal tokens are inert.
 Repeated taps cannot schedule another cancellation. **Przerywam…** remains visible during
