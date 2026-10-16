@@ -33,14 +33,16 @@ area requires a new decision. Wake/configuration reset and service replacement d
 process-local completion, and old executor callbacks cannot satisfy the new generation.
 No/disabled home configuration preserves independent driving startup and manual actions.
 
-The barrier does not invent a call when the existing detector cannot arm: departure still
-requires its stationary baseline and sustained directional movement. If no call succeeds,
+The barrier does not invent a call when the existing detector cannot arm: RC3 departure
+requires a qualified parking opportunity and three seconds of movement in any direction.
+Cancellation rearming retains its separate stationary baseline. If no call succeeds,
 media remains deferred while the area applies. Investigate missing calls independently;
 do not weaken Bluetooth/cooldown rules or reset consumed events to force a result.
 
 Safe diagnostics add `MEDIA_GATE_AREA_UNKNOWN/NONE/DEPARTURE/RETURN` on transitions and
 `MEDIA_GATE_CALL_COMPLETED` when a current-area call releases the barrier. No positions,
-phone data or extra raw GPS logger. The queued-action deadlines below remain unchanged;
+phone data enter these generic events. RC4's separate private location trace does not drive
+the queue. The queued-action deadlines below remain unchanged;
 media is not queued/reserved merely because motion occurred inside the blocked area.
 
 ## Scheduling contract
@@ -95,8 +97,9 @@ only that occurrence's timers, pending queue tasks and unsent callbacks. Yanosik
 share a group, so cancelling after Yanosik launch also removes pending Spotify. Already opened
 apps remain open. No global reset or gate-area bypass is performed.
 
-Pre-send cancellation is kept in RAM and discards buffered diagnostics, consuming no durable
-reservation. Sending and cancellation have a serialized admission boundary; if cancellation
+Pre-send cancellation consumes no durable reservation. RC4 keeps bounded private diagnostic
+evidence independently of the process-local cancelled occurrence. Sending and cancellation
+have a serialized admission boundary; if cancellation
 wins, no external command is allowed. Once sending starts, retain durable protection even for
 an uncertain result. Binder/HTTP cleanup holds the shared lease; no stop/pause/dock is sent.
 
@@ -104,7 +107,7 @@ Driving rearm requires a ten-second fresh, accurate standstill below 0.5 m/s, th
 motion test. Departure/cleaning requires five seconds stationary within 45 m of parking;
 return requires five seconds outside the 300-metre junction approach, then a new return.
 Accuracy <=15 m and fix age <=3 s qualify the driving standstill; invalid GPS breaks dwell.
-Restart never replays queue entries or restores cancellation history. Existing sent markers
+Restart never replays queue entries or restores cancellation state from diagnostic history. Existing sent markers
 and conservative update compatibility remain. See [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Spotify transport

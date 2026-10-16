@@ -29,7 +29,8 @@ and STARTUP_DIAGNOSTICS.md. The new detector's physical acceptance is pending.
 The action screen and progress surfaces now expose current-attempt cancellation. The same
 process-bound token is captured in UI and immutable notification service PendingIntent;
 stale tokens cannot affect a later attempt. Before sending, cancellation drops RAM work and
-has no durable history/quota record. After sending, retain all call reservations and permit
+creates no durable quota reservation. RC4 retains bounded private diagnostic evidence of
+the cancelled occurrence, independently of reservations. After sending, retain all call reservations and permit
 only best-effort cleanup of this attempt's own call. The shared lease lasts through actual
 cleanup; cancellation cannot interrupt a synchronous vendor Binder transact. No dial/hangup
 protocol or 60-second cooldown rule below changes. Hardware acceptance of cancellation is

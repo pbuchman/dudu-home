@@ -13,7 +13,13 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Local heading candidate `1.4.0-rc3-local-street3` (code 29).**
+> **Integration candidate `1.4.0-rc4` (code 30).**
+> Retains a confirmed street while matching is uncertain, with two distinct valid fixes
+> required for a changed street or an unnamed road. The compact movable card and durable
+> queue/location journals are prepared for offline validation. Physical radio acceptance
+> and publication remain separate gates; prepared source is not an installed release.
+>
+> **Historical local heading candidate `1.4.0-rc3-local-street3` (code 29).**
 > Builds on code 28 and optionally reads source-proven short-fragment orientation from
 > map schema 3. Only a bounded, straight continuation within one original OSM way can
 > supply heading; unnamed roads remain candidates. Schema 2 retains its existing scores.
@@ -83,7 +89,8 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   time and kilometres while preserving active/paused state. Show locality, street, distance
   and session time including observed stops. Count in the background; show a silent card with up to three readable street lines
   and an expanded full-address notification that open the full screen when tapped. Move the card
-  with its **Przesuń** handle or hide it with **×**; position and visibility survive restarts.
+  by holding a non-button area for 350 ms and dragging horizontally, or hide it with **×**;
+  position and visibility survive restarts.
   **Pokaż panel w tle** on the trip screen restores it without changing the trip. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
@@ -130,8 +137,9 @@ Server runtime secrets and actual recorded locations remain outside the reposito
 
 **Anuluj tę próbę** is available during detection, queue wait and execution, including in a
 notification when overlays are unavailable. It cancels only the current process occurrence;
-Yanosik and Spotify share that control. A pre-send cancellation consumes no durable quota
-or attempt history. A newly detected occurrence can start fresh after its required baseline.
+Yanosik and Spotify share that control. A pre-send cancellation consumes no durable quota.
+A bounded private diagnostic record remains available for investigation. A newly
+detected occurrence can start fresh after its required baseline.
 Already sent commands cannot be undone; call/HTTP cleanup and durable safety blocks remain.
 See [cancellation and UI](docs/PROGRESS_UI.md).
 
@@ -230,7 +238,11 @@ Roborock credentials are encrypted with Android Keystore in private no-backup st
 short-lived import file is deleted after successful import. App backups are disabled.
 An authorized ADB/debug session is privileged access: keep it restricted and disconnect afterward.
 
-Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
+Generic operational logs contain event/result categories, never credential bundles,
+authorization headers or coordinates. RC4 also keeps a separate private on-device location
+trace with GPS fixes, matching decisions and displayed labels for route correlation. It is
+bounded to 32 MiB and seven days and is never uploaded automatically. Neither journal records
+message contents, login data or tokens. See [diagnostic journals](docs/DIAGNOSTIC_JOURNALS.md).
 RC3 adds departure rejection reasons, cycle/reservation state and per-component locality quality
 to private diagnostics. Capture these before manually opening or updating the app after a
 failure; a missing event and a rejected phone attempt have different causes. The available

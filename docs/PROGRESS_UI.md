@@ -9,13 +9,15 @@ taps without focus; the automation banner receives cancellation touches within i
 notification during a protected action defers opening until the menu is safe. See [trip UI](WHERE_AM_I.md).
 
 
-Current candidate `1.3.0-rc3`, versionCode 23; the original progress baseline was `911d18b`. Java 17, native Views/XML,
+Current integration candidate `1.4.0-rc4`, versionCode 30; the original progress baseline was `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
 ## Presentation
 
-One top-centred banner, maximum 480 dp, at least 16 dp from available window edges.
+One initially top-centred banner, maximum 480 dp, at least 16 dp from available window edges.
+Hold a non-button area for 350 ms to move its floating instance horizontally; the bounded
+position is saved separately from the location card. Inline menu presentation does not drag.
 WindowManager fits normal system bars; no fullscreen/layout-no-limits flags. Wrap-content
 supports larger text. Title 22 sp, detail 18 sp, current platform font and dark background.
 Sand identifies gate events, mint cleaning, blue navigation. Icon and text accompany colour.
@@ -101,8 +103,9 @@ Repeated taps cannot schedule another cancellation. **Przerywam…** remains vis
 transport cleanup; shared exclusion is released only when cleanup finishes. If overlays are
 unavailable, a silent ongoing notification supplies the same immutable explicit service action.
 
-Before external sending, user cancellation drops the pending steps without consuming limits
-or writing durable history of that attempt. It blocks only the current occurrence in RAM.
+Before external sending, user cancellation drops the pending steps without consuming limits.
+RC4 keeps private diagnostic evidence of that attempt; cancellation blocks only the current
+occurrence in RAM and diagnostic rows never restore it after restart.
 After sending, show **Polecenie już wysłane. Zatrzymano dalsze kroki** and preserve reservations;
 no robot stop command or closing of an already launched media app is implied. Gate cancellation
 may only clean up its own call and retains the durable 60-second call block.
@@ -154,11 +157,13 @@ presentation generation. GPS disable/watchdog, configuration changes and teardow
 invalidate presentation. Late cycle results after teardown are ignored. Force-stop may skip
 teardown; Android removes that process's window. This does not replace the ignition-task fix.
 
-The existing two private journal files of about 128 KiB remain the only logger. Added safe
+RC4 retains up to eight private journal files of 1 MiB for at most seven days. Added safe
 categories: PROGRESS_kind_phase_reason with ID, PROGRESS_RESET_reason with GENERATION,
 ACTION_REQUESTED_kind and ACTION_kind_phase_reason with ID, ACTION_UI_EXPIRED and
 PROGRESS_OVERLAY_UNAVAILABLE. Record state transitions, not each fill change. No positions,
-streets, phone fragments, credentials or server payloads. UI never parses logs.
+streets, phone fragments, credentials or server payloads enter this generic journal. UI never
+parses logs. A separate bounded private location trace records raw and displayed place evidence;
+it is not uploaded automatically. See DIAGNOSTIC_JOURNALS.md for durability and failure limits.
 
 ## Verification and remaining acceptance
 

@@ -1,5 +1,29 @@
 # Design decisions
 
+## Confirmed street presentation and durable queue evidence - October 16 RC4
+
+- Keep raw matching quality separate from the street shown on screen. Retain a confirmed
+  street through uncertain observations without a time/distance presentation grace or
+  last-known prefix. Confirm another named or unnamed road with two distinct valid fixes.
+  A confirmed unnamed road hides the street row. This supersedes the local grace below.
+- Reset display memory at a new trip, provider disable, or ten seconds without a valid fix.
+  Older resolver generations cannot restore a pre-reset label. These presentation resets
+  never rearm gate, cleaning or media opportunities.
+- The compact card uses max286dp width, 25sp street and 16sp locality. Floating surfaces
+  support a 350ms non-button hold and horizontal drag with bounded persisted positions;
+  inline controls retain their existing behavior. Hiding the trip card never stops collection.
+- The owner explicitly requested on-device diagnostic evidence before dispatch and across
+  process restarts. Keep cancelled unsent occurrences in a private bounded journal while
+  preserving their existing quota/reservation semantics. This supersedes the historical
+  no-durable-cancellation-history rule, not any action safety rule.
+- Generic journals retain at most eight1MiB files for seven days. Private location decisions
+  and displayed labels retain at most32MiB for seven days, enabled by default and never
+  uploaded automatically. Credential and message contents remain excluded.
+- Do not add Wispr-based admission or delayed-Spotify suppression to the Dudu queue.
+  The separately maintained adapter owns its local dictation/media session.
+- Offline tests, replay, installation and physical acceptance are independent gates. Retained
+  labels are not proof of location correctness; a natural radio failure needs causal evidence.
+
 ## Source-proven short-fragment heading candidate - October 16
 
 - Schema 3 adds `road_short_headings(road_id,heading,support_length)` and binds its policy,
