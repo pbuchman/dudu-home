@@ -24,6 +24,8 @@ public final class TripPresentation implements AutoCloseable {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private View overlay;
     private String notified="";
+    private boolean notificationWasAvailable;
+    private final java.util.function.BooleanSupplier notificationAvailable;
     private boolean closed;
     private long retryAfter;
     private final Runnable tick=new Runnable() { public void run() {
@@ -31,7 +33,8 @@ public final class TripPresentation implements AutoCloseable {
         try { render(controller.snapshot()); } catch(RuntimeException unavailable) { remove(); }
         handler.postDelayed(this,500);
     }};
-    public TripPresentation(Context service) {
+    public TripPresentation(Context service) { this(service,null); }
+    TripPresentation(Context service,java.util.function.BooleanSupplier availability) {
         Context window=Build.VERSION.SDK_INT>=30 ? service.createDisplayContext(service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY))
                 .createWindowContext(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,null) : service;
         context=new ContextThemeWrapper(window,R.style.Theme_DuduGate);
@@ -41,6 +44,8 @@ public final class TripPresentation implements AutoCloseable {
         position=new FloatingPanelPosition(context,windows,preferences,286,this::remove);
         NotificationChannel channel=new NotificationChannel(CHANNEL,"Gdzie jestem",NotificationManager.IMPORTANCE_LOW);
         channel.setSound(null,null); channel.enableVibration(false); notifications.createNotificationChannel(channel);
+        notificationAvailable=availability!=null?availability:()->notifications.areNotificationsEnabled()
+                &&notifications.getNotificationChannel(CHANNEL).getImportance()!=NotificationManager.IMPORTANCE_NONE;
         handler.post(tick);
     }
     public static Intent open(Context context) {
@@ -49,16 +54,17 @@ public final class TripPresentation implements AutoCloseable {
     public void render(TripController.Snapshot state) {
         if(!state.active()) { remove(); hideNotification(); return; }
         String title=state.title(),subtitle=state.subtitle(),text=title+"\n"+subtitle;
-        if(!text.equals(notified)) {
+        boolean allowed=notificationAvailable.getAsBoolean();
+        if(allowed&&(!text.equals(notified)||!notificationWasAvailable)) {
             PendingIntent intent=PendingIntent.getActivity(context,18,open(context),PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             notifications.notify(18,new Notification.Builder(context,CHANNEL).setSmallIcon(R.drawable.ic_launcher)
                     .setContentTitle(title).setContentText(subtitle).setContentIntent(intent)
                     .setStyle(new Notification.BigTextStyle().bigText(text))
                     .setOnlyAlertOnce(true).setOngoing(true).setShowWhen(false).setVisibility(Notification.VISIBILITY_PRIVATE).build());
             notified=text;
-            boolean allowed=notifications.areNotificationsEnabled()&&notifications.getNotificationChannel(CHANNEL).getImportance()!=NotificationManager.IMPORTANCE_NONE;
-            controller.presented("trip_notification",allowed,state,title,subtitle);
         }
+        notificationWasAvailable=allowed;
+        controller.presented("trip_notification",allowed,state,title,subtitle);
         if(!preferences.visible() || TripActivity.visible || HomeActions.visibleActivity()!=null || HomeActions.busy()
                 || !HomeActions.allowsExternalLaunch() || ProgressBus.visible()!=null || !Settings.canDrawOverlays(context)) { remove(); return; }
         if(SystemClock.elapsedRealtime()<retryAfter)return;
@@ -80,7 +86,7 @@ public final class TripPresentation implements AutoCloseable {
         controller.presented("trip_overlay",false,controller.snapshot(),"","");
     }
     private void hideNotification() {
-        notifications.cancel(18);notified="";
+        notifications.cancel(18);notified="";notificationWasAvailable=false;
         controller.presented("trip_notification",false,controller.snapshot(),"","");
     }
     public void close() { closed=true;handler.removeCallbacksAndMessages(null);remove();hideNotification(); }

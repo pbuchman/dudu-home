@@ -21,6 +21,7 @@ final class TripUiChecks {
         check(overlayPreferences.setVisible(true)&&overlayPreferences.savePosition(1f,0f),"initial UI preferences durable");
         checkPreferenceFailure(c);
         checkLocationCard(i, c);
+        TripNotificationChecks.run(i);
         TripController controller=TripController.get(c);
         controller.command("START");state(controller,"ACTIVE");
         android.location.Location stationary=new android.location.Location("gps");
