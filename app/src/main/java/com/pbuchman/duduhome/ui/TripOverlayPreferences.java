@@ -6,8 +6,10 @@ import android.content.SharedPreferences;
 /** Presentation preferences only: no trip state, coordinates or automation settings. */
 public final class TripOverlayPreferences {
     private final SharedPreferences preferences;
-    public TripOverlayPreferences(Context context) {
-        preferences = context.getSharedPreferences("trip_overlay_ui", Context.MODE_PRIVATE);
+    private final float defaultHorizontal;
+    public TripOverlayPreferences(Context context) { this(context,"trip_overlay_ui",1f); }
+    TripOverlayPreferences(Context context,String name,float horizontal) {
+        preferences=context.getSharedPreferences(name,Context.MODE_PRIVATE);defaultHorizontal=horizontal;
     }
     public boolean visible() { return preferences.getBoolean("visible", true); }
     public boolean setVisible(boolean visible) {
@@ -18,7 +20,7 @@ public final class TripOverlayPreferences {
         commit(preferences.edit().putBoolean("visible", previous));
         return false;
     }
-    public float horizontal() { return bounded(preferences.getFloat("horizontal", 1f)); }
+    public float horizontal() { return bounded(preferences.getFloat("horizontal", defaultHorizontal)); }
     public float vertical() { return bounded(preferences.getFloat("vertical", 0f)); }
     public boolean savePosition(float horizontal, float vertical) {
         float previousHorizontal=horizontal(),previousVertical=vertical();

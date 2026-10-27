@@ -21,7 +21,9 @@ public final class ProgressBus {
     private static final String SESSION = java.util.UUID.randomUUID().toString();
     private static final java.util.Map<Long, Control> controls = new java.util.HashMap<>();
     private static java.util.function.Consumer<ProgressModel.State> cancellationListener = ignored -> { };
+    public enum ReservationPolicy { TERMINAL_OR_SEND, SEND_ONLY }
     private static final class Control {
+        ReservationPolicy reservationPolicy = ReservationPolicy.TERMINAL_OR_SEND;
         boolean cancelled, sent, groupSent, finalized;
         java.util.function.BooleanSupplier reservation = () -> true;
         java.util.function.BooleanSupplier admission = () -> true;
@@ -39,7 +41,19 @@ public final class ProgressBus {
         checkThread(); if (cancellationListener == listener) cancellationListener = ignored -> { };
     }
     public static void reserveWith(long id, java.util.function.BooleanSupplier reservation) {
-        synchronized (controls) { controls.computeIfAbsent(id, ignored -> new Control()).reservation = reservation; }
+        reserveWith(id, reservation, ReservationPolicy.TERMINAL_OR_SEND);
+    }
+    public static void reserveWith(long id, java.util.function.BooleanSupplier reservation, ReservationPolicy policy) {
+        synchronized (controls) {
+            Control c = controls.computeIfAbsent(id, ignored -> new Control());
+            c.reservation = reservation; c.reservationPolicy = policy;
+        }
+    }
+    public static boolean sendOnly(long id) {
+        synchronized (controls) { Control c = controls.get(id); return c != null && c.reservationPolicy == ReservationPolicy.SEND_ONLY; }
+    }
+    public static boolean admissionOpen(long id) {
+        synchronized (controls) { Control c = controls.get(id); return c != null && c.admission.getAsBoolean(); }
     }
     public static void allowSendWith(long id, java.util.function.BooleanSupplier admission) {
         synchronized (controls) { controls.computeIfAbsent(id, ignored -> new Control()).admission = admission; }
@@ -78,7 +92,7 @@ public final class ProgressBus {
             if (c == null || c.cancelled || c.finalized || c.sent || !c.admission.getAsBoolean()) return false;
             if (!c.reservation.getAsBoolean() || !ownReservation.getAsBoolean()) return false;
             c.sent = true;
-            Diagnostics.commitAttempt(context, id);
+            Diagnostics.recordAttempt(context,id,"COMMAND_DISPATCH STATE=SENDING REASON=NONE");
             return true;
         }
     }
@@ -93,6 +107,7 @@ public final class ProgressBus {
             if (c == null || c.cancelled || c.finalized) return false;
             c.cancelled = true;
         }
+        Diagnostics.recordAttempt(token.id(),"ATTEMPT_CANCEL STATE=CANCELLING REASON="+((c.sent || c.groupSent) ? "COMMAND_SENT" : "USER_CANCELLED"));
         model.cancelByUser(token.id(), (c.sent || c.groupSent) ? Reason.COMMAND_SENT : Reason.USER_CANCELLED, true, SystemClock.elapsedRealtime());
         cancellationListener.accept(state);
         boolean pending = false;
@@ -106,6 +121,7 @@ public final class ProgressBus {
         if (Looper.myLooper() != Looper.getMainLooper()) { main.post(() -> finishCancellation(id)); return; }
         Control c;
         synchronized (controls) { c = controls.get(id); if (c == null || !c.cancelled) return; c.finalized = true; }
+        Diagnostics.recordAttempt(id,"ATTEMPT_CANCEL STATE=CANCELLED REASON="+((c.sent || c.groupSent) ? "COMMAND_SENT" : "USER_CANCELLED"));
         model.cancelByUser(id, (c.sent || c.groupSent) ? Reason.COMMAND_SENT : Reason.USER_CANCELLED, false, SystemClock.elapsedRealtime());
         notifyObservers();
     }
@@ -165,17 +181,18 @@ public final class ProgressBus {
             Control control = controls.get(id);
             if (control != null && control.cancelled) return;
             if (control != null && ProgressModel.terminal(phase) && !control.finalized) {
-                if (!control.sent) control.reservation.getAsBoolean();
+                if (!control.sent && control.reservationPolicy == ReservationPolicy.TERMINAL_OR_SEND) control.reservation.getAsBoolean();
                 control.finalized = true;
                 Diagnostics.commitAttempt(app, id);
             }
         }
         ProgressModel.State before = model.attempt(id);
-        model.update(id, phase, reason, SystemClock.elapsedRealtime());
+        model.update(id, phase, reason, SystemClock.elapsedRealtime(), sendOnly(id) ? 2500 : 2000);
         ProgressModel.State after = model.attempt(id);
         if (after != null && after != before) {
             Diagnostics.recordAttempt(app, id, "ACTION_" + after.kind() + "_" + phase + "_" + reason + " ID=" + id);
             notifyObservers();
+            if (ProgressModel.terminal(phase)) HomeActions.schedulingChanged();
         }
     }
     public static Kind kind(HomeEvent event) {

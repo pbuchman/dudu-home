@@ -1,5 +1,34 @@
 # Ordered automation and local Spotify playback
 
+## Full departure continuation (1.5.0)
+
+A successful own automatic DEPARTURE_STARTED call queues independent Full Cleaning,
+then Yanosik and Spotify, including while stationary without an earlier stop or checkpoint.
+The captured attempt, runtime generation and driving cycle must still match. Duplicated,
+manual, return, failed, cancelled and stale gate results cannot create a continuation.
+OUTBOUND_CHECKPOINT remains passive route evidence and has no command authority or cleaning countdown.
+
+Cleaning has a separate attempt and cancellation scope. Cancelling media does not cancel
+cleaning; cancelling cleaning permits remaining media after transport cleanup. No robot stop
+command is introduced. The gate retains its cleanup and five-second success display;
+Spotify waits ten seconds after a Yanosik launch request. Existing manual UI priority remains.
+RAM tasks expire after 120 seconds and are never replayed after restart/configuration/cycle reset.
+Each deadline starts at enqueue; cleaning expiry never revives media whose own deadline expired.
+
+Automatic cleaning skips/errors/uncertain results display for 2.5 seconds and never open a
+persistent error or credentials form. Both that presentation and transport cleanup must end
+before media. Accepted cleaning says only "Zlecono sprzątanie"; it is not robot completion.
+Used quota says "Dzisiejsza próba sprzątania została już wykorzystana".
+Manual cleaning and manual-only Mop retain their existing behavior.
+
+ProgressBus uses SEND_ONLY reservation policy for automatic cleaning; other actions retain
+the existing policy. DailyCleaning commits synchronously at claimSend immediately before
+HTTP admission. Unsent cancellation, expiry, missing configuration or failure does not consume
+the day and does not retry this occurrence. A later real automatic departure may try.
+After admission, retain the reservation even for server error, timeout or uncertainty.
+Failed persistence prevents sending. Check Europe/Warsaw date again at admission, including
+a UI dispatch before midnight. Preserve historical last_attempt_day conservatively.
+
 ## Passive trip screen
 
 Gdzie jestem does not register as protected manual MainActivity UI and never acquires the
@@ -33,14 +62,16 @@ area requires a new decision. Wake/configuration reset and service replacement d
 process-local completion, and old executor callbacks cannot satisfy the new generation.
 No/disabled home configuration preserves independent driving startup and manual actions.
 
-The barrier does not invent a call when the existing detector cannot arm: departure still
-requires its stationary baseline and sustained directional movement. If no call succeeds,
+The barrier does not invent a call when the existing detector cannot arm: RC3 departure
+requires a qualified parking opportunity and three seconds of movement in any direction.
+Cancellation rearming retains its separate stationary baseline. If no call succeeds,
 media remains deferred while the area applies. Investigate missing calls independently;
 do not weaken Bluetooth/cooldown rules or reset consumed events to force a result.
 
 Safe diagnostics add `MEDIA_GATE_AREA_UNKNOWN/NONE/DEPARTURE/RETURN` on transitions and
 `MEDIA_GATE_CALL_COMPLETED` when a current-area call releases the barrier. No positions,
-phone data or extra raw GPS logger. The queued-action deadlines below remain unchanged;
+phone data enter these generic events. RC4's separate private location trace does not drive
+the queue. The queued-action deadlines below remain unchanged;
 media is not queued/reserved merely because motion occurred inside the blocked area.
 
 ## Automatic departure continuation (1.4.0-rc5)
@@ -88,8 +119,8 @@ ten-second Yanosik grace, with no repeated Yanosik launch afterward.
 
 Pending cleaning is reserved in RAM while queued, including behind a busy gate. Durable
 reservation is committed immediately before external sending. Explicit user cancellation
-before sending drops that RAM reservation; non-user failure, missing configuration and expiry
-retain the conservative consumed-limit behavior. Already sent/uncertain commands stay consumed. Crossing the calendar-day
+before sending drops that RAM reservation; unsent failure, missing configuration and expiry
+leave the day available for a later departure. Already sent/uncertain commands stay consumed. Crossing the calendar-day
 boundary expires pending cleaning. Manual cleaning is independent and Mop remains manual only.
 No route thresholds, Bluetooth safety checks, cooldown or Roborock protocol are changed.
 
@@ -116,16 +147,18 @@ only that occurrence's timers, pending queue tasks and unsent callbacks. Yanosik
 share a group, so cancelling after Yanosik launch also removes pending Spotify. Already opened
 apps remain open. No global reset or gate-area bypass is performed.
 
-Pre-send cancellation is kept in RAM and discards buffered diagnostics, consuming no durable
-reservation. Sending and cancellation have a serialized admission boundary; if cancellation
+Pre-send cancellation consumes no durable reservation. RC4 keeps bounded private diagnostic
+evidence independently of the process-local cancelled occurrence. Sending and cancellation
+have a serialized admission boundary; if cancellation
 wins, no external command is allowed. Once sending starts, retain durable protection even for
 an uncertain result. Binder/HTTP cleanup holds the shared lease; no stop/pause/dock is sent.
 
 Driving rearm requires a ten-second fresh, accurate standstill below 0.5 m/s, then a new complete
-motion test. Departure/cleaning requires five seconds stationary within 45 m of parking;
+motion test. Cancelled departure requires five seconds stationary within 45 m of parking;
+cleaning has no detection baseline and only follows a new successful automatic departure;
 return requires five seconds outside the 300-metre junction approach, then a new return.
 Accuracy <=15 m and fix age <=3 s qualify the driving standstill; invalid GPS breaks dwell.
-Restart never replays queue entries or restores cancellation history. Existing sent markers
+Restart never replays queue entries or restores cancellation state from diagnostic history. Existing sent markers
 and conservative update compatibility remain. See [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Spotify transport
@@ -171,5 +204,5 @@ stop at that documented limitation rather than adding an unapproved SDK or UI wo
 
 Then test working-Yanosik skip, gate/cleaning contention, manual-menu protection, real sleep/wake
 and short stops without repeating sent operations; after explicit cancellation verify the new
-qualified standstill-and-motion sequence. Use existing backup/signature/import procedures, never clear
+qualified standstill-and-motion sequence. Use current guarded signature/import procedures, never clear
 radio data. Confirm audible radio output and Yanosik warnings, not just process presence.

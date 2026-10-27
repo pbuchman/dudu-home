@@ -18,6 +18,10 @@ import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 public final class AutomationBanner {
     private AutomationBanner() { }
     public static View create(Context c) { return LayoutInflater.from(c).inflate(R.layout.automation_progress, null); }
+    public static View createFloating(Context c) {
+        View view=LayoutInflater.from(c).inflate(R.layout.automation_progress_floating,null);
+        view.setTag(R.id.banner_icon,Boolean.TRUE);return view;
+    }
     public static void render(View view, ProgressModel.State state) {
         if (state.equals(view.getTag())) return;
         view.setTag(state);
@@ -29,7 +33,8 @@ public final class AutomationBanner {
             case CLEANING -> R.color.cleaning_mint; default -> R.color.mop_sky; };
         ((TextView) view.findViewById(R.id.banner_title)).setText(title);
         ((TextView) view.findViewById(R.id.banner_detail)).setText(detail(state));
-        ((ImageView) view.findViewById(R.id.banner_icon)).setImageResource(switch (state.kind()) {
+        boolean compact=Boolean.TRUE.equals(view.getTag(R.id.banner_icon));
+        ((ImageView) view.findViewById(R.id.banner_icon)).setImageResource(compact?R.drawable.ic_navigation_arrow:switch (state.kind()) {
             case DEPARTURE, RETURN -> R.drawable.art_gate; case CLEANING -> R.drawable.art_cleaning;
             default -> R.drawable.ic_launcher;
         });
@@ -41,7 +46,8 @@ public final class AutomationBanner {
         boolean cancellable = ProgressBus.cancellable(state);
         cancel.setVisibility(cancellable || state.phase() == Phase.CANCELLING ? View.VISIBLE : View.GONE);
         cancel.setEnabled(cancellable);
-        cancel.setText(state.phase() == Phase.CANCELLING ? R.string.cancelling_attempt : R.string.cancel_attempt);
+        cancel.setText(state.phase()==Phase.CANCELLING?view.getContext().getString(R.string.cancelling_attempt):compact?"Anuluj":view.getContext().getString(R.string.cancel_attempt));
+        cancel.setContentDescription(view.getContext().getString(R.string.cancel_attempt));
         AttemptToken token = ProgressBus.token(state);
         cancel.setOnClickListener(v -> {
             cancel.setEnabled(false);
@@ -64,6 +70,7 @@ public final class AutomationBanner {
             case COOLDOWN -> R.string.progress_cooldown;
             case NO_NUMBER -> R.string.progress_no_number;
             case NO_CONFIG -> R.string.progress_no_config;
+            case DAILY_LIMIT -> R.string.automatic_cleaning_used;
             case DAILY_LIMIT_OR_STORAGE -> R.string.progress_cleaning_blocked;
             case UI_UNAVAILABLE -> R.string.progress_ui_unavailable;
             case TARGET_UNAVAILABLE -> R.string.progress_target_unavailable;
@@ -80,6 +87,9 @@ public final class AutomationBanner {
             case BUSY_OR_MAINTENANCE, UI_BUSY -> R.string.operation_busy;
             default -> R.string.progress_conditions;
         };
+        if (s.kind() == Kind.CLEANING && s.phase() == Phase.UNKNOWN) return R.string.cleaning_unknown;
+        if (s.kind() == Kind.CLEANING && s.phase() == Phase.ERROR) return R.string.cleaning_error;
+        if (s.kind() == Kind.CLEANING && s.phase() == Phase.SUCCEEDED) return R.string.automatic_cleaning_accepted;
         if (s.kind() == Kind.YANOSIK && s.phase() == Phase.SUCCEEDED) return R.string.progress_launch_requested;
         if (s.kind() == Kind.SPOTIFY && s.phase() == Phase.SUCCEEDED) return R.string.spotify_playing;
         if (s.kind() == Kind.SPOTIFY && s.phase() == Phase.STARTED) return R.string.spotify_starting;

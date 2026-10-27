@@ -20,15 +20,20 @@ import android.widget.EditText;
 
 /** Dependency-free checks. Refuses to run on a physical radio. */
 public final class SafetyChecks extends Instrumentation {
-    private boolean gallery, national, tripSession;
+    private boolean gallery, national, tripSession, windowLayouts;
     private String tripOverlay;
-    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); tripSession="true".equals(arguments.getString("tripSession")); tripOverlay=arguments.getString("tripOverlay"); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
+    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); windowLayouts="true".equals(arguments.getString("windowLayouts")); tripSession="true".equals(arguments.getString("tripSession")); tripOverlay=arguments.getString("tripOverlay"); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
 
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
             require(Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish"),
                     "Emulator only: refusing to touch physical device settings");
+            if (windowLayouts) {
+                com.pbuchman.duduhome.ui.WindowLayoutChecks.run(this);
+                result.putString("result", "PASS: responsive native windows and synthetic progress/street rendering; no GPS or external actions");
+                finish(Activity.RESULT_OK, result); return;
+            }
             if (tripSession) {
                 com.pbuchman.duduhome.trip.TripChecks.run(this);
                 result.putString("result", "PASS: focused trip session migration, clocks, persistence, stale reset work and save failures; no external actions");
@@ -110,6 +115,7 @@ public final class SafetyChecks extends Instrumentation {
             require(cleaned.await(5, java.util.concurrent.TimeUnit.SECONDS) && !HomeActions.busy(),
                     "lifecycle close releases shared lease only after cleanup");
             RoborockChecks.run(this);
+            AutomaticCleaningUiChecks.run(this);
             MapsChecks.run(this);
             NavigationChecks.run(this);
             SpotifyChecks.run();

@@ -39,7 +39,7 @@ while IFS= read -r DUDU_PACKAGE; do
     fi
 done <<< "$DUDU_PACKAGES"
 if [[ "$DUDU_INSTALLED" == true ]]; then
-    echo "Aktualizacja wymaga kopii i prywatnej konfiguracji: użyj scripts/configure-device.py z --apk i --backup-dir." >&2
+    echo "Do zweryfikowanej aktualizacji z prywatną konfiguracją użyj scripts/install-radio.py; aktualizacja nie tworzy kopii zapasowych." >&2
     exit 1
 fi
 

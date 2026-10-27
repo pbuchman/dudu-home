@@ -1,5 +1,10 @@
 # Dudu Home - plan wdrożenia i odbioru
 
+## Aktualizacja 1.5
+
+Bieżący zakres, testy i warunki wydania opisuje [RELEASE_1_5_0_RC1.md](RELEASE_1_5_0_RC1.md).
+Poniższe plany są historyczne; sprzątanie nie jest już komendą punktu kontrolnego.
+
 ## Aktualizacja 0.5.6
 
 Bieżąca kolejka i start Spotify są opisane w [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).

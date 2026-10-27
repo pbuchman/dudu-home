@@ -79,10 +79,18 @@ Brak odpowiedzi jest wynikiem **nieznanym**: serwer mógł przyjąć żądanie. 
 HTTP nie cofa zlecenia, nie zatrzymuje robota i nie wywołuje `stop`. Ta integracja nie gwarantuje
 idempotencji po stronie chmury. Ponowienie ręczne jest nową świadomą próbą.
 
+## Automatyczna kontynuacja od 1.5
+
+Tylko sukces własnego automatycznego wyjazdu tworzy próbę Full Cleaning. Punkt kontrolny
+nie wysyła komend. Brak konfiguracji, pominięcie i błąd przed wysyłką nie rezerwują dnia;
+po dopuszczeniu wysyłki błąd lub niepewność zachowują limit. Stare last_attempt_day pozostaje
+ważne. Automatyczny błąd nie otwiera formularza: komunikat trwa 2,5 s, potem po cleanup
+mogą ruszyć media. Ręczne sprzątanie i Mop zachowują swoje ekrany i nie używają tego limitu.
+
 ## Stan trwały i bezpieczeństwo
 
 - `daily_cleaning.last_attempt_day`: `LocalDate` Europe/Warsaw jako epoch-day, zapis `commit()`
-  przed dispatch. Wszystkie daty mniejsze/równe zapisanej są blokowane dla automatyzacji.
+  przy claimSend bezpośrednio przed dopuszczeniem HTTP, po sprawdzeniu dnia zadania. Wszystkie daty mniejsze/równe zapisanej są blokowane dla automatyzacji.
 - `gate_settings`: numer, konfiguracja cooldown i rezerwacja dial. Wykonawca zachowuje osobną
   blokadę procesu i kontrolę przy samym dial, nie tylko w UI.
 - `home_detector`: flagi zużytych zdarzeń i hash samych punktów. Zmiana autoryzacji nie resetuje trasy.

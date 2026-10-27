@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Private atomic import; optional backed-up APK update. Never launches or triggers actions."""
+"""Private atomic import; optional in-place APK update. Never launches or triggers actions."""
 from navigation_config import read_navigation, validate_navigation
+from radio_update import Blocked
 import argparse
 import hashlib
 import json
@@ -10,8 +11,6 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-import tempfile
-import tarfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,10 +18,11 @@ PACKAGE = 'com.pbuchman.duduhome'
 
 
 def private_path(value):
-    path = Path(value).resolve()
+    from radio_update import regular_file,managed_path
+    path = managed_path(value)
     if path.is_relative_to(ROOT) or any((parent/'.git').exists() for parent in (path, *path.parents)):
         raise ValueError('Private paths must be outside repositories')
-    return path
+    return regular_file(path)
 
 
 def validate(data, robot, enabled, navigation=None):
@@ -76,7 +76,7 @@ def main():
     p.add_argument('--roborock', type=private_path)
     p.add_argument('--navigation', type=private_path)
     p.add_argument('--enable-automation', action='store_true'); p.add_argument('--dry-run', action='store_true')
-    p.add_argument('--apk', type=Path); p.add_argument('--backup-dir', type=private_path)
+    p.add_argument('--apk', type=Path)
     sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home()/'Library/Android/sdk')))
     p.add_argument('--adb', default=str(sdk/'platform-tools/adb'))
     p.add_argument('--apksigner', default=str(sdk/'build-tools/35.0.0/apksigner'))
@@ -104,52 +104,23 @@ def main():
     navigation_schema = payload.get('navigation', {}).get('schema_version', 1)
     if navigation_schema == 2 and not a.apk and int(version.group(1)) < 17:
         raise ValueError('Install navigation groups build before importing schema 2')
-    from radio_update import wait_idle
-    if not a.apk: wait_idle(adb)
+    from radio_update import wait_idle, validate_apk, block_update
     if a.apk:
-        if not a.backup_dir: raise ValueError('--backup-dir required for APK update')
-        a.backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if a.backup_dir.stat().st_mode & 0o077: raise ValueError('Backup directory must be owner-only (chmod 700)')
-        metadata = subprocess.check_output([a.aapt, 'dump', 'badging', str(a.apk)], stderr=subprocess.PIPE).decode()
-        target = re.search(r"package: name='([^']+)' versionCode='(\d+)'", metadata)
-        if not target or target.group(1) != PACKAGE or int(target.group(2)) < 3:
-            raise ValueError('APK is not the expected Full Cleaning application')
-        if navigation_schema == 2 and int(target.group(2)) < 17:
-            raise ValueError('APK does not support navigation schema 2')
-        if int(target.group(2)) < int(version.group(1)):
-            raise ValueError('Refusing APK downgrade; use a documented recovery procedure')
-        backup = Path(tempfile.mkdtemp(prefix='before-update-', dir=a.backup_dir))
-        remote = run(['shell', 'pm', 'path', PACKAGE]).decode().strip().removeprefix('package:')
-        if not remote.startswith('/') or '\n' in remote: raise ValueError('Unsupported installed APK layout')
-        run(['pull', remote, str(backup/'installed.apk')])
-        def cert(apk):
-            output = subprocess.check_output([a.apksigner, 'verify', '--print-certs', str(apk)], stderr=subprocess.PIPE).decode()
-            return re.findall(r'Signer #\d+ certificate SHA-256 digest: (\w+)', output)
-        old, new = cert(backup/'installed.apk'), cert(a.apk)
-        if not old or old != new: raise ValueError('Signature mismatch; backup preserved, no update')
-        wait_idle(adb)
-        # Verified idle observations; stop writes only after cleanup, before snapshot.
-        run(['shell', 'am', 'force-stop', PACKAGE])
-        (backup/'app-data.tar').write_bytes(run(['exec-out', 'run-as', PACKAGE, 'tar', '-cf', '-', '.']))
-        # exec-out may hide a failed remote command's exit status. Validate the archive itself.
-        with tarfile.open(backup/'app-data.tar') as archive:
-            names = [member.name for member in archive.getmembers()]
-            if not names or (payload['gate_number'] is not None and not any(
-                    name.removeprefix('./') == 'shared_prefs/gate_settings.xml' for name in names)):
-                raise ValueError('Incomplete application backup; no update')
-        manifest = {x.name: hashlib.sha256(x.read_bytes()).hexdigest() for x in backup.iterdir() if x.is_file()}
-        (backup/'sha256.json').write_text(json.dumps(manifest, indent=2))
-        for name, digest in manifest.items():
-            if hashlib.sha256((backup/name).read_bytes()).hexdigest() != digest: raise ValueError('Backup checksum mismatch')
-        run(['shell', 'am', 'force-stop', PACKAGE])
-        shell(f"run-as {PACKAGE} sh -c 'umask 077; mkdir -p no_backup; touch no_backup/maintenance'")
-        disabled = dict(schema_version=2, points=payload['points'], automation_enabled=False)
-        shell(f"run-as {PACKAGE} sh -c 'cat > no_backup/home-config.json'", input=json.dumps(disabled).encode())
-        run(['install', '-r', str(a.apk)])
-        version = re.search(r'versionCode=(\d+)', run(['shell', 'dumpsys', 'package', PACKAGE]).decode())
+        validate_apk(a.apk,a.aapt,a.apksigner,int(version.group(1)),navigation_schema)
+    # Markers cannot interrupt an existing call. Observe idle first, block new admissions,
+    # then observe again before force-stop. Existing configuration is never disabled/replaced.
+    wait_idle(adb)
+    block_update(adb,verification=bool(a.apk))
+    wait_idle(adb)
+    run(['shell','am','force-stop',PACKAGE])
+    if a.apk:
+        # Android enforces installed signing identity; never pull an old APK or bypass rejection.
+        run(['install','-r',str(a.apk)])
+        version=re.search(r'versionCode=(\d+)',run(['shell','dumpsys','package',PACKAGE]).decode())
+        if not version:raise ValueError('Updated application version unavailable; update remains blocked')
     if int(version.group(1)) < 3: raise ValueError('Install Full Cleaning build before importing')
     run(['shell', 'am', 'force-stop', PACKAGE])
-    command = f"run-as {PACKAGE} sh -c 'umask 077; mkdir -p no_backup; touch no_backup/maintenance; cat > no_backup/pending-config.json.tmp && mv no_backup/pending-config.json.tmp no_backup/pending-config.json'"
+    command = f"run-as {PACKAGE} sh -c 'set -e; test ! -L no_backup; test ! -L no_backup/pending-config.json; test ! -L no_backup/pending-config.json.tmp; umask 077; mkdir -p no_backup; touch no_backup/maintenance; cat > no_backup/pending-config.json.tmp && mv no_backup/pending-config.json.tmp no_backup/pending-config.json'"
     encoded = json.dumps(payload).encode(); shell(command, input=encoded)
     copied = run(['exec-out', 'run-as', PACKAGE, 'cat', 'no_backup/pending-config.json'])
     if hashlib.sha256(copied).digest() != hashlib.sha256(encoded).digest(): raise ValueError('Import checksum mismatch; automation suspended')
@@ -161,12 +132,13 @@ def main():
         for perm in permissions: run(['shell', 'pm', 'grant', PACKAGE, 'android.permission.'+perm])
         run(['shell', 'appops', 'set', PACKAGE, 'SYSTEM_ALERT_WINDOW', 'allow'])
     print('Private configuration staged and checksum verified. No launch, call or cleaning.')
-    print('Open Dudu Home to consume import; verify settings and permissions.')
+    if a.apk:print('APK verification remains blocked. Complete normal APK updates through install-radio.py.')
+    else:print('Open Dudu Home to consume the inert import. An existing outer verification block is retained.')
 
 
 if __name__ == '__main__':
     try: main()
-    except (ValueError, TypeError, OSError, subprocess.SubprocessError, ET.ParseError, tarfile.TarError) as error:
-        print('FAILED: ' + (str(error) if isinstance(error, ValueError) and not isinstance(error, json.JSONDecodeError)
+    except (Blocked, ValueError, TypeError, OSError, subprocess.SubprocessError, ET.ParseError) as error:
+        print('FAILED: ' + (str(error) if isinstance(error, (Blocked, ValueError)) and not isinstance(error, json.JSONDecodeError)
                            else type(error).__name__), file=sys.stderr)
         raise SystemExit(1)

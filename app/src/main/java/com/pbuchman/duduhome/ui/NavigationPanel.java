@@ -115,8 +115,8 @@ final class NavigationPanel {
             tile.setOnClickListener(v -> {
                 if (busy() || launching || !allowed.getAsBoolean()) return;
                 if (empty) {
-                    new AlertDialog.Builder(activity).setTitle(R.string.navigation_empty)
-                            .setMessage(R.string.navigation_empty_help).setPositiveButton("OK", null).show();
+                    ContentDialogs.show(activity, new AlertDialog.Builder(activity).setTitle(R.string.navigation_empty)
+                            .setMessage(R.string.navigation_empty_help).setPositiveButton("OK", null));
                     return;
                 }
                 if (multiple) showSelector(slotIndex, group);
@@ -151,9 +151,12 @@ final class NavigationPanel {
             }
         };
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        LinearLayout content = new LinearLayout(activity);
+        int width = ContentDialogs.width(activity, 840);
+        boolean compact = width < dp(600), narrow = width < dp(420);
+        int padding = compact ? 16 : 24;
+        LinearLayout content = new SelectorLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(28), dp(28), dp(28), dp(24));
+        content.setPadding(dp(padding), dp(18), dp(padding), dp(18));
         content.setBackground(shape(0xff1a303b, 28));
         LinearLayout header = new LinearLayout(activity);
         header.setGravity(Gravity.CENTER_VERTICAL);
@@ -164,20 +167,22 @@ final class NavigationPanel {
             default -> R.drawable.art_navigation_pin;
         });
         art.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        header.addView(art, new LinearLayout.LayoutParams(dp(68), dp(68)));
+        if (!narrow) header.addView(art, new LinearLayout.LayoutParams(dp(48), dp(48)));
         LinearLayout heading = new LinearLayout(activity); heading.setOrientation(LinearLayout.VERTICAL);
-        TextView title = words(group.label(), 32, R.color.text_primary);
+        TextView title = words(group.label(), compact ? 26 : 28, R.color.text_primary);
         if (android.os.Build.VERSION.SDK_INT >= 28) title.setAccessibilityHeading(true);
         heading.addView(title);
-        heading.addView(words(activity.getString(R.string.navigation_choose), 20, R.color.text_secondary));
+        heading.addView(words(activity.getString(R.string.navigation_choose), 18, R.color.text_secondary));
+        ScrollView headingScroll = new ScrollView(activity); headingScroll.setFillViewport(false);
+        headingScroll.addView(heading);
         LinearLayout.LayoutParams headingSize = new LinearLayout.LayoutParams(0, -2, 1);
-        headingSize.setMarginStart(dp(16)); header.addView(heading, headingSize);
+        headingSize.setMarginStart(narrow ? 0 : dp(12)); headingSize.setMarginEnd(dp(8)); header.addView(headingScroll, headingSize);
         ImageButton close = new ImageButton(activity);
         close.setImageResource(R.drawable.ic_navigation_close);
         close.setContentDescription(activity.getString(R.string.navigation_close));
         close.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44ffffff), shape(0xff263f4b, 16), null));
         close.setOnClickListener(v -> dialog.dismiss());
-        header.addView(close, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        header.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
         content.addView(header);
         ScrollView scroll = new ScrollView(activity);
         scroll.setFillViewport(false);
@@ -185,23 +190,23 @@ final class NavigationPanel {
         for (NavigationConfig.Destination d : group.destinations()) {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(18), dp(18), dp(18), dp(18)); row.setMinimumHeight(dp(124));
+            row.setPadding(dp(14), dp(12), dp(14), dp(12)); row.setMinimumHeight(dp(88));
             row.setBackgroundResource(R.drawable.tile_cleaning);
             ImageView pin = new ImageView(activity); pin.setImageResource(R.drawable.art_navigation_pin);
             pin.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            row.addView(pin, new LinearLayout.LayoutParams(dp(64), dp(74)));
+            if (!narrow) row.addView(pin, new LinearLayout.LayoutParams(dp(44), dp(48)));
             LinearLayout labels = new LinearLayout(activity); labels.setOrientation(LinearLayout.VERTICAL);
             labels.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
-            labels.addView(words(d.label(), 26, R.color.tile_ink));
+            labels.addView(words(d.label(), 22, R.color.tile_ink));
             if (!d.address().isEmpty()) {
-                TextView address = words(d.address(), 18, R.color.tile_ink);
-                address.setPadding(0, dp(8), 0, 0); labels.addView(address);
+                TextView address = words(d.address(), 16, R.color.tile_ink);
+                address.setPadding(0, dp(5), 0, 0); labels.addView(address);
             }
             LinearLayout.LayoutParams labelsSize = new LinearLayout.LayoutParams(0, -2, 1);
-            labelsSize.setMarginStart(dp(16)); row.addView(labels, labelsSize);
+            labelsSize.setMarginStart(narrow ? 0 : dp(12)); row.addView(labels, labelsSize);
             TextView go = words(activity.getString(R.string.navigation_drive), 20, R.color.tile_ink);
             go.setPadding(dp(12), 0, dp(10), 0);
-            go.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); row.addView(go);
+            go.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); if (!compact) row.addView(go);
             ImageView arrow = new ImageView(activity); arrow.setImageResource(R.drawable.ic_navigation_arrow);
             arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             row.addView(arrow, new LinearLayout.LayoutParams(dp(24), dp(24)));
@@ -219,27 +224,14 @@ final class NavigationPanel {
                 if (launch(d)) dialog.dismiss();
             });
             LinearLayout.LayoutParams rowSize = new LinearLayout.LayoutParams(-1, -2);
-            if (list.getChildCount() > 0) rowSize.topMargin = dp(14);
+            if (list.getChildCount() > 0) rowSize.topMargin = dp(10);
             list.addView(row, rowSize);
         }
         scroll.addView(list);
-        // Measure wrapped labels at the actual dialog width before bounding the scroll area.
-        int availableWidth = activity.getWindow().getDecorView().getWidth();
-        int availableHeight = activity.getWindow().getDecorView().getHeight();
-        if (availableWidth == 0) availableWidth = activity.getResources().getDisplayMetrics().widthPixels;
-        if (availableHeight == 0) availableHeight = activity.getResources().getDisplayMetrics().heightPixels;
-        int width = Math.min(dp(840), availableWidth - dp(32));
-        header.measure(View.MeasureSpec.makeMeasureSpec(width - dp(56), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        list.measure(View.MeasureSpec.makeMeasureSpec(width - dp(56), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         TextView footer = words(activity.getString(R.string.navigation_choice_help), 16, R.color.text_secondary);
-        footer.measure(View.MeasureSpec.makeMeasureSpec(width - dp(56), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        int listHeight = Math.max(dp(64), availableHeight - header.getMeasuredHeight() - footer.getMeasuredHeight() - dp(132));
-        LinearLayout.LayoutParams scrollSize = new LinearLayout.LayoutParams(-1, Math.min(listHeight, list.getMeasuredHeight()));
-        scrollSize.topMargin = dp(24); content.addView(scroll, scrollSize);
-        LinearLayout.LayoutParams footerSize = new LinearLayout.LayoutParams(-1, -2); footerSize.topMargin = dp(18);
+        LinearLayout.LayoutParams scrollSize = new LinearLayout.LayoutParams(-1, -2);
+        scrollSize.topMargin = dp(16); content.addView(scroll, scrollSize);
+        LinearLayout.LayoutParams footerSize = new LinearLayout.LayoutParams(-1, -2); footerSize.topMargin = dp(12);
         content.addView(footer, footerSize);
         dialog.setContentView(content); dialog.setCanceledOnTouchOutside(true);
         selector = dialog; selectedSlot = slot;
@@ -255,6 +247,28 @@ final class NavigationPanel {
             window.setAttributes(attributes);
         }
         HomeActions.schedulingChanged();
+    }
+    /** Re-measure wrapped labels whenever the native window's available size changes. */
+    private final class SelectorLayout extends LinearLayout {
+        SelectorLayout(Activity owner) { super(owner); }
+        @Override protected void onMeasure(int widthSpec, int heightSpec) {
+            int width = MeasureSpec.getSize(widthSpec) - getPaddingLeft() - getPaddingRight();
+            int limit = Math.max(1, ContentDialogs.available(activity).height() - dp(32));
+            if (MeasureSpec.getMode(heightSpec) != MeasureSpec.UNSPECIFIED) limit = Math.min(limit, MeasureSpec.getSize(heightSpec));
+            View header = getChildAt(0), scroll = getChildAt(1), footer = getChildAt(2);
+            int exact = MeasureSpec.makeMeasureSpec(Math.max(1, width), MeasureSpec.EXACTLY);
+            int natural = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+            // Very long group names scroll beside the persistent close control rather than truncating.
+            header.measure(exact, MeasureSpec.makeMeasureSpec(Math.max(dp(48), limit / 3), MeasureSpec.AT_MOST));
+            header.getLayoutParams().height = header.getMeasuredHeight();
+            footer.measure(exact, natural);
+            int remaining = Math.max(1, limit - getPaddingTop() - getPaddingBottom()
+                    - header.getMeasuredHeight() - footer.getMeasuredHeight() - dp(28));
+            scroll.getLayoutParams().height = LayoutParams.WRAP_CONTENT;
+            scroll.measure(exact, MeasureSpec.makeMeasureSpec(remaining, MeasureSpec.AT_MOST));
+            scroll.getLayoutParams().height = scroll.getMeasuredHeight();
+            super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(limit, MeasureSpec.AT_MOST));
+        }
     }
     private void selectionDismissed(int slot) {
         selector = null; selectedSlot = -1;

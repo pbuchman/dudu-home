@@ -58,12 +58,15 @@ public final class ProgressModel {
         return id;
     }
     public void update(long id, Phase phase, Reason reason, long now) {
+        update(id, phase, reason, now, 2000);
+    }
+    public void update(long id, Phase phase, Reason reason, long now, long presentationMs) {
         State s = attempts.get(id);
         if (s == null || terminal(s.phase)) return;
         if (s.phase == phase && s.reason == reason) return;
         if (!terminal(phase) && !canAdvance(s.phase, phase)) return;
         attempts.put(id, new State(id, s.generation, s.kind, phase, 1, reason,
-                s.validUntil, terminal(phase) ? now + 2000 : Long.MAX_VALUE, s.evidenceId, s.stage));
+                s.validUntil, terminal(phase) ? now + presentationMs : Long.MAX_VALUE, s.evidenceId, s.stage));
     }
     private static boolean canAdvance(Phase before, Phase after) {
         if (after == Phase.CANCELLING) return true;

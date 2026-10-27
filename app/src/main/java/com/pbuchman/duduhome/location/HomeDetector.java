@@ -341,9 +341,6 @@ public final class HomeDetector {
                 fix.elapsedMs + 3000, lost);
         observeReturn(fix, events.contains(HomeEvent.RETURN_APPROACH), junctionDistance,
                 approachDistance, gateDistance, jx, lost);
-        progress.update(CLEANING, outboundDeparture && !checkpointConsumed && !cleaningIgnored && previous != null
-                        && gateDistance > previous.distance(geometry.gate) && fix.speed >= 0.7,
-                events.contains(HomeEvent.OUTBOUND_CHECKPOINT), 0.5, fix.elapsedMs + 3000, lost);
         previous = p;
         return events;
     }

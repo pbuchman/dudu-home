@@ -72,17 +72,40 @@ class PrivateToolsTests(unittest.TestCase):
             source = root/'input.json'; source.write_text(json.dumps({'schema_version': 2, 'points': None}))
             nav = root/'places.json'; nav.write_text(json.dumps({'schema_version': 2, 'slots': []}))
             source.chmod(0o600); nav.chmod(0o600)
+            (root/'fixture.apk').write_bytes(b'synthetic')
             base = ['configure-device.py', 'synthetic-device', str(source), '--navigation', str(nav)]
             def observed(args, **kwargs):
                 if args[-3:] == ['dumpsys', 'package', 'com.pbuchman.duduhome']: return b'versionCode=16'
                 if 'badging' in args: return b"package: name='com.pbuchman.duduhome' versionCode='16'"
+                if '--print-certs' in args:return ('Signer #1 certificate SHA-256 digest: '+'a'*64).encode()
                 raise AssertionError('Unexpected mutation before compatibility rejection')
-            for suffix in ([], ['--apk', str(root/'fixture.apk'), '--backup-dir', str(root/'backup')]):
+            for suffix in ([], ['--apk', str(root/'fixture.apk')]):
                 previous_mask = os.umask(0o077)
                 try:
                     with patch('sys.argv', base + suffix), patch.object(installer.subprocess, 'check_output', side_effect=observed):
-                        with self.assertRaisesRegex(ValueError, 'schema 2'): installer.main()
+                        with self.assertRaisesRegex((ValueError,installer.Blocked), 'schema 2'): installer.main()
                 finally: os.umask(previous_mask)
+
+    def test_apk_update_blocks_verification_but_config_only_uses_maintenance(self):
+        import radio_update
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'input.json';source.write_text(json.dumps({'schema_version':2}));source.chmod(0o600)
+            apk=root/'fixture.apk';apk.write_bytes(b'synthetic')
+            for updating in (False,True):
+                copied=[]
+                def observed(args,**kwargs):
+                    if 'dumpsys' in args:return b'versionCode=31'
+                    if kwargs.get('input') is not None:copied.append(kwargs['input']);return b''
+                    if args[-1]=='no_backup/pending-config.json':return copied[-1]
+                    return b''
+                argv=['configure-device.py','synthetic-device',str(source)]+(['--apk',str(apk)] if updating else [])
+                previous_mask=os.umask(0o077)
+                try:
+                    with patch('sys.argv',argv),patch.object(installer.subprocess,'check_output',side_effect=observed),patch.object(radio_update,'validate_apk',return_value=31),patch.object(radio_update,'wait_idle'),patch.object(radio_update,'block_update') as block:
+                        installer.main()
+                        self.assertEqual(block.call_count,1)
+                        self.assertEqual(block.call_args.kwargs,{'verification':updating})
+                finally:os.umask(previous_mask)
 
     def test_minimal_bundle(self):
         r = SimpleNamespace(u='example-user', s='example-session', h='example-secret', k='unneeded-key',

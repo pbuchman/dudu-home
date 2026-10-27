@@ -26,7 +26,11 @@ public final class CancellationChecks {
             Diagnostics.recordAttempt(context,id,"LATE_CANCELLED_CALLBACK");
             ProgressBus.update(context,id,Phase.SUCCEEDED,Reason.NONE);
             check(Diagnostics.awaitWrites(), "diagnostic drain after cancellation");
-            check(journal.length() == before, "cancelled pre-send attempt has no durable diagnostics, including late callback");
+            check(journal.length() > before, "cancelled pre-send evidence remains durable without consuming quota");
+            try {
+                String evidence=new String(java.nio.file.Files.readAllBytes(journal.toPath()),java.nio.charset.StandardCharsets.UTF_8);
+                check(evidence.contains("ATTEMPT_CANCEL STATE=CANCELLED REASON=USER_CANCELLED ID="+id),"durable cancellation reason");
+            } catch(java.io.IOException failedRead) { throw new AssertionError(failedRead); }
             var state = ProgressBus.snapshot().stream().filter(s -> s.id()==id).findFirst().orElseThrow();
             check(state.phase()==Phase.CANCELLED && state.reason()==Reason.USER_CANCELLED, "late success does not revive cancellation");
             long other = ProgressBus.requestManual(context,Kind.RETURN);
@@ -55,6 +59,10 @@ public final class CancellationChecks {
             ProgressBus.reserveWith(sent, () -> { reservations[0]++; return true; });
             ProgressBus.onCancel(sent, () -> true);
             check(ProgressBus.claimSend(context,sent) && !ProgressBus.claimSend(context,sent), "one serialized send admission");
+            try {
+                check(new String(java.nio.file.Files.readAllBytes(journal.toPath()),java.nio.charset.StandardCharsets.UTF_8).contains("COMMAND_DISPATCH STATE=SENDING REASON=NONE ID="+sent),
+                        "send marker is on disk before caller may dispatch synthetic command");
+            } catch(java.io.IOException failedRead) { throw new AssertionError(failedRead); }
             check(ProgressBus.cancelAttempt(ProgressBus.token(sent)), "sent work remains cancellable");
             check(ProgressBus.snapshot().stream().anyMatch(s -> s.id()==sent && s.phase()==Phase.CANCELLING), "cleanup holds cancelling state");
             ProgressBus.finishCancellation(sent);

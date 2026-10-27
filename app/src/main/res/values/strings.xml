@@ -26,7 +26,7 @@
     <string name="progress_yanosik">Yanosik</string>
     <string name="progress_departure_detail">Potwierdzam 3 sekundy ruchu</string>
     <string name="progress_return_detail">Potwierdzam dojazd do bramy</string>
-    <string name="progress_cleaning_detail">Potwierdzam wyjazd z osiedla</string>
+    <string name="progress_cleaning_detail">Sprzątanie po udanym połączeniu wyjazdowym</string>
     <string name="progress_motion_detail">Potwierdzam jazdę</string>
     <string name="progress_stopped">Ruch ustał lub jest zbyt wolny. Potwierdzanie przerwane.</string>
     <string name="progress_bad_gps">Brak wiarygodnego GPS. Potwierdzanie przerwane.</string>
@@ -62,6 +62,8 @@
     <string name="save_roborock">Zapisz dane</string>
     <string name="cleaning_starting">Zlecam Full Cleaning</string>
     <string name="cleaning_description">Wysyłam polecenie do Roborock.</string>
+    <string name="automatic_cleaning_accepted">Zlecono sprzątanie</string>
+    <string name="automatic_cleaning_used">Dzisiejsza próba sprzątania została już wykorzystana</string>
     <string name="cleaning_accepted">Zlecono Full Cleaning</string>
     <string name="cleaning_accepted_description">Polecenie przyjęte. Postęp sprawdzisz w aplikacji Roborock.</string>
     <string name="cleaning_unknown">Nie potwierdzono wyniku. Polecenie mogło zostać przyjęte. Sprawdź aplikację Roborock przed ponowieniem.</string>
@@ -121,7 +123,7 @@
     <string name="trip_reset">Reset</string>
     <string name="trip_permissions">Brak uprawnień lokalizacji lub powiadomień. Sprawdź instalację.</string>
     <string name="trip_overlay_drag">Przesuń</string>
-    <string name="trip_overlay_drag_description">Przeciągnij, aby przesunąć panel</string>
+    <string name="trip_overlay_drag_description">Przytrzymaj i przesuń panel poziomo</string>
     <string name="trip_overlay_close">Ukryj panel</string>
     <string name="trip_overlay_show">Pokaż panel w tle</string>
     <string name="trip_overlay_hide">Ukryj panel w tle</string>

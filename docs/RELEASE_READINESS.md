@@ -1,5 +1,12 @@
 # Release readiness - 2026-10-15
 
+## Current 1.5 gate
+
+See [1.5.0-rc1](RELEASE_1_5_0_RC1.md). Source candidate publication is permitted after
+review/privacy/tests/CI; stable 1.5.0 remains blocked on physical departure, observed robot
+start, audible local Spotify and repeated same-day departure acceptance. Earlier evidence
+below does not establish these new checks. No backend deployment or map build is included.
+
 ## Current: 1.4.0-rc1 / code 25
 
 Detailed Routebook analytics run on Home Dev; Android changes only the location panel.
@@ -136,7 +143,7 @@ the historical hardware result in VERIFICATION; it was not repeated after the cl
    manually selected Maps route. Media must not override manual UI in the current cycle.
 3. **Real departure, return and second departure:** observe the configured directional
    sequence and one action per event. Confirm physical gate/robot effects. The second
-   same-day outward checkpoint must not repeat automatic cleaning, including after restart.
+   same-day successful automatic departure must show the used-limit message and not repeat automatic cleaning, including after restart.
 4. **Overlapping work and call protection:** observe gate/cleaning/media priorities on the
    device when real events overlap; verify number-save/restart cooldown and refusal to
    interfere with an existing call. Synthetic coverage is already green, but does not

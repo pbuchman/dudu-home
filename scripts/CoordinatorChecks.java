@@ -36,6 +36,12 @@ public final class CoordinatorChecks {
         check(c.next(0,true,false)==null); // Manual menu, error or configuration.
         check(c.next(0,true,true).id()==11);
         check(new AutomationCoordinator().next(0,true,true)==null);
+        var delayed=new AutomationCoordinator();delayed.enqueue(12,GATE,null,1000,10);
+        long beforeDiagnosticIo=5999,afterDiagnosticIo=6001;
+        check(beforeDiagnosticIo<6000 && delayed.next(afterDiagnosticIo,true,true)==null);
+        check(delayed.expire(afterDiagnosticIo,10).size()==1); // A slow journal cannot extend a five-second TTL.
+        delayed.enqueue(13,CLEANING,null,1000,10);
+        check(delayed.next(121001,true,true)==null && delayed.expire(121001,10).size()==1);
         System.out.println("PASS: priorities, grace, expiry, presentation lock, generations, no replay");
     }
 }

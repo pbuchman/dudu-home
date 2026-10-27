@@ -5,9 +5,7 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-After a successful automatic departure gate call, or sustained driving elsewhere, it starts
-Yanosik, then opens Spotify and requests local music playback. Departure continuation works
-while stationary and does not require another movement countdown.
+After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
 Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
 Before generic driving detection, a location precondition gives a possible gate departure or
 return priority even when its call event is not ready yet. Media waits for a successful gate
@@ -15,21 +13,14 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Departure continuation candidate `1.4.0-rc5` (code 32).**
-> Continues automatic departure after gate-call success, retaining cleanup, result-screen,
-> cancellation and reservation safeguards. [Release notes](docs/RELEASE_1_4_0_RC5.md).
-> Based on public RC3; separate local street/layout candidates are not included.
-> Physical installation and road/audio acceptance remain pending.
->
-> **Previous combined test candidate `1.4.0-rc3` (code 27).**
-> Home Dev distinguishes observed GPS time from estimated parking-tail corrections.
-> Android adds a passive radio observer with a separate durable event queue.
-> Power-based timer corrections require an independently validated firmware profile.
-> [Release notes](docs/RELEASE_1_4_0_RC3.md).
-> Android, backend, private map UI and deployment tooling now share one source revision.
-> Hardware GPS, delivery and sleep/wake acceptance remain pending. Stable 1.1.0 is the
-> last recorded radio-verified release. See [combined handoff](docs/INTEGRATED_RELEASE.md).
-> Source only: no public APK, map database, private configuration or signing key.
+**Candidate `1.5.0-rc1` (code 34).** A successful automatic departure call continues with
+Full Cleaning, Yanosik and Spotify while the car may still be waiting at the gate. No extra
+standstill or outbound checkpoint is required. One source line now includes the reviewed
+street stability, map-schema-3 support, compact panels, window layouts and private diagnostics.
+[Release contract and acceptance](docs/RELEASE_1_5_0_RC1.md). Physical installation and
+road/robot/audio acceptance remain pending; the stable release requires that evidence.
+The earlier [RC5 media fix](docs/RELEASE_1_4_0_RC5.md) remains included.
+Source only: no public APK, map, private configuration or signing key.
 
 Release checks cover Android, the existing v1 collector and private Routebook analytics.
 PR/main/tag publication gates are enforced separately. [Evidence and limits](docs/VERIFICATION.md)
@@ -78,7 +69,8 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   time and kilometres while preserving active/paused state. Show locality, street, distance
   and session time including observed stops. Count in the background; show a silent card with up to three readable street lines
   and an expanded full-address notification that open the full screen when tapped. Move the card
-  with its **Przesuń** handle or hide it with **×**; position and visibility survive restarts.
+  by holding a non-button area for 350 ms and dragging horizontally, or hide it with **×**;
+  position and visibility survive restarts.
   **Pokaż panel w tle** on the trip screen restores it without changing the trip. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
@@ -100,19 +92,18 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   restart/update/menu entry and GPS gaps cannot. Return still requires its directional route.
   This is event timing: fresh phone idle and the Binder snapshot add time before dial.
   [Exact conditions and rearming](docs/FUNCTIONAL.md).
-- **Automatic cleaning:** first outward crossing of the configured approach checkpoint each
-  calendar day in `Europe/Warsaw`. **One automatic attempt, including failure or a blocked
-  attempt. Explicit user cancellation before sending releases the opportunity.
-  No automatic retry or persisted queue.** It may wait up to 120 seconds behind a gate
-  action and its result screen; non-user failures and expiry still consume the daily attempt. Manual cleaning remains independent.
+- **Automatic cleaning:** after success of this app's automatic departure call, before media.
+  One admitted send per `Europe/Warsaw` day. Unsent skip, expiry, cancellation or missing
+  configuration leaves the day available for a later genuine departure, without retrying this
+  occurrence. A sent request consumes the limit even on failure or uncertainty. Automatic
+  skips/errors show brief feedback and continue media; manual cleaning remains independent.
 - **Three Google Maps navigation slots:** private JSON import, generic icons and empty-slot guidance.
   Each slot accepts up to 12 ordered places: zero shows setup guidance, one starts navigation
   directly, and two, three or more open a modal chooser. Add a third place by appending to the
   private JSON and importing it again; no source edit or rebuild is needed. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
-  ten seconds of qualified GPS movement, or after a successful automatic departure gate call.
-  The departure path requires no new standstill or motion test. First check its foreground-service notification.
+  ten seconds of qualified GPS movement. First check its foreground-service notification.
   If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
   skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
   gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
@@ -126,15 +117,17 @@ Server runtime secrets and actual recorded locations remain outside the reposito
 
 **Anuluj tę próbę** is available during detection, queue wait and execution, including in a
 notification when overlays are unavailable. It cancels only the current process occurrence;
-Yanosik and Spotify share that control. A pre-send cancellation consumes no durable quota
-or attempt history. A newly detected occurrence can start fresh after its required baseline.
+Yanosik and Spotify share that control. A pre-send cancellation consumes no durable quota.
+A bounded private diagnostic record remains available for investigation. A newly
+detected occurrence can start fresh after its required baseline.
 Already sent commands cannot be undone; call/HTTP cleanup and durable safety blocks remain.
 See [cancellation and UI](docs/PROGRESS_UI.md).
 
 Opening the menu, saving configuration, starting the radio or reaching the end of a cooldown
 does **not** itself call or start cleaning. Manual actions return to the menu. Automatic actions
 hide after the result unless the menu was already open. Success stays for five seconds.
-Errors stay until user action.
+Automatic cleaning skips/errors last 2.5 seconds; transport cleanup must also finish.
+Manual errors retain their user-dismissed screens.
 
 No robot stop, pause, docking, status polling, Python runtime on Android, usage tracking, Home Assistant
 or Google Home dependency. Roborock requires Internet; gate calls use the paired phone's network.
@@ -184,33 +177,12 @@ for that transition, not an ordinary update. Keep the matching signing certifica
 
 ## Install safely
 
-**RC5 update:** first verify installed source/features and signing identity. The public RC5
-baseline excludes separate local street/layout candidates and must not replace them blindly.
-For this delivery use the current maintainer updater with idle/maintenance checks, preserving
-data/maps and without new backups, clearing, downgrading or automatic rollback. The commands
-below describe the historical public-baseline installer; see the RC5 boundary in OPERATIONS.md.
-
-
 Use the [migration runbook](docs/MIGRATION.md) for the old radio package. For an already
-migrated installation, use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
-signature comparison and all supplied configuration sections. For an existing radio installation:
-
-```sh
-python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
-  --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
-  --navigation "$PRIVATE_DIR/navigation.json" \
-  --apk app/build/outputs/apk/debug/app-debug.apk \
-  --backup-dir "$PRIVATE_DIR/radio-backups" --enable-automation
-```
-
-`PRIVATE_DIR` is an owner-only directory outside every repository. The installer checks the
-configured number against the radio, stages data via stdin, and never launches an action.
-For an unattended update, use `scripts/install-radio.py` from the operations runbook: it discovers
-the authorized radio, performs idle preflight, installs the local map pack and opens/verifies the
-menu automatically. Busy or inconclusive call/action state blocks the update.
-The fresh-install helper refuses to update an existing app; use the backed-up path above.
-It requires an explicit device, stops on failed/empty/unrecognized ADB checks, includes packages
-with retained data, and never passes the replacement flag `-r` to installation.
+migrated installation, use the [complete installation runbook](docs/OPERATIONS.md).
+The guarded `scripts/install-radio.py` update verifies the signed APK, current configuration,
+idle evidence and preserved safety/session state. It creates no backups and performs no
+rollback, downgrade or data clearing. Reuse the existing private map: mismatched/missing maps
+fail closed. No hardware access means installation remains pending.
 
 No home GPS configuration disables home-route automation, not the independent movement hook
 or manual tiles. No gate number blocks calls;
@@ -233,7 +205,11 @@ Roborock credentials are encrypted with Android Keystore in private no-backup st
 short-lived import file is deleted after successful import. App backups are disabled.
 An authorized ADB/debug session is privileged access: keep it restricted and disconnect afterward.
 
-Logs contain event/result categories, never credential bundles, authorization headers or coordinates.
+Generic operational logs contain event/result categories, never credential bundles,
+authorization headers or coordinates. RC4 also keeps a separate private on-device location
+trace with GPS fixes, matching decisions and displayed labels for route correlation. It is
+bounded to 32 MiB and seven days and is never uploaded automatically. Neither journal records
+message contents, login data or tokens. See [diagnostic journals](docs/DIAGNOSTIC_JOURNALS.md).
 RC3 adds departure rejection reasons, cycle/reservation state and per-component locality quality
 to private diagnostics. Capture these before manually opening or updating the app after a
 failure; a missing event and a rejected phone attempt have different causes. The available

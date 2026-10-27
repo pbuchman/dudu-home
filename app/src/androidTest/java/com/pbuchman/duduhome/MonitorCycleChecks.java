@@ -69,19 +69,18 @@ final class MonitorCycleChecks {
                 AutomationRuntime waiting = new AutomationRuntime(context);
                 waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
                 AutomationCoordinator waitingQueue = (AutomationCoordinator)get(waiting,"queue");
-                check(waitingQueue.hasHomeWaiting() && DailyCleaning.available(context, java.time.LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")).toEpochDay()),
-                        "busy gate queues cleaning with quota pending only in RAM");
-                waiting.home(HomeEvent.OUTBOUND_CHECKPOINT);
-                check(((java.util.Map<?,?>)get(waitingQueue,"queued")).size() == 1,
-                        "duplicate cleaning cannot enqueue twice");
+                check(!waitingQueue.hasHomeWaiting() && DailyCleaning.available(context,DailyCleaning.day()),
+                        "checkpoint is passive and never queues cleaning");
+                waiting.home(HomeEvent.DEPARTURE_STARTED);
+                check(waitingQueue.hasHomeWaiting(),"departure still queues gate first");
                 HomeActions.configurationChanged();
-                check(!waitingQueue.hasHomeWaiting() && !DailyCleaning.reserve(context),
-                        "configuration invalidates pending work without restoring quota");
+                check(!waitingQueue.hasHomeWaiting() && DailyCleaning.available(context,DailyCleaning.day()),
+                        "configuration invalidates unsent work without consuming cleaning quota");
                 waiting.close();
                 AutomationRuntime replacement = new AutomationRuntime(context);
-                check(!DailyCleaning.reserve(context) &&
+                check(DailyCleaning.available(context,DailyCleaning.day()) &&
                         ((AutomationCoordinator)get(replacement,"queue")).next(now,true,true)==null,
-                        "new runtime neither restores quota nor replays cleaning");
+                        "new runtime never replays pending commands");
                 replacement.close(); HomeActions.end();
                 check(daily.edit().clear().commit(), "daily test cleanup");
                 ((java.util.concurrent.ExecutorService)get(old,"cycleReader")).shutdownNow();

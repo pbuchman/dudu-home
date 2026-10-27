@@ -1,5 +1,12 @@
 # Combined main candidate: 1.4.0-rc3 / code 27
 
+## 1.5 delivery supersedes earlier rollout instructions
+
+Current candidate is 1.5.0-rc1/code34. See RELEASE_1_5_0_RC1.md and VERIFICATION.md.
+One source line contains RC5 plus reviewed local features. Source-only prerelease; no Home Dev
+deployment, map generation or routine changes. Installation and hardware acceptance remain
+separate from build and publication. Stable 1.5.0 is held until physical acceptance.
+
 ## RC5 delivery supersedes the rollout instructions below
 
 Current candidate: **1.4.0-rc5 / code 32**, scoped to Android departure continuation.

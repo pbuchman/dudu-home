@@ -2,6 +2,7 @@ package com.pbuchman.duduhome.ui;
 
 import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.automation.HomeAction;
+import com.pbuchman.duduhome.automation.DailyCleaning;
 import com.pbuchman.duduhome.automation.HomeActions;
 import com.pbuchman.duduhome.automation.ProgressBus;
 import static com.pbuchman.duduhome.automation.DetectionProgress.*;
@@ -82,6 +83,7 @@ public final class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
         prepareActionTiles();
+        prepareActionStatus();
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
@@ -125,20 +127,20 @@ public final class MainActivity extends Activity {
         findViewById(R.id.where_am_i_button).setOnClickListener(view -> requestTrip());
         findViewById(R.id.settings_button).setOnClickListener(view -> {
             if (busyNotice()) return;
-            new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
+            ContentDialogs.show(this, new android.app.AlertDialog.Builder(this).setTitle(R.string.settings)
                     .setItems(new String[]{"Numer bramy", "Dane dostępowe Roborock", "Lokalizacja",
                             getString(R.string.yanosik_notification_access), getString(R.string.navigation_import), "Dane map OSM"}, (dialog, which) -> {
-                        if (which == 5) new android.app.AlertDialog.Builder(this).setTitle("Dane map")
-                                .setMessage("© OpenStreetMap contributors · ODbL 1.0\nopenstreetmap.org/copyright\nPakiet: Geofabrik. Online: Photon, bez gwarancji dostępności.").setPositiveButton("OK", null).show();
+                        if (which == 5) ContentDialogs.show(this, new android.app.AlertDialog.Builder(this).setTitle("Dane map")
+                                .setMessage("© OpenStreetMap contributors · ODbL 1.0\nopenstreetmap.org/copyright\nPakiet: Geofabrik. Online: Photon, bez gwarancji dostępności.").setPositiveButton("OK", null));
                         else if (which == 0) { returnToMenu = true; showNumberSetup(); }
                         else if (which == 1) showRoborockSetup(false);
                         else if (which == 4) navigation.pick();
                         else if (which == 3) showYanosikAccess();
-                        else new android.app.AlertDialog.Builder(this).setTitle("Lokalizacja")
+                        else ContentDialogs.show(this, new android.app.AlertDialog.Builder(this).setTitle("Lokalizacja")
                                 .setMessage(HomeConfiguration.load(this) == null ? "Brak konfiguracji GPS. Dostarcz prywatny plik instalatorem."
                                         : "Konfiguracja GPS zainstalowana. Zmiany przez prywatny plik instalatora.")
-                                .setPositiveButton("OK", null).show();
-                    }).show();
+                                .setPositiveButton("OK", null));
+                    }));
         });
         findViewById(R.id.cancel_number_button).setOnClickListener(view -> { hideKeyboard(); showMenu(); });
         findViewById(R.id.cancel_roborock_button).setOnClickListener(view -> showMenu());
@@ -208,23 +210,42 @@ public final class MainActivity extends Activity {
         if (navigation != null) navigation.result(request, result, data);
     }
     @Override public void onConfigurationChanged(android.content.res.Configuration config) {
-        super.onConfigurationChanged(config); prepareActionTiles();
+        super.onConfigurationChanged(config); prepareActionTiles(); prepareActionStatus();
         if (navigation != null) navigation.render();
+    }
+
+    private void prepareActionStatus() {
+        sizeActionView(findViewById(R.id.action_illustration), R.dimen.action_art_width, R.dimen.action_art_height);
+        sizeActionView((View) findViewById(R.id.progress).getParent(), R.dimen.action_indicator_size, R.dimen.action_indicator_size);
+        sizeActionView(findViewById(R.id.progress), R.dimen.action_progress_size, R.dimen.action_progress_size);
+        sizeActionView(findViewById(R.id.status_icon), R.dimen.action_icon_size, R.dimen.action_icon_size);
+        int[] views = {R.id.status_title, R.id.status_description, R.id.cancel_attempt, R.id.error_actions};
+        int[] gaps = {R.dimen.action_title_gap, R.dimen.action_detail_gap, R.dimen.action_cancel_gap, R.dimen.action_buttons_gap};
+        for (int n = 0; n < views.length; n++) {
+            View view = findViewById(views[n]);
+            android.view.ViewGroup.MarginLayoutParams size = (android.view.ViewGroup.MarginLayoutParams) view.getLayoutParams();
+            size.topMargin = getResources().getDimensionPixelSize(gaps[n]); view.setLayoutParams(size);
+        }
+    }
+    private void sizeActionView(View view, int width, int height) {
+        android.view.ViewGroup.LayoutParams size = view.getLayoutParams();
+        size.width = getResources().getDimensionPixelSize(width); size.height = getResources().getDimensionPixelSize(height);
+        view.setLayoutParams(size);
     }
 
     private void showYanosikAccess() {
         boolean granted = com.pbuchman.duduhome.automation.YanosikPresence.accessGranted(this);
-        new android.app.AlertDialog.Builder(this).setTitle(R.string.yanosik_notification_access)
+        ContentDialogs.show(this, new android.app.AlertDialog.Builder(this).setTitle(R.string.yanosik_notification_access)
                 .setMessage(getString(granted ? R.string.yanosik_access_granted : R.string.yanosik_access_missing)
                         + "\n\n" + getString(R.string.yanosik_access_explanation))
                 .setNegativeButton(R.string.close, null)
                 .setPositiveButton(R.string.yanosik_access_settings, (dialog, which) -> {
                     try { startActivity(new Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
                     catch (RuntimeException unavailable) {
-                        new android.app.AlertDialog.Builder(this).setMessage(R.string.yanosik_access_unavailable)
-                                .setPositiveButton("OK", null).show();
+                        ContentDialogs.show(this, new android.app.AlertDialog.Builder(this).setMessage(R.string.yanosik_access_unavailable)
+                                .setPositiveButton("OK", null));
                     }
-                }).show();
+                }));
     }
 
     @Override protected void onPause() {
@@ -359,7 +380,7 @@ public final class MainActivity extends Activity {
         }
 
         int generation = ++uiGeneration;
-        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        if (!HomeActions.begin(actionAttempt,currentAction)) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
         final Runnable gateSuccess = HomeActions.gateSuccessCallback(attempt);
         final java.util.concurrent.atomic.AtomicBoolean gateCleaned = new java.util.concurrent.atomic.AtomicBoolean();
@@ -669,9 +690,20 @@ public final class MainActivity extends Activity {
     private void startCleaning() {
         if (actionAttempt == 0) actionAttempt = ProgressBus.requestManual(this, ProgressBus.kind(currentAction));
         if (busyNotice()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        boolean automatic = currentAction == HomeAction.CLEANING && ProgressBus.sendOnly(actionAttempt);
+        if (automatic && !ProgressBus.admissionOpen(actionAttempt)) {
+            automaticCleaningInformation(Reason.EXPIRED, R.string.progress_expired); return;
+        }
+        if (automatic && !DailyCleaning.available(this, DailyCleaning.day())) {
+            automaticCleaningInformation(Reason.DAILY_LIMIT, R.string.automatic_cleaning_used); return;
+        }
         RoborockStore store = new RoborockStore(this);
         RoborockCredentials credentials = store.read();
-        if (credentials == null) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_CONFIG); showRoborockSetup(store.rejected()); return; }
+        if (credentials == null) {
+            if (automatic) automaticCleaningInformation(Reason.NO_CONFIG, R.string.progress_no_config);
+            else { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_CONFIG); showRoborockSetup(store.rejected()); }
+            return;
+        }
         if (currentAction == HomeAction.MOP && credentials.fullMopRoutine == 0) {
             ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.NO_CONFIG);
             showRoborockSetup(false);
@@ -679,7 +711,7 @@ public final class MainActivity extends Activity {
             return;
         }
         RoborockCredentials selected = credentials.forAction(currentAction);
-        if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
+        if (!HomeActions.begin(actionAttempt,currentAction)) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
         final HomeAction executing = currentAction;
         final Context application = getApplicationContext();
@@ -697,8 +729,12 @@ public final class MainActivity extends Activity {
         java.util.concurrent.ScheduledExecutorService timer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
         java.util.function.Consumer<RoborockClient.Result> complete = result -> {
             if (ProgressBus.cancelled(attempt) || !delivered.compareAndSet(false, true)) return;
-            ProgressBus.update(application, attempt, result == RoborockClient.Result.ACCEPTED ? Phase.SUCCEEDED
-                    : result == RoborockClient.Result.NETWORK_UNKNOWN ? Phase.UNKNOWN : Phase.ERROR, Reason.NONE);
+            boolean unsentAutomatic = automatic && !ProgressBus.sent(attempt);
+            Reason reason = !unsentAutomatic ? Reason.NONE : !ProgressBus.admissionOpen(attempt) ? Reason.EXPIRED
+                    : !DailyCleaning.available(application, DailyCleaning.day()) ? Reason.DAILY_LIMIT : Reason.DAILY_LIMIT_OR_STORAGE;
+            ProgressBus.update(application, attempt, unsentAutomatic ? Phase.SKIPPED
+                    : result == RoborockClient.Result.ACCEPTED ? Phase.SUCCEEDED
+                    : result == RoborockClient.Result.NETWORK_UNKNOWN ? Phase.UNKNOWN : Phase.ERROR, reason);
             com.pbuchman.duduhome.diagnostics.Diagnostics.recordAttempt(application, attempt, executing.name() + "_RESULT_" + result.name());
             runOnUiThread(() -> {
                 if (generation != uiGeneration || isFinishing() || isDestroyed()) return;
@@ -730,15 +766,34 @@ public final class MainActivity extends Activity {
         }, "RoborockRoutine").start();
     }
 
+    private void automaticCleaningInformation(Reason reason, int message) {
+        ProgressBus.update(this, actionAttempt, Phase.SKIPPED, reason);
+        renderAutomaticCleaningInformation(message);
+    }
+    private void renderAutomaticCleaningInformation(int message) {
+        actionRunning = true;
+        menuContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
+        showInformation(R.string.full_cleaning, getString(message), R.drawable.ic_error, R.string.error_icon_description);
+    }
     private void renderCleaningResult(RoborockClient.Result result) {
         cancelAttempt.setVisibility(View.GONE);
         updateActionIllustration();
         actionRunning = false;
+        boolean automatic = currentAction == HomeAction.CLEANING && ProgressBus.sendOnly(actionAttempt);
+        if (automatic && result != RoborockClient.Result.ACCEPTED) {
+            int message = !ProgressBus.sent(actionAttempt)
+                    ? !ProgressBus.admissionOpen(actionAttempt) ? R.string.progress_expired
+                    : !DailyCleaning.available(this, DailyCleaning.day()) ? R.string.automatic_cleaning_used
+                    : R.string.progress_cleaning_blocked
+                    : result == RoborockClient.Result.NETWORK_UNKNOWN ? R.string.cleaning_unknown : R.string.cleaning_error;
+            renderAutomaticCleaningInformation(message); return;
+        }
         if (result == RoborockClient.Result.AUTH_REJECTED) { showRoborockSetup(true); return; }
         menuContent.setVisibility(View.GONE); numberSetupContent.setVisibility(View.GONE); roborockSetup.setVisibility(View.GONE);
         callStatusContent.setVisibility(View.VISIBLE);
         if (result == RoborockClient.Result.ACCEPTED) {
-            statusTitle.setText(currentAction == HomeAction.MOP ? R.string.mop_accepted : R.string.cleaning_accepted);
+            statusTitle.setText(currentAction == HomeAction.MOP ? R.string.mop_accepted
+                    : automatic ? R.string.automatic_cleaning_accepted : R.string.cleaning_accepted);
             statusDescription.setText(R.string.cleaning_accepted_description);
             showSuccessAnimation();
         } else {

@@ -36,7 +36,7 @@ public final class TripChecks {
         throw new AssertionError("trip state "+state);
     }
     public static void run(Instrumentation i) throws Exception {
-        Context c=i.getTargetContext();LocalityChecks.run(c);fixture(c);
+        Context c=i.getTargetContext();LocalityChecks.run(c);ShortHeadingChecks.run(c);fixture(c);
         OfflinePlaces offline=new OfflinePlaces(c);
         PlaceResult place=offline.resolve(fix(.001));
         check(place.complete() && place.street().equals("Ulica Przykładowa"),"offline on unvisited road");

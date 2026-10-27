@@ -1,5 +1,13 @@
 # Development handoff
 
+## Current candidate: 1.5.0-rc1 / code 34
+
+Public RC5 and audited code33 additions are unified with independent departure cleaning.
+There is no separate -local release. See RELEASE_1_5_0_RC1.md for delivery and hardware gates.
+Physical ADB was unavailable during preparation; installed version/signature and installation
+remain unverified. Never downgrade, clear data, reset quotas, create update backups or roll back
+automatically. Backend, existing map and private routines are unchanged.
+
 ## Current candidate: 1.4.0-rc5 / code 32
 
 RC5 continues a successful automatic departure with Yanosik and Spotify without requiring
@@ -11,7 +19,63 @@ newer local feature set merely because this public candidate has a higher versio
 Preserve app state/maps; no clear, downgrade, automatic rollback or new backups for this update.
 No Home Dev deployment, pairing or private configuration change belongs to this release.
 
-## Current candidate: 1.4.0-rc3 / code 27
+October19 follow-up: `radio_update.py` uses the existing connected Wispr accessibility probe
+with strict freshness/completeness checks and no UIAutomator. Idle requires explicit busy=false
+or proven process absence; passive smoke is structural because Dudu text is redacted. Changed
+or missing map writes are held before mutation pending enforced process/map-reader exclusion;
+the persistent marker alone cannot supply it. Equal-hash updates remain supported. Twenty-six
+mocked host update tests pass; no device/ADB command was executed in this implementation scope.
+The direct-transfer test evidence below predates this hold.
+
+Normal updates now use one `places.sqlite`, computed hashes, direct replacement under a
+persistent block and explicit retry. No backups, sidecar manifests/audits, saved receipts or
+automatic rollback are created. See OPERATIONS.md; earlier evidence below describes historical
+tooling. Host synthetic tests include real OSM/PBF parsing. No physical radio update or owner
+archive cleanup was performed in this implementation workstream.
+
+# Development handoff
+
+## Local window layout candidate: 1.4.0-rc4-local-layout / code 31
+
+Based on frozen code-30 source `95d7721`. Source changes are limited to app-owned window
+geometry, progress presentation, native dialog creation wrappers and synthetic UI checks.
+No detector, action, IPC, quota, map resolver, diagnostic or collection behavior changes.
+The selected 286 dp street card retains typography, movement and X semantics. Build/lint
+and pure progress checks pass. All five final window profiles (105 synthetic captures),
+full emulator SafetyChecks and separate drag/restart/resize checks pass. Physical-radio boundaries
+are recorded in [WINDOW_LAYOUT.md](WINDOW_LAYOUT.md) and VERIFICATION.md. Keep the frozen
+code-30 APK untouched. The local code-31 APK is not a publication input.
+
+## Local heading candidate: 1.4.0-rc3-local-street3 / code 29
+
+Schema-3 builder/reader/install compatibility adds provenance-backed short-fragment
+orientation only. See WHERE_AM_I.md for the exact source-node/way bounds and metadata.
+Schema 2 remains readable with its old road scores and current locality evidence.
+The source, APK, maps and build audit stay private. Build/lint and host fixtures pass;
+Android SQLite fixtures compile but were not executed in this session. New-pack replay,
+held-out truth and physical radio checks remain separate and pending.
+
+## Local integration: 1.4.0-rc3-local-street2 / code 28
+
+This isolated local patch starts from merged code 27 (`44f9f1f`) and preserves the prior
+code-24 street contract. Offline and optional Photon work run independently; only an exact
+current fix/generation may accept HTTP evidence. The bounded LAST_KNOWN presentation and
+private opt-in trace are documented in WHERE_AM_I.md. This integration changes no road
+geometry, score threshold, recovery/confirmation policy, gate executor or action ordering.
+
+TripController merges this resolver with the code-27 manual session rather than replacing
+its timer/power logic. Keep atomic state/time/distance checkpoints, input epochs, diagnostic
+UNKNOWN firmware profile, separate power outbox and unchanged GPS schema 1. The session
+instrumentation now references PlaceResolver and its independent generation boundary.
+
+Build/lint and host results are in VERIFICATION.md. No worker device/emulator operations,
+source publication or Home Dev deployment are part of this local delivery. Private source,
+APK/signature/hash receipt and the selected existing APK-only update plan stay outside Git.
+Preserve map/configuration and current safety state; never clear data or restore an earlier
+safety snapshot after monitoring has resumed. Radio installation and runtime checks belong
+to the coordinating device workstream.
+
+## Combined source candidate: 1.4.0-rc3 / code 27
 
 RC3 separates recorded GPS coverage from estimated parking-tail exclusions on Home Dev.
 All day/range/table/period and trip/comparison views retain raw time and expose correction
@@ -118,7 +182,7 @@ The remaining records below are historical.
 Build/lint both APKs, run check-trip.sh and test-radio-update.py in addition to every existing
 check, then execute instrumentation on an emulator. `osmium==4.3.1` is a computer-only optional
 builder dependency; install it to exercise the synthetic OSM parser. Prepare real regional
-map files outside Git and keep their manifest. `capture-readme.py` creates the current full-app
+map files outside Git; current packs keep metadata/proof inside the sole places.sqlite. `capture-readme.py` creates the current full-app
 gallery; review images before copying them into documentation. The installer automatically
 opens and verifies the updated menu. A radio connection failure is a deployment blocker,
 not an invitation to clear data or ask for unplanned device reconfiguration.

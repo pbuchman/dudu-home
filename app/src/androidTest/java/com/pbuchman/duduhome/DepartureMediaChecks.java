@@ -29,27 +29,82 @@ final class DepartureMediaChecks {
                 stationarySuccess(context);
                 rejectedOutcomes(context);
                 cancellations(context);
+                cleaningIsolation(context);
                 scheduling(context);
             } finally {
                 HomeActions.end();
                 setStatic(HomeActions.class,"visible",visible); setStatic(HomeActions.class,"screen",screen);
             }
         });
+        schedulerFeedback(instrumentation);
+    }
+    private static void schedulerFeedback(Instrumentation instrumentation) {
+        Context context=instrumentation.getTargetContext();
+        check(!new java.io.File(context.getNoBackupFilesDir(),"roborock.enc").exists(),"end-to-end cleaning test requires absent credentials");
+        check(!HomeMonitorService.ready(context),"synthetic scheduler fixture requires GPS monitor disabled");
+        for(boolean used:new boolean[]{false,true}) {
+            Fixture[] fixture={null};
+            boolean[] sawFeedback={false};
+            try {
+                ProgressChecks.main(instrumentation,() -> {
+                    check(HomeActions.begin(),"hold synthetic gate cleanup before continuation");
+                    fixture[0]=new Fixture(context);
+                    Fixture f=fixture[0]; f.fakeYanosik(YanosikPresence.State.NO_WORK_SIGNAL,true);
+                    if(used)check(DailyCleaning.reserve(context),"isolated used quota for scheduler integration");
+                    Call call=f.gate(HomeEvent.DEPARTURE_STARTED);call.success.run();
+                    ProgressBus.update(context,call.id,Phase.SUCCEEDED,Reason.NONE);
+                    check(f.types().equals(List.of(CLEANING,YANOSIK,SPOTIFY)),"full departure waits in correct order behind gate cleanup");
+                    HomeActions.end();
+                });
+                long deadline=SystemClock.uptimeMillis()+8000;
+                boolean[] launched={false};
+                do {
+                    ProgressChecks.main(instrumentation,() -> {
+                        var activity=HomeActions.visibleActivity();
+                        if(activity!=null && !activity.isFinishing() && !activity.isDestroyed()
+                                && activity.findViewById(R.id.call_status_content).isShown()) {
+                            sawFeedback[0]=true;
+                            check(!activity.findViewById(R.id.roborock_setup_content).isShown()
+                                    && !activity.findViewById(R.id.error_actions).isShown(),"scheduler automatic feedback never opens configuration or a persistent error");
+                            check(fixture[0].opens==0 && !HomeActions.allowsExternalLaunch(),"real information timer and UI ownership block fake Yanosik");
+                        }
+                        launched[0]=fixture[0].opens==1;
+                    });
+                    if(!launched[0])SystemClock.sleep(40);
+                } while(!launched[0] && SystemClock.uptimeMillis()<deadline);
+                ProgressChecks.main(instrumentation,() -> {
+                    Fixture f=fixture[0];
+                    check(sawFeedback[0] && f.opens==1,"real runtime->MainActivity->2.5-second feedback cleanup automatically continues fake Yanosik");
+                    check(f.types().equals(List.of(SPOTIFY)),"Spotify remains behind actual ten-second Yanosik grace");
+                    var cleaning=ProgressBus.snapshot().stream().filter(s -> s.kind()==Kind.CLEANING && !f.previousIds.contains(s.id())).findFirst().orElseThrow();
+                    check(cleaning.phase()==Phase.SKIPPED && cleaning.reason()==(used?Reason.DAILY_LIMIT:Reason.NO_CONFIG),"scheduler preserves missing/used outcome provenance");
+                    check(DailyCleaning.available(context,DailyCleaning.day())!=used,"unsent scheduler outcome preserves the original daily quota");
+                });
+            } finally {
+                ProgressChecks.main(instrumentation,() -> {
+                    if(fixture[0]!=null)fixture[0].close();
+                    HomeActions.end();
+                    var activity=HomeActions.visibleActivity(); if(activity!=null)activity.finish();
+                });
+                instrumentation.waitForIdleSync();
+            }
+        }
     }
     private static void stationarySuccess(Context context) {
         try (Fixture f = new Fixture(context)) {
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED);
             check(f.jobs().isEmpty(),"recognition/admission alone cannot queue media");
             call.success.run();
-            check(f.types().equals(List.of(YANOSIK,SPOTIFY)),"successful departure queues ordered media without any motion baseline");
+            check(f.types().equals(List.of(CLEANING,YANOSIK,SPOTIFY)),"successful departure queues independent cleaning and ordered media without any motion baseline");
             check(f.session.available() && f.session.available(JourneySession.Target.SPOTIFY),"pending media has no durable reservation");
             call.success.run(); HomeActions.gateSuccessCallback(call.id).run();
-            check(f.jobs().size()==2,"repeated and recaptured success cannot duplicate queued media");
+            check(f.jobs().size()==3,"repeated and recaptured success cannot duplicate queued media");
             ProgressBus.update(context,call.id,Phase.SUCCEEDED,Reason.NONE);
             HomeActions.gateSuccessCallback(call.id).run();
-            check(f.jobs().size()==2,"terminal gate cannot replay completion");
+            check(f.jobs().size()==3,"terminal gate cannot replay completion");
             invoke(f.runtime,"drain");
-            check(f.jobs().size()==2,"actual cleanup exclusion blocks all media");
+            check(f.jobs().size()==3,"actual cleanup exclusion blocks all media");
+            f.completeCleaning();
             set(f.runtime,"areaFreshUntil",0L);
             check(!f.mediaReady(),"old GPS proof blocks pending continuation");
             f.runtime.gateArea(UNKNOWN,0);
@@ -61,6 +116,7 @@ final class DepartureMediaChecks {
         }
         try (Fixture f = new Fixture(context)) {
             f.runtime.home(HomeEvent.OUTBOUND_CHECKPOINT);
+            check(f.jobs().isEmpty(),"checkpoint no longer schedules a command");
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
             check(f.queue.next(SystemClock.elapsedRealtime(),true,true).type()==CLEANING,"cleaning remains above continuation media");
             check(f.queue.next(SystemClock.elapsedRealtime(),true,true).type()==YANOSIK,"Yanosik is first media target");
@@ -113,7 +169,10 @@ final class DepartureMediaChecks {
             check(f.jobs().isEmpty(),"another gate attempt cannot take departure provenance");
             ProgressBus.update(context,wrong,Phase.SUCCEEDED,Reason.NONE);
             check(f.session.chooseManualNavigation(),"manual Maps choice"); call.success.run();
-            check(f.jobs().isEmpty(),"Maps suppresses a later departure success");
+            check(f.types().equals(List.of(CLEANING)),"Maps suppresses media while keeping independent cleaning queued");
+            HomeActions.end(); invoke(f.runtime,"drain");
+            check(f.types().equals(List.of(CLEANING)),"manual Maps defers automatic cleaning instead of covering navigation");
+            check(HomeActions.begin(),"restore lock after Maps priority check");
         }
         try (Fixture f = new Fixture(context)) {
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED);
@@ -134,11 +193,12 @@ final class DepartureMediaChecks {
             check(ProgressBus.cancelAttempt(ProgressBus.token(candidate)),"media detector candidate cancellation accepted");
             check(ProgressBus.acceptsGateSuccess(call.id),"candidate cancellation leaves the actual successful gate attempt valid");
             call.success.run();
-            check(f.jobs().isEmpty(),"pre-enqueue candidate cancellation suppresses successful departure continuation");
+            check(f.types().equals(List.of(CLEANING)),"pre-enqueue media cancellation cannot suppress independent departure cleaning");
             check(((GatePrecondition)get(f.runtime,"gate")).allowsMedia(),"suppression is cancellation provenance, not rejected gate success");
             f.runtime.reset(Reason.CONFIGURATION);
             Call newer=f.gate(HomeEvent.DEPARTURE_STARTED); newer.success.run();
-            check(f.jobs().isEmpty(),"reset and another gate success cannot rearm media cancellation");
+            check(f.types().equals(List.of(CLEANING)),"reset and another gate success cannot rearm media cancellation");
+            f.completeCleaning();
             ProgressBus.update(context,newer.id,Phase.SUCCEEDED,Reason.NONE);
             MotionHook motion=(MotionHook)get(f.monitor,"motion");
             HomeActions.end();
@@ -153,12 +213,14 @@ final class DepartureMediaChecks {
         try (Fixture f = new Fixture(context)) {
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
             check(ProgressBus.cancelAttempt(ProgressBus.token(f.id(YANOSIK))),"pending departure media cancellation");
-            check(f.jobs().isEmpty() && f.session.available() && f.session.available(JourneySession.Target.SPOTIFY),"unsent group cancellation consumes neither target");
+            check(f.types().equals(List.of(CLEANING)) && f.session.available() && f.session.available(JourneySession.Target.SPOTIFY),"unsent media cancellation leaves independent cleaning and consumes neither media target");
+            f.completeCleaning();
             call.success.run(); HomeActions.gateSuccessCallback(call.id).run();
             check(f.jobs().isEmpty(),"gate callback cannot restore a cancelled media group");
         }
         try (Fixture f = new Fixture(context)) {
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
+            f.completeCleaning();
             f.fakeYanosik(YanosikPresence.State.NO_WORK_SIGNAL,true);
             HomeActions.end(); invoke(f.runtime,"drain");
             check(f.opens==1 && !f.session.available(),"synthetic Yanosik sent once");
@@ -167,10 +229,41 @@ final class DepartureMediaChecks {
             check(HomeActions.begin(),"restore lock after fake Yanosik");
         }
     }
+    private static void cleaningIsolation(Context context) {
+        try (Fixture f = new Fixture(context)) {
+            Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
+            long cleaning=f.id(CLEANING);
+            check(ProgressBus.cancelAttempt(ProgressBus.token(cleaning)),"cleaning has its own cancellation token");
+            check(f.types().equals(List.of(YANOSIK,SPOTIFY)),"cleaning cancellation preserves both media targets");
+            check(f.session.available() && DailyCleaning.available(context,DailyCleaning.day()),"unsent cleaning cancellation preserves independent quotas");
+        }
+        try (Fixture f = new Fixture(context)) {
+            Call call=f.gate(HomeEvent.DEPARTURE_STARTED);call.success.run();
+            long cleaning=f.id(CLEANING);f.queue.cancel(cleaning);
+            ProgressBus.update(context,cleaning,Phase.STARTED,Reason.NONE);
+            check(ProgressBus.claimSend(context,cleaning),"synthetic admitted cleaning send commits only its daily quota");
+            HomeActions.end();check(HomeActions.begin(cleaning,HomeAction.CLEANING),"hold cleaning transport cleanup lease");
+            ProgressBus.onCancel(cleaning,() -> true);
+            check(ProgressBus.cancelAttempt(ProgressBus.token(cleaning)),"sent cleaning cancellation is independent");
+            check(f.types().equals(List.of(YANOSIK,SPOTIFY)) && !f.mediaReady(),"media survives cancellation but waits for actual cleanup");
+            check(!DailyCleaning.available(context,DailyCleaning.day()) && f.session.available(),"sent cleaning keeps quota without consuming media reservation");
+            HomeActions.end();ProgressBus.finishCancellation(cleaning);
+            check(!f.mediaReady(),"cleaning cancellation feedback still precedes media after cleanup");
+            f.expireFeedback(cleaning);check(f.mediaReady(),"media can continue after independent cleaning cleanup and feedback");
+            check(HomeActions.begin(),"restore outer synthetic lock");
+        }
+        try (Fixture f = new Fixture(context)) {
+            Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run(); f.expireAll(); invoke(f.runtime,"drain");
+            check(f.jobs().isEmpty() && DailyCleaning.available(context,DailyCleaning.day()),"expired cleaning consumes no daily quota");
+            call.success.run(); HomeActions.gateSuccessCallback(call.id).run();
+            check(f.jobs().isEmpty(),"expired departure occurrence never retries");
+        }
+    }
     private static void scheduling(Context context) {
         for (YanosikPresence.State presence : new YanosikPresence.State[]{YanosikPresence.State.WORK_DETECTED,YanosikPresence.State.NO_WORK_SIGNAL,YanosikPresence.State.UNKNOWN}) {
             try (Fixture f = new Fixture(context)) {
                 Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
+                f.completeCleaning();
                 f.fakeYanosik(presence,false);
                 HomeActions.end(); invoke(f.runtime,"drain");
                 check(f.opens==0 && f.types().equals(List.of(SPOTIFY)),"working/missing/unknown Yanosik does not reopen or block Spotify");
@@ -180,6 +273,7 @@ final class DepartureMediaChecks {
         }
         try (Fixture f = new Fixture(context)) {
             Call call=f.gate(HomeEvent.DEPARTURE_STARTED); call.success.run();
+            f.completeCleaning();
             f.fakeYanosik(YanosikPresence.State.NO_WORK_SIGNAL,true);
             HomeActions.end(); invoke(f.runtime,"drain");
             check(f.opens==1 && (long)get(f.queue,"mediaNotBefore")>SystemClock.elapsedRealtime(),"actual launch request retains ten-second grace");
@@ -197,6 +291,9 @@ final class DepartureMediaChecks {
         final Context context;
         final SharedPreferences prefs;
         final JourneySession session;
+        final SharedPreferences daily;
+        final boolean hadDaily;
+        final long previousDay;
         final long epoch;
         final java.util.Set<Long> previousIds;
         final AutomationRuntime runtime;
@@ -206,6 +303,9 @@ final class DepartureMediaChecks {
         int opens;
         @SuppressWarnings("unchecked") Fixture(Context context) {
             this.context=context; prefs=context.getSharedPreferences("journey_session",0);
+            daily=context.getSharedPreferences("daily_cleaning",0); hadDaily=daily.contains("last_attempt_day");
+            previousDay=daily.getLong("last_attempt_day",Long.MIN_VALUE);
+            check(daily.edit().clear().commit(),"isolated cleaning fixture quota");
             previousIds=ProgressBus.snapshot().stream().map(ProgressModel.State::id).collect(java.util.stream.Collectors.toSet());
             check(prefs.edit().clear().commit(),"isolated journey session");
             epoch=ProgressBus.reset(context,Reason.RESET);
@@ -240,6 +340,20 @@ final class DepartureMediaChecks {
                 public void open(Intent intent) { opens++; }
             },() -> presence));
         }
+        @SuppressWarnings("unchecked") void completeCleaning() {
+            long id=id(CLEANING); queue.cancel(id);
+            ProgressBus.update(context,id,Phase.SKIPPED,Reason.NO_CONFIG);
+            check(!mediaReady(),"automatic skip feedback precedes media");
+            check(DailyCleaning.available(context,DailyCleaning.day()),"unsent cleaning skip never consumes quota");
+            expireFeedback(id);
+        }
+        @SuppressWarnings("unchecked") void expireFeedback(long id) {
+            Object model=getStatic(ProgressBus.class,"model");
+            Map<Long,ProgressModel.State> attempts=(Map<Long,ProgressModel.State>)get(model,"attempts");
+            var state=attempts.get(id);
+            check(state.expiresAt()-SystemClock.elapsedRealtime()<=2500 && state.expiresAt()>SystemClock.elapsedRealtime(),"automatic cleaning feedback is bounded to 2.5 seconds");
+            attempts.put(id,new ProgressModel.State(state.id(),state.generation(),state.kind(),state.phase(),state.value(),state.reason(),state.validUntil(),0,state.evidenceId(),state.stage()));
+        }
         void expireAll() {
             for (var job : List.copyOf(jobs().values())) jobs().put(job.id(),new AutomationCoordinator.Job(job.id(),job.type(),job.event(),job.generation(),0,job.day()));
         }
@@ -251,6 +365,8 @@ final class DepartureMediaChecks {
                     ProgressBus.cancelAttempt(ProgressBus.token(state));
             ((java.util.concurrent.ExecutorService)get(monitor,"cycleReader")).shutdownNow();
             check(prefs.edit().clear().commit(),"journey fixture cleanup");
+            var restore=daily.edit().clear(); if(hadDaily) restore.putLong("last_attempt_day",previousDay);
+            check(restore.commit(),"daily fixture cleanup");
         }
     }
     private static MotionDetector.Fix motion(long t,double x,double speed) { return new MotionDetector.Fix(t,x,0,3,speed,true,0,false); }
