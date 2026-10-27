@@ -10,8 +10,8 @@ android {
         applicationId 'com.pbuchman.duduhome'
         minSdk 26
         targetSdk 36
-        versionCode 34
-        versionName '1.5.0-rc1'
+        versionCode 35
+        versionName '1.5.0'
         testInstrumentationRunner project.findProperty('routebookRunner') ?: 'com.pbuchman.duduhome.SafetyChecks'
     }
 

@@ -1,5 +1,16 @@
 # Change history
 
+## 1.5.0 (code 35) - 2026-10-27
+
+- Promote the unchanged 1.5.0-rc1 application behavior with stable version metadata.
+- The owner confirmed both hardware scenarios on installed RC1/code34: automatic departure
+  gate → observed robot start → Yanosik → audible Spotify, then a later same-day quota skip
+  without another cleaning. These are owner observations, not newly captured raw test logs.
+- RC installation preserved the existing map, configuration and safety/session state; monitoring
+  was verified healthy. Code35 radio installation remains a separate, unperformed step.
+- Source-only release; no public APK, map, private configuration or signing material.
+- See [release notes](docs/RELEASE_1_5_0.md) and [verification](docs/VERIFICATION.md).
+
 ## 1.5.0-rc1 (code 34) - 2026-10-27
 
 - Continue successful automatic departure with independent Full Cleaning before media.

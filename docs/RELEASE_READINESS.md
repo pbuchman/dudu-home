@@ -1,13 +1,21 @@
-# Release readiness - 2026-10-15
+# Release readiness - 2026-10-27
 
-## Current 1.5 gate
+## Stable 1.5.0 / code 35
 
-See [1.5.0-rc1](RELEASE_1_5_0_RC1.md). Source candidate publication is permitted after
-review/privacy/tests/CI; stable 1.5.0 remains blocked on physical departure, observed robot
-start, audible local Spotify and repeated same-day departure acceptance. Earlier evidence
-below does not establish these new checks. No backend deployment or map build is included.
+See [stable release notes](RELEASE_1_5_0.md) and VERIFICATION.md. On 2026-10-27 the owner
+confirmed both required scenarios on installed RC1/code34: automatic gate → observed robot
+start → Yanosik → audible Spotify, and a later same-day quota skip without another cleaning.
+This satisfies the scoped hardware acceptance gate and explicitly authorizes stable promotion.
+It is owner-confirmed evidence, not a new instrumented/raw-log campaign.
 
-## Current: 1.4.0-rc1 / code 25
+Code35 changes version metadata/documentation only. Review, privacy and final PR/main/tag CI
+must pass before publication. The code34 installation, existing map/configuration/state and
+healthy monitor were verified; separate code35 radio installation has not been performed.
+Generic installer compatibility issues found during that update remain tooling work, not fixes
+in this stable promotion. No backend deployment, map build or private routine change is included.
+Earlier unobserved firmware, cancellation and wake scenarios remain limitations.
+
+## Historical: 1.4.0-rc1 / code 25
 
 Detailed Routebook analytics run on Home Dev; Android changes only the location panel.
 See [scope and delivery](RELEASE_1_4_0_RC1.md), [analytics contract](../routebook/contract/ANALYTICS.md)

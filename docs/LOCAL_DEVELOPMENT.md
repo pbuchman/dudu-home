@@ -1,14 +1,34 @@
 # Development handoff
 
-## Current candidate: 1.5.0-rc1 / code 34
+## Current stable preparation: 1.5.0 / code 35
+
+The owner requested official stable promotion on 2026-10-27 after confirming two scenarios
+on installed RC1/code34: the complete automatic gate → observed robot start → Yanosik →
+audible Spotify sequence, and a later same-day quota skip without another cleaning. This is
+owner confirmation; no new raw recordings or logs were produced by stable preparation.
+Code34 installation preserved map/configuration/safety state and monitoring was verified healthy.
+
+Starting from main `b63936e`, code35 changes only version metadata and release documentation.
+Application behavior and installer code remain unchanged. Stable debug/test-APK builds and
+lint passed with JDK17/SDK36, and the built APK reports code35/version1.5.0. Review, privacy
+and final CI gates still apply; the coordinator owns publication. Code35 has not been installed on the radio.
+Do not treat acceptance of code34 as a performed code35 installation or as proof of every
+historical firmware, cancellation, location or wake scenario. See RELEASE_1_5_0.md.
+
+The RC update needed private operator handling of firmware process/dump formatting,
+maintenance observer processes and accessibility-probe availability. Those observations do
+not establish a generic installer fix. Keep fail-closed safeguards; never clear data, reset
+quotas, downgrade, add update backups or roll back automatically.
+
+## Previous candidate preparation: 1.5.0-rc1 / code 34
 
 Public RC5 and audited code33 additions are unified with independent departure cleaning.
 There is no separate -local release. See RELEASE_1_5_0_RC1.md for delivery and hardware gates.
-Physical ADB was unavailable during preparation; installed version/signature and installation
-remain unverified. Never downgrade, clear data, reset quotas, create update backups or roll back
+Physical ADB was unavailable at RC preparation; the later installation and owner-confirmed
+acceptance are recorded in the current handoff above. Never downgrade, clear data, reset quotas, create update backups or roll back
 automatically. Backend, existing map and private routines are unchanged.
 
-## Current candidate: 1.4.0-rc5 / code 32
+## Historical candidate: 1.4.0-rc5 / code 32
 
 RC5 continues a successful automatic departure with Yanosik and Spotify without requiring
 another stop or movement countdown. Source baseline is public RC3, not the separate local
