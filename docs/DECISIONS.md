@@ -1,5 +1,17 @@
 # Design decisions
 
+## Stable 1.5 promotion - October 27
+
+- The owner explicitly requested stable 1.5.0 after confirming both acceptance scenarios on
+  installed RC1/code34: automatic gate → observed robot start → Yanosik → audible Spotify,
+  and a later same-day quota skip without another cleaning. Attribute this evidence to the
+  owner confirmation on 2026-10-27; no new raw logs or broader hardware coverage are implied.
+- Allocate code35/1.5.0 for the stable artifact. Change version metadata and documentation
+  only; preserve RC application behavior, safety rules and release history. Its separate
+  radio installation remains unverified until performed.
+- Keep review, privacy and final PR/main/tag CI gates. Publish source only; no APK, private
+  map/configuration/keys, backend deployment or installer behavior change is included.
+
 ## Full departure continuation - 1.5.0
 
 A successful own automatic DEPARTURE_STARTED call queues independent Full Cleaning,
@@ -31,8 +43,9 @@ a UI dispatch before midnight. Preserve historical last_attempt_day conservative
 One source line includes reviewed code33 street stability, schema3 map reading, compact panels,
 window layout and durable private diagnostics, plus guarded no-backup update tooling.
 Preserve RC5 history and all Binder, endpoint, permission and protocol safeguards.
-Only source prereleases are published; the private APK, maps/configuration/keys are excluded.
-Stable 1.5.0 requires physical departure/robot/audio/repeat-limit acceptance and final CI.
+At RC preparation, publication was source-only and stable promotion was held on physical
+departure/robot/audio/repeat-limit acceptance and final CI. The owner confirmation and stable
+decision above supersede that acceptance hold; private APK/maps/configuration/keys remain excluded.
 No backend deployment, map build or private routine change is included.
 
 ## Departure continuation - October 27, RC5

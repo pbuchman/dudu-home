@@ -22,7 +22,9 @@ direction. It does not shorten the phone snapshot or bypass fresh idle admission
 Event time, dispatch, `DIAL_REQUESTED`, outgoing and idle are separate diagnostic milestones;
 three seconds is not a promise that the phone has dialled. Cycle and rejection diagnostics
 contain categories/counters only and cannot initiate a Binder command. See FUNCTIONAL.md
-and STARTUP_DIAGNOSTICS.md. The new detector's physical acceptance is pending.
+and STARTUP_DIAGNOSTICS.md. On 2026-10-27 the owner confirmed the installed code34 departure
+sequence through observed robot start and audible Spotify, plus a later same-day cleaning
+quota skip. See VERIFICATION.md for attribution and the remaining unobserved hardware cases.
 
 ## Explicit user cancellation
 

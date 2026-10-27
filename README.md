@@ -5,7 +5,8 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
+After a successful automatic departure call, or sustained driving elsewhere, it starts
+Yanosik, then opens Spotify and requests local music playback.
 Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
 Before generic driving detection, a location precondition gives a possible gate departure or
 return priority even when its call event is not ready yet. Media waits for a successful gate
@@ -13,13 +14,16 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-**Candidate `1.5.0-rc1` (code 34).** A successful automatic departure call continues with
+**Stable `1.5.0` (code 35).** A successful automatic departure call continues with
 Full Cleaning, Yanosik and Spotify while the car may still be waiting at the gate. No extra
-standstill or outbound checkpoint is required. One source line now includes the reviewed
-street stability, map-schema-3 support, compact panels, window layouts and private diagnostics.
-[Release contract and acceptance](docs/RELEASE_1_5_0_RC1.md). Physical installation and
-road/robot/audio acceptance remain pending; the stable release requires that evidence.
-The earlier [RC5 media fix](docs/RELEASE_1_4_0_RC5.md) remains included.
+standstill or outbound checkpoint is required. The release includes reviewed street stability,
+map-schema-3 support, compact panels, window layouts and private diagnostics.
+On 2026-10-27 the owner confirmed the complete sequence, observed robot start and audible
+Spotify on installed RC1/code34, plus a later same-day quota skip without another cleaning.
+[Release notes and evidence limits](docs/RELEASE_1_5_0.md). Code35 changes version metadata
+and documentation only; its separate radio installation remains pending.
+The [RC1 record](docs/RELEASE_1_5_0_RC1.md) and earlier [RC5 media fix](docs/RELEASE_1_4_0_RC5.md)
+remain documented.
 Source only: no public APK, map, private configuration or signing key.
 
 Release checks cover Android, the existing v1 collector and private Routebook analytics.
@@ -103,7 +107,8 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   private JSON and importing it again; no source edit or rebuild is needed. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
-  ten seconds of qualified GPS movement. First check its foreground-service notification.
+  ten seconds of qualified GPS movement, or after a successful automatic departure gate call.
+  The departure continuation needs no new stop or movement countdown. First check its foreground-service notification.
   If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
   skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
   gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
@@ -139,12 +144,16 @@ with one connected phone: idle → dial → outgoing → delay → hangup → id
 phone path was also checked. On 2026-09-08 the combined APK was installed on that radio:
 both manual tiles returned to the menu after gate-call success / Roborock cloud acceptance,
 and background GPS delivery was verified. On 2026-09-12 a full reboot, one ignition recovery
-and one automatic return call also passed. Further acceptance remains in the [verification ledger](docs/VERIFICATION.md).
+and one automatic return call also passed. On 2026-10-27 the owner confirmed the code34
+full departure sequence through observed robot start, Yanosik and audible Spotify, and a later
+same-day quota skip without another cleaning. These are owner-confirmed observations;
+remaining hardware boundaries are in the [verification ledger](docs/VERIFICATION.md).
 
 The implementation uses undocumented DUDU/SYU IPC; other firmware and two-phone setups are not
 certified. It cannot detect the first ringback, reception by the controller, or physical gate
-opening. Roborock's accepted response confirms the cloud request, **not completed cleaning or
-even physical robot movement**. Previous computer-side routine experiments are not radio tests.
+opening. Roborock's accepted response alone confirms the cloud request, **not completed cleaning or
+physical robot movement**. The owner's observed robot start is separate evidence and does not
+mean the routine finished. Earlier computer-side routine experiments remain separate from radio tests.
 
 ## Build and verification
 

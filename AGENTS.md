@@ -52,7 +52,13 @@ Automatic cleaning errors/skips last 2.5 seconds and wait for cleanup; manual UI
 Keep RAM-only 120-second queues and generation/cycle guards. RC5 documentation remains history.
 Maintain guarded idle/signature/in-place update checks, data/maps and durable safety state.
 Normal updates create no backups, perform no downgrade/data clear/automatic rollback.
-Do not publish stable 1.5.0 until physical departure/robot/audio/daily-limit acceptance passes.
+The owner confirmed both 1.5 acceptance scenarios on installed RC1/code34 on 2026-10-27:
+successful automatic departure through observed robot start, Yanosik and audible Spotify,
+and a later same-day quota skip without another cleaning. Stable 1.5.0/code35 is authorized
+after review, privacy and final CI gates. Its separate radio installation is not yet verified.
+Attribute these hardware results to owner confirmation; do not invent raw logs or mark
+unobserved cancellation, firmware or wake scenarios complete. Stable promotion changes
+version metadata/documentation only; RC history and source-only distribution remain intact.
 Never print headers, account payloads, routine IDs, connection addresses or raw firmware logs.
 Do not bypass a browser security refusal to store secrets. Google Password Manager backup is
 not completed; the local owner-only credential bundle is the working source of configuration.

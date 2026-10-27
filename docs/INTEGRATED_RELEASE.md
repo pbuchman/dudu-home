@@ -1,15 +1,17 @@
-# Combined main candidate: 1.4.0-rc3 / code 27
+# Combined source delivery
 
 ## 1.5 delivery supersedes earlier rollout instructions
 
-Current candidate is 1.5.0-rc1/code34. See RELEASE_1_5_0_RC1.md and VERIFICATION.md.
-One source line contains RC5 plus reviewed local features. Source-only prerelease; no Home Dev
-deployment, map generation or routine changes. Installation and hardware acceptance remain
-separate from build and publication. Stable 1.5.0 is held until physical acceptance.
+Current stable preparation is 1.5.0/code35. See RELEASE_1_5_0.md and VERIFICATION.md.
+One source line contains RC5 plus reviewed local features. On 2026-10-27 the owner confirmed
+both departure/robot/audio and same-day quota scenarios on installed RC1/code34 and requested
+stable promotion. Code35 changes only metadata/documentation; its radio installation remains
+separate and has not been performed. Source-only publication includes no Home Dev deployment,
+map generation, routine change, APK or private assets. Review/privacy/final CI gates remain.
 
-## RC5 delivery supersedes the rollout instructions below
+## Historical RC5 delivery superseded the rollout instructions below
 
-Current candidate: **1.4.0-rc5 / code 32**, scoped to Android departure continuation.
+Historical candidate: **1.4.0-rc5 / code 32**, scoped to Android departure continuation.
 [Release notes](RELEASE_1_4_0_RC5.md) and VERIFICATION.md govern this delivery.
 No backend deployment or pairing is required. Public source derives from RC3 and excludes
 separate local street/layout candidates. Physical ADB is unavailable; installation is pending.
@@ -17,7 +19,7 @@ Check the actual installed source/features and signature before updating; retain
 maps, cooldowns and reservations. Use the current safe updater, without new backups,
 clearing, downgrading or automatic rollback. The older rollout instructions are historical.
 
-## Current change and independent delivery
+## Historical RC3 change and independent delivery
 
 The RC3 candidate adds conservative parking-tail corrections to private Home Dev summaries,
 with raw/estimated/provisional evidence kept visible. Android adds independent passive power

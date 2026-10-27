@@ -1,6 +1,31 @@
 # Verification ledger
 
+## Stable 1.5.0 / code 35 - owner acceptance on 2026-10-27
+
+- The owner explicitly confirmed both acceptance scenarios on the installed RC1/code34:
+  successful automatic departure gate call → observed robot start → Yanosik → audible
+  Spotify; and a later same-day departure showing the quota skip without another cleaning.
+  These are owner-confirmed physical observations, not newly captured raw test logs.
+- Code34 installation and its exact release artifact were verified during the operational
+  update. The existing map, configuration/navigation and safety/session state were preserved,
+  and monitoring was verified healthy. No map rebuild, new routine or backend change is implied.
+- Stable code35 changes version metadata and documentation only; RC application behavior is
+  unchanged. Its separate radio installation has not been performed. The owner acceptance
+  above belongs to code34 and must not be relabelled as a code35 device test.
+- On the stable metadata revision, `assembleDebug`, `assembleDebugAndroidTest` and
+  `lintDebug` passed with JDK17 and SDK36. Built APK metadata independently reports
+  `com.pbuchman.duduhome`, code35 and version1.5.0. Version/doc-link/whitespace checks passed;
+  no application, installer or backend behavior source differs from the RC baseline.
+  Final review, privacy and PR/main/tag CI remain separate coordinator gates.
+- Firmware process/dump formatting, a maintenance observer process and accessibility-probe
+  availability required private operator handling during the RC update. No generic installer
+  fix is included here. Historical unobserved cancellation, multi-phone, firmware/OTA, repeated
+  wake and location-accuracy scenarios remain limitations.
+
 ## Unified departure candidate 1.5.0-rc1 / code 34, 2026-10-27
+
+This records RC preparation. Later installation and owner acceptance above supersede its
+then-pending hardware status; the original build/emulator evidence remains attributed to RC1.
 
 - Public RC5 plus reviewed code33 street/schema3/panel/layout/diagnostic source and scoped
   updater source are integrated in one branch. No predecessor history or runtime data copied.
