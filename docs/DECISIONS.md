@@ -1,5 +1,40 @@
 # Design decisions
 
+## Full departure continuation - 1.5.0
+
+A successful own automatic DEPARTURE_STARTED call queues independent Full Cleaning,
+then Yanosik and Spotify, including while stationary without an earlier stop or checkpoint.
+The captured attempt, runtime generation and driving cycle must still match. Duplicated,
+manual, return, failed, cancelled and stale gate results cannot create a continuation.
+OUTBOUND_CHECKPOINT remains passive route evidence and has no command authority or cleaning countdown.
+
+Cleaning has a separate attempt and cancellation scope. Cancelling media does not cancel
+cleaning; cancelling cleaning permits remaining media after transport cleanup. No robot stop
+command is introduced. The gate retains its cleanup and five-second success display;
+Spotify waits ten seconds after a Yanosik launch request. Existing manual UI priority remains.
+RAM tasks expire after 120 seconds and are never replayed after restart/configuration/cycle reset.
+
+Automatic cleaning skips/errors/uncertain results display for 2.5 seconds and never open a
+persistent error or credentials form. Both that presentation and transport cleanup must end
+before media. Accepted cleaning says only "Zlecono sprzątanie"; it is not robot completion.
+Used quota says "Dzisiejsza próba sprzątania została już wykorzystana".
+Manual cleaning and manual-only Mop retain their existing behavior.
+
+ProgressBus uses SEND_ONLY reservation policy for automatic cleaning; other actions retain
+the existing policy. DailyCleaning commits synchronously at claimSend immediately before
+HTTP admission. Unsent cancellation, expiry, missing configuration or failure does not consume
+the day and does not retry this occurrence. A later real automatic departure may try.
+After admission, retain the reservation even for server error, timeout or uncertainty.
+Failed persistence prevents sending. Check Europe/Warsaw date again at admission, including
+a UI dispatch before midnight. Preserve historical last_attempt_day conservatively.
+
+One source line includes reviewed code33 street stability, schema3 map reading, compact panels,
+window layout and durable private diagnostics, plus guarded no-backup update tooling.
+Preserve RC5 history and all Binder, endpoint, permission and protocol safeguards.
+Only source prereleases are published; the private APK, maps/configuration/keys are excluded.
+Stable 1.5.0 requires physical departure/robot/audio/repeat-limit acceptance and final CI.
+No backend deployment, map build or private routine change is included.
+
 ## Departure continuation - October 27, RC5
 
 - A successful automatic DEPARTURE_STARTED call creates the existing Yanosik/Spotify
@@ -15,6 +50,110 @@
   external sending. No migration, durable commands, new permissions or Binder changes.
 - Release only this fix over public main. APKs and separate local candidates remain private;
   publication and emulator tests do not establish installation or road/audio acceptance.
+
+## Installer accessibility and map exclusion - October 19
+
+- Use the existing connected Wispr adapter's redacted ProbeReceiver tree, requiring a fresh
+  device-monotonic timestamp and complete roots/children/counts. Never attach UIAutomator or
+  change accessibility settings on the radio. Missing evidence fails closed.
+- Require explicit action_busy=false for a running Dudu process; absence of service/logs is
+  not idle evidence. Passive trip smoke proves visible control structure, not redacted text.
+- Hold changed/missing map replacement before writing until an enforced reader/process gate
+  exists. The persistent admission block is not a SQLite lock; process restart is possible.
+  Equal-hash no-transfer updates retain explicit process-absence checks around cleanup.
+  This safety hold supersedes the enabled direct replacement/repair path below.
+
+## Single-file map updates - October 18
+
+- Normal updates create no APK/data/map backups, saved installation receipts or automatic
+  rollback. This supersedes earlier update/backup guidance below; namespace migration is distinct.
+- Keep one designated `places.sqlite` in each explicitly managed host/radio directory. Validate
+  SQLite schema/integrity/source policy and APK compatibility before mutation (schema 2: code23+;
+  schema3: code29+). Existing schema2/3 packs need no companion manifest. Compute SHA at runtime.
+- Equal hash transfers zero map bytes. Changed/missing maps overwrite the final path directly
+  under the persistent installation block, then verify its hash. A partial failure stays blocked;
+  an explicit retry repairs it. Do not launch an incomplete database or restore old safety state.
+- Build replaces its designated output; all source metadata and short-heading source proof stay
+  in SQLite. Disposable OSM scratch is removed on success/failure. Cleanup removes only exact
+  recognized historical artifacts in the selected managed directory, never arbitrary extensions.
+- Preserve app data, configuration, daily quota, dial cooldown and journey/trip state. Observe
+  idle, block new admission and observe idle again before force-stop. Errors retain the block
+  without interrupting any later call. Local signature verification plus `install -r` enforces
+  package identity; no uninstall or downgrade. Hardware acceptance remains separate.
+
+## Content-sized windows - October 18 local layout candidate
+
+- Widen automation progress to at most 560 dp floating and 720 dp inline. Keep natural
+  content height, readable message width and a responsive adjacent/below cancellation control.
+  Bound overlay height to system-bar/cutout-safe space; overflow text scrolls while controls
+  remain reachable. Preserve attempt tokens, all action timing and the 350 ms horizontal drag.
+- Give native alerts explicit reading widths while retaining platform scrolling/buttons.
+  Reduce navigation chooser decoration and remeasure its scroll area at actual window bounds.
+  Full group names scroll beside the close control when necessary; destination text stays whole.
+- Preserve the selected 286 dp, street 25 sp/locality 16 sp passive card and its X semantics.
+  Full-screen content retains scrolling. Below 600 dp available height, reduce action
+  decoration and gaps to keep ordinary error controls in view; preserve text/button sizes.
+  Android/vendor notification and Toast geometry is outside this application-owned scope.
+- Allocate local code 31 separately from frozen code 30. Emulator layout evidence and radio
+  touch/display acceptance are separate; no publication or physical action follows from preview.
+
+## Confirmed street presentation and durable queue evidence - October 16 RC4
+
+- Keep raw matching quality separate from the street shown on screen. Retain a confirmed
+  street through uncertain observations without a time/distance presentation grace or
+  last-known prefix. Confirm another named or unnamed road with two distinct valid fixes.
+  A confirmed unnamed road hides the street row. This supersedes the local grace below.
+- Reset display memory at a new trip, provider disable, or ten seconds without a valid fix.
+  Older resolver generations cannot restore a pre-reset label. These presentation resets
+  never rearm gate, cleaning or media opportunities.
+- The compact card uses max286dp width, 25sp street and 16sp locality. Floating surfaces
+  support a 350ms non-button hold and horizontal drag with bounded persisted positions;
+  inline controls retain their existing behavior. Hiding the trip card never stops collection.
+- The owner explicitly requested on-device diagnostic evidence before dispatch and across
+  process restarts. Keep cancelled unsent occurrences in a private bounded journal while
+  preserving their existing quota/reservation semantics. This supersedes the historical
+  no-durable-cancellation-history rule, not any action safety rule.
+- Generic journals retain at most eight1MiB files for seven days. Private location decisions
+  and displayed labels retain at most32MiB for seven days, enabled by default and never
+  uploaded automatically. Credential and message contents remain excluded.
+- Do not add Wispr-based admission or delayed-Spotify suppression to the Dudu queue.
+  The separately maintained adapter owns its local dictation/media session.
+- Offline tests, replay, installation and physical acceptance are independent gates. Retained
+  labels are not proof of location correctness; a natural radio failure needs causal evidence.
+
+## Source-proven short-fragment heading candidate - October 16
+
+- Schema 3 adds `road_short_headings(road_id,heading,support_length)` and binds its policy,
+  source hash and generation. Preserve schemas 1/2 and schema-2 locality evidence.
+- Only nonzero fragments at most 5 m can use contiguous support from the same original
+  OSM way. Extend at most 10 m/eight edges from each end; traverse only source nodes with
+  eligible-road incidence exactly two. Stop at way ends/branches, reject curves above
+  15 degrees, repeated nodes, missing/zero geometry or exhausted edge limits. Require
+  both supported chain and chord at least 10 m. Never join ways by equal coordinates.
+- Keep source way IDs, segment ordinals, source node IDs and degree proof inside the private
+  SQLite pack alongside orientation. Count node incidence on disk with
+  bounded batches/cache; the full source/map remain outside Git.
+- Runtime requires actual bearing and speed above 2 m/s. Invalid/absent row or policy
+  retains old scoring. All road candidates, distance/margins/query guards, two-fix
+  confirmation, locality/online generation rules and 3 s/40 m retention remain unchanged.
+- This is a local candidate. Exact new-pack replay, held-out ground truth and physical
+  presentation/latency acceptance are separate gates; score changes alone prove none of them.
+
+## Local street stability integration - October 16
+
+- Keep offline matching responsive while optional Photon HTTP is in flight. Both lanes
+  coalesce pending fixes; only an exact current offline fix/session accepts online results.
+- Retain a recently confirmed street only as explicit `Ostatnio: …` / `LAST_KNOWN`,
+  bounded by 3 seconds and 40 metres. A contradictory named road or certain locality,
+  missing map coverage, invalid GPS or segment break clears it. Do not weaken road
+  ambiguity or locality boundaries to make a test appear stable.
+- Raw per-fix correlation requires a separate private runtime-file opt-in, bounded local
+  trace and no automatic export. Normal category-only diagnostics remain unchanged.
+- Code 28 combines the local code-24 street contract with the code-27 session timer,
+  movable card and passive diagnostic power observer. Keep atomic checkpoints, input
+  epochs, the separate power outbox and diagnostic UNKNOWN profile unchanged.
+- Code 28 is a local candidate only; build checks and approximate archived-route analysis
+  are distinct from new physical-radio acceptance. No release or publication is implied.
 
 ## Parking-tail corrections and passive power observations - October 16 RC3
 

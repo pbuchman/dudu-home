@@ -1,9 +1,13 @@
 package com.pbuchman.duduhome.trip;
 
-/** Independent field confirmation; two sources for one GPS fix are still one observation. */
+/** Raw resolver evidence and retained display are independent; one fix cannot confirm twice. */
 final class PlaceStabilizer {
-    private final Field locality=new Field(), street=new Field();
-    private PlaceResult latest=PlaceResult.unknown(false);
+    private final Field locality=new Field();
+    private PlaceResult latest=PlaceResult.unknown(false), shown=latest;
+    private String candidate="", confirmed="", candidateSource="offline", confirmedSource="offline";
+    private PlaceResult.Quality candidateQuality=PlaceResult.Quality.UNKNOWN, confirmedQuality=PlaceResult.Quality.UNKNOWN;
+    private long candidateFix=-1;
+    private int confirmations;
     private static final class Field {
         String candidate="", source="offline", displayed="", displayedSource="offline";
         PlaceResult.Quality quality=PlaceResult.Quality.UNKNOWN, displayedQuality=PlaceResult.Quality.UNKNOWN;
@@ -13,10 +17,9 @@ final class PlaceStabilizer {
             if (!candidate.equals(text) || quality!=evidence) {
                 candidate=text;quality=evidence;source=provenance;confirmations=1;lastFix=fix;
             } else {
-                if (lastFix!=fix) { confirmations++;lastFix=fix; }
+                if (fix>lastFix) { confirmations++;lastFix=fix; }
                 source=provenance;
             }
-            // During a disagreement, stop displaying the former place as current.
             if (!displayed.equals(text) || displayedQuality!=evidence) {
                 displayed="";displayedQuality=PlaceResult.Quality.UNKNOWN;
             }
@@ -28,9 +31,30 @@ final class PlaceStabilizer {
     PlaceResult offer(PlaceResult result,long fix) {
         latest=result;
         locality.offer(result.locality(),result.localityQuality(),result.localitySource(),fix);
-        street.offer(result.street(),result.streetQuality(),result.streetSource(),fix);
-        return new PlaceResult(locality.displayed,street.displayed,locality.displayedQuality,street.displayedQuality,
-                locality.displayedSource,street.displayedSource,result.covered());
+        boolean road=result.streetQuality()==PlaceResult.Quality.UNNAMED
+                || result.streetQuality()==PlaceResult.Quality.MATCHED && !result.street().isEmpty();
+        if (road) {
+            if (!candidate.equals(result.street()) || candidateQuality!=result.streetQuality()) {
+                candidate=result.street();candidateQuality=result.streetQuality();candidateFix=fix;confirmations=1;
+            } else if (fix>candidateFix) { confirmations++;candidateFix=fix; }
+            candidateSource=result.streetSource();
+            if (confirmations>=2) {
+                confirmed=candidate;confirmedQuality=candidateQuality;confirmedSource=candidateSource;
+            }
+        } else {
+            candidate="";candidateQuality=PlaceResult.Quality.UNKNOWN;candidateFix=-1;confirmations=0;
+        }
+        boolean current=road && confirmed.equals(result.street()) && confirmedQuality==result.streetQuality() && confirmations>=2;
+        PlaceResult.Quality displayQuality=confirmedQuality==PlaceResult.Quality.MATCHED && !current
+                ? PlaceResult.Quality.LAST_KNOWN : confirmedQuality;
+        shown=new PlaceResult(locality.displayed,confirmed,locality.displayedQuality,displayQuality,
+                locality.displayedSource,confirmedSource,result.covered());
+        return shown;
     }
+    PlaceResult offer(PlaceResult result,TripFix fix) {
+        // Invalid/noisy observations cannot confirm a road or erase the retained display.
+        return fix.valid() ? offer(result,fix.elapsed()) : shown;
+    }
+    PlaceResult current() { return shown; }
     PlaceResult latest() { return latest; }
 }

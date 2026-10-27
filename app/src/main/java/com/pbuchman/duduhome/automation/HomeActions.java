@@ -2,7 +2,6 @@ package com.pbuchman.duduhome.automation;
 
 import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.gate.GateNumberStore;
-import com.pbuchman.duduhome.roborock.RoborockStore;
 import com.pbuchman.duduhome.ui.MainActivity;
 import com.pbuchman.duduhome.diagnostics.Diagnostics;
 
@@ -45,8 +44,15 @@ public final class HomeActions {
     }
     public record Request(HomeAction action, long attempt) { }
     private static boolean busy;
+    private static long busyAttempt;
+    private static HomeAction busyAction;
     public static synchronized boolean begin() { if (busy) return false; busy = true; schedulingChanged(); return true; }
-    public static synchronized void end() { busy = false; schedulingChanged(); }
+    public static synchronized boolean begin(long attempt,HomeAction action) {
+        if(!begin())return false;busyAttempt=attempt;busyAction=action;return true;
+    }
+    public static synchronized long busyAttempt() { return busyAttempt; }
+    public static synchronized String busyAction() { return busyAction==null ? "NONE" : busyAction.name(); }
+    public static synchronized void end() { busy = false;busyAttempt=0;busyAction=null;schedulingChanged(); }
     public static synchronized boolean busy() { return busy; }
     private static WeakReference<MainActivity> visible = new WeakReference<>(null);
     private static WeakReference<MainActivity> screen = new WeakReference<>(null);
@@ -61,6 +67,22 @@ public final class HomeActions {
         return !busy() && !pending && (activity == null || activity.allowsExternalLaunch());
     }
 
+    /** Diagnostic observation only; never relaxes the existing launch predicates. */
+    public static String launchBlocker(boolean media) {
+        if (busy()) {
+            long owner=busyAttempt();
+            boolean active = ProgressBus.snapshot().stream().anyMatch(s -> (owner==0 || s.id()==owner) && !ProgressModel.terminal(s.phase())
+                    && s.phase() != Phase.CANCELLING && (s.phase() == Phase.STARTED || s.phase() == Phase.ACCEPTED));
+            return active ? "ACTIVE_OPERATION" : "RESOURCE_CLEANUP";
+        }
+        if (pendingToken != null && SystemClock.elapsedRealtime()-pendingSince<5000) return "UI_REQUEST_PENDING";
+        MainActivity activity=screen.get();
+        if (activity!=null && !activity.allowsExternalLaunch()) return "PRESENTATION_BUSY";
+        activity=visible.get();
+        if (media && activity!=null && !activity.isFinishing() && !activity.isDestroyed()) return "MENU_VISIBLE";
+        return "NONE";
+    }
+
     public static boolean callsGate(HomeEvent event) {
         return event == HomeEvent.DEPARTURE_STARTED || event == HomeEvent.RETURN_APPROACH;
     }
@@ -70,27 +92,24 @@ public final class HomeActions {
     }
 
     public static void dispatch(Context context, HomeEvent event) {
-        if (!callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT) return;
+        if (!callsGate(event)) return;
         long attempt = ProgressBus.request(context, ProgressBus.kind(event));
-        if (event == HomeEvent.OUTBOUND_CHECKPOINT) {
-            ProgressBus.reserveWith(attempt, () -> DailyCleaning.reserve(context));
-            if (!DailyCleaning.available(context, java.time.LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")).toEpochDay())) {
-                skip(context, attempt, Reason.DAILY_LIMIT_OR_STORAGE, "SKIP_CLEANING_DAILY_LIMIT_OR_STORAGE"); return;
-            }
-        }
         dispatchReserved(context, event, attempt);
     }
 
     /** Pending work is in RAM; the executor commits immediately before its command. */
     public static void dispatchReserved(Context context, HomeEvent event, long attempt) {
-        if (ProgressBus.cancelled(attempt)) return;
-        HomeAction action = callsGate(event) ? HomeAction.GATE : HomeAction.CLEANING;
+        if (!callsGate(event)) return;
+        dispatchReserved(context, HomeAction.GATE, attempt);
+    }
+    public static void dispatchReserved(Context context, HomeAction action, long attempt) {
+        if (ProgressBus.cancelled(attempt) || action == HomeAction.MOP) return;
         if (busy() || PrivateImport.pending(context)) { skip(context, attempt, Reason.BUSY_OR_MAINTENANCE, "SKIP_" + action + "_BUSY_OR_MAINTENANCE"); return; }
         if (action == HomeAction.GATE) {
             GateNumberStore store = new GateNumberStore(context);
             if (store.read() == null) { skip(context, attempt, Reason.NO_NUMBER, "SKIP_GATE_NO_NUMBER"); return; }
             if (store.cooldownRemainingMillis() > 0) { skip(context, attempt, Reason.COOLDOWN, "SKIP_GATE_COOLDOWN"); return; }
-        } else if (new RoborockStore(context).read() == null) { skip(context, attempt, Reason.NO_CONFIG, "SKIP_CLEANING_NO_CONFIG"); return; }
+        }
         Diagnostics.recordAttempt(context, attempt, "DISPATCH_" + action);
         MainActivity activity = visible.get();
         if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {

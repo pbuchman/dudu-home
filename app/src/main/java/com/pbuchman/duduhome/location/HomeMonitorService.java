@@ -46,7 +46,7 @@ public final class HomeMonitorService extends Service implements LocationListene
                 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.SPOTIFY) return;
         switch (observed.kind()) {
             case YANOSIK, SPOTIFY -> { this.motion.cancel(); this.motionOrigin = null; }
-            case DEPARTURE, RETURN, CLEANING -> { if (this.detector != null) this.detector.cancel(observed.kind()); }
+            case DEPARTURE, RETURN -> { if (this.detector != null) this.detector.cancel(observed.kind()); }
             default -> { }
         }
     };

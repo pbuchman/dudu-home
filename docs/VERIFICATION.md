@@ -1,5 +1,48 @@
 # Verification ledger
 
+## Unified departure candidate 1.5.0-rc1 / code 34, 2026-10-27
+
+- Public RC5 plus reviewed code33 street/schema3/panel/layout/diagnostic source and scoped
+  updater source are integrated in one branch. No predecessor history or runtime data copied.
+- Android debug/instrumentation builds and lint passed. Pure detector/queue/continuation,
+  progress (20,000 home and 20,000 motion samples), trip/timer/street/heading/diagnostics and
+  Routebook protocol checks passed. Native fake Roborock transport checks cover no-write
+  denial, midnight, failed persistence and retained admitted-send quota without a real robot.
+- Installer host tests: 26 passed; bounded cleanup: 6; private tools: 9; navigation: 6;
+  privacy-scanner regression: 1; fresh installer: 5. These are synthetic ADB/input tests,
+  not a radio installation. Map/parser and short-heading suites each passed all 7 tests
+  using pinned pyosmium 4.3.1; no owner map was built or changed.
+- Local Routebook build and contract passed. Backend: 53 passed, 7 database-dependent skipped;
+  UI: 29 passed; parking: 6 passed, 2 database-dependent skipped. Deployment templates: 5;
+  deployment plan: 12. CI separately runs PostGIS/nginx/browser checks. No backend deployed.
+- Local APK is code34/1.5.0-rc1; signature verifies and matches the prior local code33 APK.
+  This does not verify the installed radio signature. Source-only publication excludes APK,
+  map, private configuration, robot credentials, navigation values and signing material.
+- Working-tree/history scanner with all private denylists passed; generic icon/schema words
+  and ordinary prose were manually reviewed. No new image or runtime capture is published.
+- Physical ADB discovery, including cached authorized endpoint and mDNS, found no available
+  radio. Installed version/signature, installation and real departure/robot/audio/same-day
+  repeat acceptance remain pending. Do not call this physical confirmation of the fix.
+- Five emulator layout profiles passed: radio, radio large font, landscape, compact and
+  compact large font; 21 captures each (105 total), with actual pixel/density/font checks.
+  The capture runner pins rotation while taking overlays because the phone launcher can
+  otherwise switch back to portrait after the tested Activity closes.
+- Installer prerequisites use an isolated radio-size display and restore previous settings;
+  the compact large-font layout left by a preceding run is unsuitable for the full-suite
+  drag fixture. The emulator-only update test substitutes the unavailable vendor idle probe
+  only after verifying its serial/hardware and absence of the vendor call service. Production
+  idle verification remains fail-closed.
+- Full emulator SafetyChecks passed, including runtime-to-Activity cleaning feedback and
+  subsequent media dispatch, native fake Roborock send admission and quota preservation.
+  A new UI polling fixture was corrected to stop treating a finishing Activity as an active
+  presentation owner; elapsed feedback and exact-once dispatch assertions remain.
+- The final emulator installer run passed: actual Package Manager signer mismatch rejection,
+  in-place install/import/retry under the persistent update block, encrypted synthetic
+  credentials, and preserved safety/session/trip/quota state across restart. Display settings
+  were restored. No actual radio idle/transport or Roborock cloud behavior was tested.
+- PR/main/tag CI gates are recorded by GitHub Actions and the release page. Stable 1.5.0
+  remains held on hardware acceptance and a separate final versionCode/CI.
+
 ## Departure continuation 1.4.0-rc5 / code 32, 2026-10-27
 
 - Scoped source baseline is public RC3. Separate local street/layout changes are excluded.
@@ -26,6 +69,117 @@
 - Physical ADB was unavailable. Installed version/signature, installation, uninterrupted
   departure, audible Spotify playback and no repeats after a traffic stop remain unverified.
   The code-level diagnosis is consistent with the report, not a captured radio incident.
+
+## Installer accessibility compatibility - October 19
+
+- Twenty-six synthetic host update tests pass, including existing no-backup/input/signature/
+  import safety checks plus fresh/stale/disconnected/incomplete/truncated probe handling,
+  exact node-count checks, redacted text handling, explicit process/busy evidence and restart
+  refusal. Full-wrapper checks refuse changed/missing/corrupt maps and nonempty SQLite sidecars
+  before APK/configuration mutation; cleanup preserves sidecars appearing after preflight.
+  No physical ADB/device command was executed by this implementation workstream.
+- Radio UI reads use the existing connected Wispr ProbeReceiver; no UIAutomator fallback.
+  Passive trip smoke verifies visible resource/control structure only. Start/Pauza/Reset/time
+  text remains unverified because the adapter deliberately redacts non-Wispr text.
+- Changed/missing/corrupt maps fail before overwrite/sidecar cleanup. Source inspection shows
+  maintenance is action admission protection, not universal TripController/OfflinePlaces
+  exclusion. An enforced transfer-time gate and physical acceptance remain outstanding.
+  Equal-hash no-transfer behavior is retained with explicit process-absence checks.
+- The October18 direct-transfer/partial-retry results below describe earlier tooling and
+  do not establish current safe map-replacement support.
+
+## Single-file map/update tooling - October 18
+
+- Host update tests:15, bounded legacy artifact cleanup:6, private configuration tools:9 pass.
+  Map format/parser:7 and source-heading:7 pass with actual osmium4.3.1, including toy PBFs.
+  They cover identical-hash zero transfer/unchanged mtime, changed/missing/corrupt remote maps,
+  bad local database/policy/schema/signing input, partial transfer and explicit retry, symlink
+  refusal, SQLite sidecar handling, blocked imports and failure after release without call interruption.
+- Coordinator's emulator update/import test passes with a generated alternate signer rejected
+  by Android, followed by correct-signer retry. It preserves byte-identical dial cooldown,
+  daily quota, journey/departure state and paused trip data, encrypted credentials and navigation,
+  retains the independent outer block after consumed import and creates no backup directory.
+- Coordinator's actual Android ADB map smoke passes fresh/changed transfer, two identical-hash
+  skips, injected partial write with retained block and explicit retry to the expected SHA.
+  Host and emulator retain exactly one `places.sqlite`, including after opening the passive
+  trip screen; stale SQLite journal/WAL/SHM files are handled under quiescence.
+- Android build/test-APK/lint, baseline emulator no-dial/SafetyChecks, pure trip/detector/progress,
+  navigation/privacy tooling and unchanged Routebook build/unit suites passed in coordinator checks.
+  Routebook database-dependent tests retain their existing seven skips.
+- No physical radio installation, real call/robot action, owner archive cleanup, driving/wake
+  acceptance or publication was performed. Older backup/manifest/atomic-map evidence below
+  describes historical tooling and does not prescribe the current update path.
+
+## Local window layout candidate / code 31, 2026-10-18
+
+- Based on frozen code-30 source `95d7721` in an isolated local worktree. Android
+  `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` pass. The existing pure
+  progress/cancellation/equivalence checks pass over 40,000 synthetic home/motion samples.
+  Trip/time, diagnostic power/profile, retained-street (28) and heading host checks pass.
+  Map fixture suites pass with four optional parser cases skipped in this environment; all
+  six navigation-tool checks and the working-tree privacy scan pass. Lint has no errors
+  and retains 32 warnings, including layout-efficiency and existing copy/resource warnings.
+- The focused emulator-only window harness covers first-run, menu, both setup forms,
+  error presentation, native settings/media/reset alerts, twelve long navigation choices,
+  inline progress, seven floating progress states, overlong message scrolling and the
+  preserved passive street card. Its checks require full text, visible 48 dp controls,
+  bounded dimensions, no dial reservation and no action executor.
+- All five final coordinator-run display/font profiles passed 21 captures each (105 total),
+  including 2000 × 1200 at 240 dpi, 1280 × 720 at 240 dpi and 800 × 480 at 160 dpi,
+  with normal/enlarged fonts. The empty first-run fixture is visibly capturable without
+  weakening production protection. Compact error controls fit at normal font and remain
+  reachable by scrolling at enlarged font. Native drag, persisted position and hide/restore
+  across process restart and 2000 × 1200 → 800 × 480 resize passed separately.
+- Full emulator SafetyChecks passes on the final candidate APK with normal 2000 × 1200,
+  240 dpi, font 1.0 and GPS permissions denied. It covers real progress window/menu
+  rendering, cancellation/stale tokens, native 350 ms hold/drag, notifications and wrapped
+  street UI, alongside fake Roborock/media/Maps transports and missing-SYU gate safety.
+  No physical device, real robot, media playback or DUDU IPC was exercised.
+- Capture details are tracked in WINDOW_LAYOUT.md. Physical radio display/touch, movement
+  and vendor-overlay acceptance remain pending. No physical action, installation or
+  publication was performed by the presentation implementation worker.
+
+## Local source-heading candidate / code 29, 2026-10-16
+
+- Built from the frozen local code-28 source in an isolated private non-Git source copy.
+  `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` pass. Pure trip/time/power,
+  29 street-stability/resolver checks and the finite-support/policy/direction checks pass.
+- Seven heading tests include independent invented geometry and actual toy-PBF parsing
+  through both builder passes. Five existing format/locality-parser tests and eleven
+  map-update tests pass with the computer osmium environment. A synthetic million-node
+  incidence benchmark measures bounded memory/disk mechanics, not national-build duration.
+- Android SQLite fixtures compile for schema 2/3, straight/reverse/unnamed turns,
+  stationary/no-bearing/no-speed/poor GPS, invalid support/policy, parallel ambiguity,
+  locality retention and query overflow. They were not run on an emulator or radio in
+  this candidate session. Existing online/generation tests remain unchanged.
+- Exact new national-pack replay, independently labelled held-out evidence and physical
+  radio presentation/latency acceptance remain pending. No installation, publication,
+  physical action or claim of national correctness follows from this candidate.
+
+## Local street integration / code 28, 2026-10-16
+
+- Built from merged code 27 (`44f9f1f`) plus the existing local code-24 street contract.
+  Manual controller integration retains the session timer, input epochs, atomic checkpoints,
+  passive diagnostic power observer and independent v1 GPS/v2 power queues. No gate,
+  cleaning, media, road geometry or street-confirmation threshold changes are included.
+- `assembleDebug assembleDebugAndroidTest lintDebug` passed. A fresh-worktree SDK-path
+  failure was resolved by supplying the installed SDK through ANDROID_HOME; no source or
+  dependency change was needed. The APK uses code 28 / 1.4.0-rc3-local-street2 and the
+  existing local signing certificate. Exact source/APK hashes remain in the private receipt.
+- Trip distance/session-time, radio profile/debounce and all 29 street-stability checks
+  passed. The synthetic map suite passed three cases and skipped two optional parser cases
+  without pyosmium. The separate Routebook protocol suite passed all 84 GPS assertions and
+  the shared v2 request/ACK/validation checks.
+- Detector/departure/motion/priority/progress checks passed. Installer (10), private tools
+  (8), navigation (6), public-tree regression (1), fresh installer (5) and diagnostics (4)
+  tests passed. The source diff passes whitespace validation.
+- Routebook build and unit suites passed unchanged: backend 53 passed, 7 database/runtime
+  cases skipped without their integration environment; UI 29 passed. No backend/browser
+  runtime acceptance or Home Dev deployment was performed for this Android-only merge.
+- The existing emulator session regression was adapted for the new resolver type and
+  generation, and the complete test APK compiled. Instrumentation, first-launch/no-dial,
+  radio update, real GNSS, street presentation and power/sleep acceptance were not executed
+  by this integration worker. Those remain separate coordinator/runtime checks.
 
 ## Integrated 1.4.0-rc3 / code 27, 2026-10-16
 

@@ -42,6 +42,11 @@ public final class AutomationCoordinator {
         queued.remove(j.id);
         return j;
     }
+    /** Read-only observations; these do not advance or reserve queued work. */
+    public List<Job> snapshot() { return List.copyOf(queued.values()); }
+    public Job head() { return queued.values().stream().min(Comparator.comparingInt((Job v) -> v.type.priority)
+            .thenComparingLong(Job::id)).orElse(null); }
+    public long mediaNotBefore() { return mediaNotBefore; }
     public void yanosikLaunched(long now) { mediaNotBefore = now + 10000; }
     public long nextWake(long now) {
         long next = Long.MAX_VALUE;

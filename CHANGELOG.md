@@ -1,5 +1,14 @@
 # Change history
 
+## 1.5.0-rc1 (code 34) - 2026-10-27
+
+- Continue successful automatic departure with independent Full Cleaning before media.
+- Remove checkpoint command dispatch; reserve the daily limit only at send admission.
+- Keep automatic cleaning failures/skips bounded to 2.5 seconds without blocking media forever.
+- Preserve manual actions, independent cancellation, durable sent limits and stale-result guards.
+- Unify reviewed street/schema3/panel/layout/diagnostic additions and no-backup updater tooling.
+- Source-only RC; physical installation, robot/road/audio acceptance and stable release pending.
+
 ## 1.4.0-rc5 (code 32) - 2026-10-27
 
 - Continue automatic departure after a successful gate call with Yanosik then Spotify,

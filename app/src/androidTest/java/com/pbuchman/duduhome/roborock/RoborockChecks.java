@@ -4,6 +4,8 @@ import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.automation.DailyCleaning;
 import com.pbuchman.duduhome.automation.HomeAction;
 import com.pbuchman.duduhome.automation.HomeActions;
+import com.pbuchman.duduhome.automation.ProgressBus;
+import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.gate.GateNumberStore;
 import com.pbuchman.duduhome.ui.MainActivity;
@@ -93,6 +95,7 @@ public final class RoborockChecks {
                 == RoborockClient.Result.SERVER_ERROR, "no redirect execution");
         require(new RoborockClient(url -> { FakeConnection f = new FakeConnection(url); f.body = "x".repeat(17000); return f; }).execute(credentials)
                 == RoborockClient.Result.PROTOCOL_ERROR, "response size bound");
+        automaticQuotaBoundary(i,c,credentials);
         RoborockStore store = new RoborockStore(c);
         require(store.save(FIXTURE), "encrypted save");
         require(new RoborockStore(c).read().serialized().equals(credentials.serialized()), "decrypt after store recreation");
@@ -179,16 +182,103 @@ public final class RoborockChecks {
         require(PrivateImport.apply(c) && !DailyCleaning.reserve(c, 101), "repeat launch is inert");
         new File(c.getNoBackupFilesDir(), "roborock.enc").delete();
     }
+    private static long automaticAttempt(Instrumentation i, Context context, java.util.function.BooleanSupplier reservation) {
+        long[] id={0};
+        i.runOnMainSync(() -> {
+            id[0]=ProgressBus.request(context,Kind.CLEANING);
+            ProgressBus.reserveWith(id[0],reservation,ProgressBus.ReservationPolicy.SEND_ONLY);
+        });
+        return id[0];
+    }
+    private static void automaticQuotaBoundary(Instrumentation i,Context c,RoborockCredentials credentials) {
+        var daily=c.getSharedPreferences("daily_cleaning",0);
+        boolean had=daily.contains("last_attempt_day"); long previous=daily.getLong("last_attempt_day",Long.MIN_VALUE);
+        try {
+            for (Phase outcome:new Phase[]{Phase.SKIPPED,Phase.ERROR,Phase.UNKNOWN}) {
+                int[] reserves={0}; long id=automaticAttempt(i,c,() -> { reserves[0]++; return true; });
+                i.runOnMainSync(() -> ProgressBus.update(c,id,outcome,Reason.EXPIRED));
+                require(reserves[0]==0 && !ProgressBus.claimSend(c,id),"SEND_ONLY terminal outcomes never reserve or later send");
+            }
+            require(daily.edit().clear().commit(),"isolated send-boundary quota");
+            long cancelled=automaticAttempt(i,c,() -> DailyCleaning.reserveAtSend(c,100,() -> 100));
+            i.runOnMainSync(() -> ProgressBus.cancelAttempt(ProgressBus.token(cancelled)));
+            FakeConnection[] captured={null};
+            require(new RoborockClient(url -> captured[0]=new FakeConnection(url)).execute(credentials,() -> ProgressBus.claimSend(c,cancelled))==RoborockClient.Result.NETWORK_UNKNOWN
+                    && captured[0].writes==0 && DailyCleaning.available(c,100),"pre-send cancellation cannot reach HTTP or reserve quota");
+            // Dispatch immediately before Warsaw midnight: clock changes before reservation.
+            long[] clock={100}; long stale=automaticAttempt(i,c,() -> DailyCleaning.reserveAtSend(c,100,() -> clock[0]));
+            ProgressBus.allowSendWith(stale,() -> true); clock[0]=101;
+            new RoborockClient(url -> captured[0]=new FakeConnection(url)).execute(credentials,() -> ProgressBus.claimSend(c,stale));
+            require(captured[0].writes==0 && DailyCleaning.available(c,101),"midnight inside send admission invalidates old occurrence without reserving either day");
+            i.runOnMainSync(() -> ProgressBus.update(c,stale,Phase.SKIPPED,Reason.EXPIRED));
+            for (boolean networkUnknown:new boolean[]{false,true}) {
+                require(daily.edit().clear().commit(),"independent admitted-send fixture");
+                long id=automaticAttempt(i,c,() -> DailyCleaning.reserveAtSend(c,101,() -> 101));
+                RoborockClient client=new RoborockClient(url -> {
+                    FakeConnection f=new FakeConnection(url); captured[0]=f;
+                    f.status=500; f.failResponse=networkUnknown;
+                    f.beforeWrite=() -> require(ProgressBus.sent(id) && !DailyCleaning.available(c,101),"synchronous durable quota exists before first HTTP write");
+                    return f;
+                });
+                RoborockClient.Result result=client.execute(credentials,() -> ProgressBus.claimSend(c,id));
+                require(captured[0].writes==1 && captured[0].disconnected && !DailyCleaning.available(c,101)
+                        && !ProgressBus.claimSend(c,id),"admitted error/uncertainty retains quota and cannot resend");
+                require(result==(networkUnknown?RoborockClient.Result.NETWORK_UNKNOWN:RoborockClient.Result.SERVER_ERROR),"fake transport covers error and unknown after sending");
+                i.runOnMainSync(() -> ProgressBus.update(c,id,networkUnknown?Phase.UNKNOWN:Phase.ERROR,Reason.NONE));
+                require(!DailyCleaning.reserve(new android.content.ContextWrapper(c),101),"recreated context retains sent daily protection");
+            }
+            // A failed disk commit mutates the cache; a later genuine attempt can recover.
+            var memory=new FailedPreferences(); memory.values.put("last_attempt_day",100L); memory.fail=true;
+            Context failed=new android.content.ContextWrapper(c) {
+                @Override public android.content.SharedPreferences getSharedPreferences(String name,int mode) {
+                    return name.equals("daily_cleaning")?memory.prefs:super.getSharedPreferences(name,mode);
+                }
+            };
+            long failedId=automaticAttempt(i,c,() -> DailyCleaning.reserveAtSend(failed,101,() -> 101));
+            new RoborockClient(url -> captured[0]=new FakeConnection(url)).execute(credentials,() -> ProgressBus.claimSend(c,failedId));
+            require(captured[0].writes==0 && memory.values.get("last_attempt_day").equals(100L),"failed persistence blocks HTTP and restores prior cached protection");
+            i.runOnMainSync(() -> ProgressBus.update(c,failedId,Phase.ERROR,Reason.DAILY_LIMIT_OR_STORAGE));
+            memory.fail=false;
+            long fresh=automaticAttempt(i,c,() -> DailyCleaning.reserveAtSend(failed,101,() -> 101));
+            require(new RoborockClient(url -> captured[0]=new FakeConnection(url)).execute(credentials,() -> ProgressBus.claimSend(c,fresh))==RoborockClient.Result.ACCEPTED
+                    && captured[0].writes==1 && !DailyCleaning.available(failed,101),"future genuine departure may send after persistence recovers");
+            i.runOnMainSync(() -> ProgressBus.update(c,fresh,Phase.SUCCEEDED,Reason.NONE));
+        } finally {
+            var restore=daily.edit().clear(); if(had)restore.putLong("last_attempt_day",previous);
+            require(restore.commit(),"send-boundary fixture quota cleanup");
+        }
+    }
+    private static final class FailedPreferences {
+        final java.util.Map<String,Object> values=new java.util.HashMap<>(); boolean fail;
+        final android.content.SharedPreferences prefs=(android.content.SharedPreferences)java.lang.reflect.Proxy.newProxyInstance(
+                android.content.SharedPreferences.class.getClassLoader(),new Class<?>[]{android.content.SharedPreferences.class},(proxy,method,args) -> switch(method.getName()) {
+                    case "getLong" -> values.getOrDefault(args[0],args[1]);
+                    case "edit" -> editor();
+                    default -> throw new AssertionError("unexpected fixture preference call");
+                });
+        private android.content.SharedPreferences.Editor editor() {
+            java.util.Map<String,Object> edits=new java.util.HashMap<>();
+            return (android.content.SharedPreferences.Editor)java.lang.reflect.Proxy.newProxyInstance(android.content.SharedPreferences.Editor.class.getClassLoader(),new Class<?>[]{android.content.SharedPreferences.Editor.class},(proxy,method,args) -> {
+                switch(method.getName()) {
+                    case "putLong" -> edits.put((String)args[0],args[1]);
+                    case "remove" -> edits.put((String)args[0],null);
+                    case "commit" -> { edits.forEach((key,value) -> { if(value==null)values.remove(key);else values.put(key,value); }); return !fail; }
+                    default -> throw new AssertionError("unexpected fixture editor call");
+                }
+                return proxy;
+            });
+        }
+    }
     private static void invoke(java.lang.reflect.Method m, Activity a, RoborockClient.Result r) {
         try { m.invoke(a, r); } catch (Exception e) { throw new AssertionError(e); }
     }
     private static void require(boolean value, String label) { if (!value) throw new AssertionError(label); }
     private static final class FakeConnection extends HttpsURLConnection {
-        int status = 200, writes; boolean disconnected; String body = "{\"success\":true}";
+        int status = 200, writes; boolean disconnected,failResponse; Runnable beforeWrite=() -> { }; String body = "{\"success\":true}";
         FakeConnection(URL url) { super(url); }
         int fixed() { return fixedContentLength; }
-        @Override public OutputStream getOutputStream() { writes++; return new ByteArrayOutputStream(); }
-        @Override public int getResponseCode() { return status; }
+        @Override public OutputStream getOutputStream() { beforeWrite.run(); writes++; return new ByteArrayOutputStream(); }
+        @Override public int getResponseCode() throws java.io.IOException { if(failResponse)throw new java.io.IOException("synthetic after-send failure"); return status; }
         @Override public InputStream getInputStream() { return new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)); }
         @Override public InputStream getErrorStream() { return getInputStream(); }
         @Override public void disconnect() { disconnected = true; }

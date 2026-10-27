@@ -1,19 +1,5 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
-## RC5 departure-fix update boundary (October 27)
-
-The RC5 source-only candidate fixes departure continuation over public RC3. It does not
-include separate local street/layout candidates. A higher versionCode alone is not proof
-of feature compatibility with the installed radio. Inspect installed source/features and
-signing identity before updating; do not overwrite a newer local feature set.
-
-For this update, preserve application data, maps, gate cooldown and journey reservations.
-Use the maintainer's current safe updater with verified idle/maintenance gates. Do not use
-the historical backup-oriented commands below for this update: no new backups, clearing,
-downgrade or automatic rollback is authorized. Never force-stop an active call.
-The physical radio was unavailable during preparation; installation and road/audio
-acceptance remain pending. Publishing RC5 does not authorize backend deployment or pairing.
-
 ## Read-only failure capture before opening or updating the app
 
 Resolve an owner-only `PRIVATE_DIR` outside every Git repository (0700). With the existing
@@ -39,62 +25,84 @@ that no action occurred. Read the complete correlation before blaming GPS, detec
 or phone IPC. See STARTUP_DIAGNOSTICS.md. Missing hardware blocks capture; do not open/reset
 the app merely to produce a success result.
 
-## RC3 local artifacts and unattended radio update
+## Current normal update: one map, no backups
 
-The current candidate is 1.3.0-rc3/code 23. Build its signed local APK from the exact reviewed
-main revision and keep it outside public release assets. The schema-2 Poland index and its
-validated manifest were built from source timestamp 2026-09-27T20:23:36Z; do not call this
-a latest-data download. Record source SHA, APK version/signing fingerprint/SHA-256, map
-schema/source timestamp/counts/bytes/SHA-256 in a private handoff beside installation notes.
-Code-23 build/lint, local synthetic/emulator/tooling/Routebook, update/import/quota and
-privacy checks passed, including final incremental SafetyChecks after failed-write latch
-hardening; see VERIFICATION.md. Extended exact consumed departure-cycle preservation across
-backed-up update/import and process restart passed. National manifest validation, staged/hash/
-atomic Android 36 emulator installation and sampled lookup passed. Initial PR/branch CI is
-green, including PostGIS/browser checks; enforce final PR/main/tag gates separately and
-record final results on the release page. Complete the private merged-source APK/hash
-manifest after merge. The known signing certificate matches; physical installation is separate.
+The normal updater creates no APK/data/map backup, sidecar manifest/audit or saved installation
+receipt, and performs no automatic rollback. Historical backup evidence below describes earlier
+runs. Namespace migration in MIGRATION.md is a separate operation.
 
-Update APK and map together: the app reads schema 1 for compatibility, but the old pack
-does not contain the new locality evidence. Normal map installation requires schema 2.
-Keep the prior APK/map pair for the updater's backed-up recovery; do not downgrade only
-the APK while leaving an incompatible new map. Reserve space for both staged and installed
-maps plus private backups. Map schema 2 is unrelated to navigation JSON schema 2.
-
-Current physical ADB access is unavailable; no RC3 update or current installed version is
-confirmed. Once authorized connectivity exists, collect failure evidence before opening
-or updating the app, then use the existing guarded procedure below. Never clear application
-data to reset departure eligibility or other safety state.
-
-Use the current private handoff to resolve the canonical navigation file, including every group
-member; never substitute an older shorter navigation file. Build the APK and dated map pack first.
-The wrapper discovers an already-authorized physical SYU radio through supplied ADB servers,
-cached private endpoint and mDNS; no pairing or broad LAN scan is attempted. Same Wi-Fi alone
-is not ADB authorization. Missing/ambiguous devices stop with a sanitized BLOCKED result.
+Build the signed local APK and reuse the existing `$PRIVATE_DIR/maps/places.sqlite`. Rebuild
+the map only when changing its OSM data, schema or heading policy; APK-only updates do not
+rebuild it. Rebuilding changes generation metadata/bytes and therefore requires a transfer.
+Use the current full private navigation source. Inputs stay owner-only outside repositories.
+The builder keeps schema/source/date/policy metadata and heading source proof inside SQLite.
+Existing schema2/3 packs are validated directly without a companion file. Schema2 requires
+code23+; schema3 requires code29+. APK/map compatibility and the supplied APK signature are
+checked before mutation; Android `install -r` enforces replacement signing identity. Never
+uninstall or downgrade to bypass a rejection.
 
 ```sh
 python3 scripts/install-radio.py --config "$PRIVATE_DIR/config.json" \
   --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
-  --navigation "$DUDU_CURRENT_NAVIGATION" --map "$DUDU_MAP" \
-  --apk app/build/outputs/apk/debug/app-debug.apk \
-  --backup-dir "$PRIVATE_DIR/radio-backups" --adb "$DUDU_ADB"
+  --navigation "$DUDU_CURRENT_NAVIGATION" --map "$PRIVATE_DIR/maps/places.sqlite" \
+  --apk app/build/outputs/apk/debug/app-debug.apk --adb "$DUDU_ADB"
 ```
 
-Supply `--adb` again for a second existing server wrapper. Inputs must be owner-only and outside
-Git. The wrapper preserves the actual automation-enabled state and compares installed geometry
-and complete navigation before updating. It checks available space, map integrity, signature
-through configure-device.py, and repeated idle evidence before force-stop. Audio mode, visible
-UI and service state are conservative observations, not a claim of fresh vendor HFP idle.
-Unknown/busy state blocks rather than interrupting a call.
+Repeat `--adb` for another existing server wrapper. Discovery uses existing authorization,
+cached private endpoint and mDNS; no pairing or broad LAN scan. Missing/ambiguous devices stop.
+It compares installed geometry/navigation and preserves the actual enabled state. Audio mode,
+visible UI and service state provide repeated conservative idle observations; they do not prove
+fresh vendor HFP idle. Unknown/busy state prevents stopping the app. After the first idle check,
+maintenance/install-verification block new admission; a second idle check waits for any existing
+cleanup. Only then does it force-stop and compare safety/session state in memory.
 
-A separate install-verification marker prevents monitor startup while the app consumes its
-one-time import. The wrapper verifies full navigation, geometry, safety preferences, effective
-permissions and installed APK checksum before releasing it and automatically starting the menu.
-Backups and receipts are private. Pre-start failures restore the previous signed APK/data;
-after monitoring resumes, old safety state must not be restored because it could rearm actions.
-Never uninstall or clear radio data to overcome a failed update. A rejected downgrade remains
-a recovery blocker. Run the radio UI smoke only when connected; a successful update is not
-proof of driving accuracy or vendor wake behavior. See WHERE_AM_I and VERIFICATION.
+The October19 radio path reads the existing Wispr steering adapter's permission-protected
+`ProbeReceiver` DUMP into its private redacted `window-tree.json`. It checks a connected
+service, a fresh device-monotonic timestamp, exact node counts and complete child/root trees.
+Missing/disconnected/stale/truncated probes block the operation; there is no UIAutomator
+fallback or accessibility-setting change. A running Dudu process requires explicit
+`action_busy=false`; a missing service is accepted only with a successful parsed process
+listing proving no Dudu process. These observations still cannot certify vendor HFP idle.
+
+Equal map SHA-256 skips transfer and preserves map mtime. **Changed/missing/corrupt remote
+maps currently block before overwrite or SQLite sidecar cleanup.** The admission marker is
+not a map-reader lock: a notification listener/task can restart the process, and monitor/trip
+construction is not universally guarded before map access. Process-absence checks surround
+equal-map cleanup, but cannot enforce exclusion across a large transfer. That stronger gate
+must be implemented and verified before direct replacement/repair is enabled. No `.new`,
+previous or second map is made. Local malformed maps
+are rejected before touching the radio. Input/managed directory symlinks are refused. Cleanup
+only removes the exact recognized `places.*` historical artifact names in `radio_update.py`
+from the selected map parent and radio `no_backup`; it never searches other directories or
+infers ownership from extensions. For a one-time migration, explicitly select each old managed map or backup directory:
+
+```sh
+python3 scripts/cleanup-update-artifacts.py "$PRIVATE_DIR/maps"
+python3 scripts/cleanup-update-artifacts.py "$PRIVATE_DIR/radio-backups"
+```
+
+This nonrecursive helper removes old maps only when an old builder manifest, computed hash,
+actual database metadata/counts and any bound heading-audit hash all agree. It preserves
+canonical `places.sqlite`. Historical `before-update-*` directories require exactly the known
+files, matching SHA manifest and a recognized optional receipt. All candidates are inspected
+before deletion; symlinks/path escapes/unexpected backup contents reject the run. Unrelated
+files and unproven map versions remain untouched. No owner cleanup was run during development.
+
+The persistent install-verification block survives successful import until configuration,
+full navigation, daily quota/dial cooldown/journey/departure/overlay preferences, trip state,
+APK/map hashes and effective permissions pass verification. Then the wrapper releases it,
+starts monitoring and checks the visible passive trip resource/control structure. The probe
+redacts Dudu strings, so Start/Pauza/Reset/time text is not verified by this smoke. Existing
+trip sessions may resume counting.
+Any failure retains/recreates the block, with no automatic launch, restore, rollback or data
+clearing. It never force-stops a call that may have begun after release. Repeat the same command
+with valid inputs to finish after an already-consumed import when the map already matches.
+Map repair remains blocked pending the enforced quiescence gate described above.
+Do not remove the block manually to open an incomplete map.
+
+The script prints a sanitized result and saves no receipt. A successful local/emulator update
+is not physical-radio acceptance. This change performed no physical installation, driving/wake
+check or cleanup of owner archives. The older national-map and RC3 evidence remains historical.
 
 
 ## Historycznie potwierdzona instalacja 1.1.0
@@ -166,7 +174,7 @@ PRIVATE_DIR/
   config.json                       # prywatny numer, GPS, źródła i instalacyjne metadane
   roborock/routine-credentials.json  # minimalny pakiet do wykonania Full Cleaning
   navigation.json                   # trzy prywatne sloty/listy, schemat w NAVIGATION.md
-  radio-backups/                    # APK, dane i sumy przed kolejnymi aktualizacjami
+  maps/                            # one final places.sqlite; no update backups
   archive-.../                      # oryginalny projekt, APK, podpis i pełne logi kalibracji
   replay/                          # prywatne dane wejściowe detektora
 ```
@@ -214,39 +222,27 @@ zawartość przez stdin. Ścieżki plików mogą być argumentami; ich zawartoś
    To sprawdza format, zakres geometrii i dozwolony endpoint; **nie** sprawdza ważności autoryzacji,
    numeru z urządzenia, fizycznej lokalizacji ani podpisu zainstalowanego APK.
 
-4. Po podłączeniu zweryfikowanego radia przez ADB, gdy nie trwa rozmowa ani akcja, wykonaj pełną aktualizację:
+4. Pełną aktualizację APK/mapy wykonaj przez `install-radio.py` z bieżącej procedury powyżej.
+   Nie dodawaj katalogu backupu. Instalator zachowuje dane aplikacji i sprawdza je przed odblokowaniem.
+5. Sama wymiana konfiguracji w już zgodnym APK używa `configure-device.py` bez `--apk`:
 
    ```sh
    python3 scripts/configure-device.py DEVICE_SERIAL "$PRIVATE_DIR/config.json" \
      --roborock "$PRIVATE_DIR/roborock/routine-credentials.json" \
-     --navigation "$PRIVATE_DIR/navigation.json" \
-     --apk app/build/outputs/apk/debug/app-debug.apk \
-     --backup-dir "$PRIVATE_DIR/radio-backups" --enable-automation
+     --navigation "$PRIVATE_DIR/navigation.json" --enable-automation
    ```
 
-   Instalator wymaga istniejącej aplikacji, porównuje numer z `gate_settings`, sprawdza
-   pakiet/versionCode APK i oba certyfikaty przez `apksigner`. Robi prywatną kopię zainstalowanego
-   APK i danych oraz manifest SHA-256, weryfikuje odczyt. Przed snapshotem danych zatrzymuje aplikację.
-   Następnie zakłada maintenance, wyłącza starą konfigurację automatu i wykonuje `adb install -r`.
-   Nie zmienia klucza, nie wykonuje uninstall, nie przywraca starego numeru na ślepo.
-
-5. Konfiguracja jest atomowo przenoszona do `no_backup/pending-config.json`; suma odczytanego
-   pliku musi się zgadzać. Nadawane są fine/coarse location, background location od API 29,
-   notifications od API 33 oraz overlay. Przy błędzie grant/import automat pozostaje wstrzymany.
-6. Otwórz Dudu Home po instalacji. Import waliduje sekcje, zapisuje je prywatnie, szyfruje
-   Roborock i usuwa staging/maintenance. Nie wysyła telefonu ani HTTP. Sprawdź menu i stan
-   automatyzacji. Systemowy GPS i uprawnienia muszą rzeczywiście działać; sam sukces `pm grant`
-   nie potwierdza dostępu do świeżych pomiarów.
-7. Zweryfikuj obecność wszystkich sekcji odczytem logicznym/rozmiarami, nie wypisaniem wartości.
-   `roborock.enc` powinien istnieć, staging i maintenance zniknąć. `home-config.json` po imporcie v2
-   nie zawiera numeru ani pakietu Roborock. Numer porównano już przed instalacją.
-8. Ustawienie autostartu/wybudzenia DUDU ma wskazywać `.startup.HomeWakeActivity`. Zweryfikuj faktyczny
-   dostęp do tej opcji na urządzeniu. BOOT_COMPLETED nie zastępuje vendorowego wybudzenia.
-9. Wykonaj pakiet prób z następnej sekcji. Zachowuj logi wyłącznie w prywatnym katalogu.
-
-Sama wymiana konfiguracji w aktualnym APK używa tej samej komendy bez `--apk` i `--backup-dir`.
-Również zatrzymuje aplikację i czeka na otwarcie/import; nie przerywaj aktywnej akcji. Bez
-`--enable-automation` staging celowo wyłącza monitoring. Nie zeruje blokady dziennej ani cooldown.
+   Porównuje numer z urządzeniem, czeka na idle, zakłada maintenance i atomowo zapisuje
+   jednorazowy import. Nie zmienia bieżącego pliku konfiguracji tylko po to, by zatrzymać automat.
+   Bez `--enable-automation` docelowa konfiguracja celowo wyłącza automat; to jawna zmiana konfiguracji.
+6. Otwórz menu, aby zużyć inertny import. Sprawdź sekcje i uprawnienia bez wypisywania wartości.
+   Import usuwa własny maintenance, zachowuje zewnętrzny install-verification, jeśli taki istnieje.
+   Niskopoziomowe `configure-device.py --apk` zawsze zostawia install-verification; pełne
+   aktualizacje APK kończy `install-radio.py`, który weryfikuje stan przed odblokowaniem.
+   Dzienny limit, cooldown, sesja podróży i stan przejazdu pozostają zachowane. W razie błędu
+   popraw wejście i ponów import; nie kasuj danych ani blokad na ślepo.
+7. Autostart DUDU powinien wskazywać `.startup.HomeWakeActivity`; BOOT_COMPLETED nie potwierdza
+   vendorowego wybudzenia. Próby fizyczne i świeży GPS pozostają osobną weryfikacją.
 
 Świeża instalacja dla innego użytkownika: `scripts/install-on-device.sh DEVICE_SERIAL`, potem
 formularz numeru na postoju. Helper odmawia aktualizacji już istniejącej aplikacji. Dla tego
@@ -351,13 +347,9 @@ i powrotu do menu po pięciu sekundach. Nie zatrzymuj robota po teście i nie re
 - Przerwany import: pozostaw maintenance, popraw prywatny plik i ponownie uruchom instalator.
   Nie usuwaj blokady na ślepo. Jeżeli staging już zniknął, ale maintenance pozostał, ponowny
   kompletny import jest bezpieczniejszy od ręcznego odblokowania niesprawdzonych danych.
-- Przy nieudanej aktualizacji zachowaj katalog `before-update-*` i jego SHA-256. Przywrócenie
-  danych obejmuje sekrety i stan automatyzacji; wymaga kontrolowanej sesji na postoju, nie `pm clear`.
-- Rollback kodu: użyj poprzedniego APK z identycznym certyfikatem, ewentualnie `adb install -r -d`
-  gdy Android dopuści downgrade debug. Najpierw wyłącz automat/maintenance. Nie odinstalowuj
-  aplikacji: utracisz klucz Android Keystore i zaszyfrowany pakiet może stać się nieczytelny.
-  Snapshot plików nie zawiera eksportu klucza Keystore. Po powrocie do wersji wspierającej Roborock
-  można ponownie zaimportować z prywatnej kopii. Nie uruchamiaj samoczynnie starego baseline'u.
+- Nieudana normalna aktualizacja zachowuje blokadę. Ponów bieżący instalator z poprawnym APK,
+  mapą i pełną konfiguracją. Nie ma automatycznego rollbacku, kopii APK/danych/map ani `install -d`.
+  Nie odinstalowuj aplikacji i nie czyść danych: utracisz konfigurację, stan bezpieczeństwa i Keystore.
 
 Logi `DuduHome` zawierają nazwy zdarzeń, pominięcia i kategorie wyniku. `DuduGate` opisuje
 bezpieczną sesję Binder. Pełne logi firmware mogą zawierać numer, więc są zawsze prywatne.
@@ -393,10 +385,10 @@ Plik schema 2 ma listę destinations oraz etykietę/ikonę grupy na slot. Inne s
 w pełnym prywatnym pliku: import zastępuje całość. Najpierw aktualizuj APK do code 17 lub
 nowszego, potem importuj schema 2. Nie importuj publicznych przykładów do radia właściciela.
 Walidacja instalatora obejmuje obie wersje; stary APK z nowym formatem jest odrzucany.
-Przy rollbacku przywróć zgodny plik schema 1 przed otwarciem starszej aplikacji.
+Nie obniżaj wersji APK, aby obejść niezgodny format; ponów import w obsługiwanej wersji.
 
 Po zatwierdzeniu automatycznej instalacji wykonaj ją po uzyskaniu zweryfikowanego ADB bez
-pytań o jazdę/postój: stan bez aktywnej rozmowy/akcji, backup i sumy, zgodny podpis, aktualizacja
+pytań o jazdę/postój: stan bez aktywnej rozmowy/akcji, walidacja i sumy, zgodny podpis, aktualizacja
 bez kasowania danych, pełny import, kontrola staging/maintenance/limitów, test kafelków i modalu,
 powrót do menu. Gdy trwa akcja, poczekaj na cleanup. Gdy brak ADB, zachowaj artefakty do wznowienia;
 nie raportuj instalacji jako wykonanej. Do testu tej funkcji nie potrzeba dzwonienia ani robota.

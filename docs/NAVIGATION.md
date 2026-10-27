@@ -115,7 +115,7 @@ its association with the owner's configured destinations is private.
    PY
    ```
 
-4. Back up before updating. Install the compatible APK, then use the document picker or the
+4. Install the compatible APK through the normal no-backup updater, then use the document picker or the
    complete `configure-device.py --navigation` command in OPERATIONS.md. Import is inert;
    opening the menu consumes staged configuration without calling or cleaning.
 5. Verify zero/one/many behavior, order and each actual Maps target privately on the device.
@@ -123,8 +123,8 @@ its association with the owner's configured destinations is private.
 6. Before publication, scan against the complete private file (including group labels and every
    destination), then manually review text, images and metadata. Public docs, examples, tests,
    issue/PR text and screenshots must be synthetic. Never upload the private input to CI.
-7. Rollback needs the previous APK with the same signature **and a compatible saved configuration**.
-   Restore schema 1 before opening an older build; never clear app data to bypass rollback failure.
+7. Failed normal updates remain blocked for explicit retry. Never uninstall, downgrade or clear
+   app data to bypass a compatibility/signature failure. No automatic rollback is performed.
 
 ## Import on the radio
 

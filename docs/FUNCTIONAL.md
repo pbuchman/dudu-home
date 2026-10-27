@@ -33,7 +33,7 @@ wjazd na parking nie uruchamia wyjazdu. Potrzebny jest rzeczywisty rozpoznany po
 Trzy sekundy dotyczą rozpoznania zdarzenia, nie gwarantowanego czasu połączenia. Wykonawca
 nadal rejestruje callbacki, zbiera snapshot telefonu i wymaga świeżego idle przed jednym
 dial. Nie rozłącza istniejącej rozmowy; trwała blokada 60 s i outgoing → idle pozostają.
-Progi sprzątania i powrotu oraz pierwszeństwo bramy przed mediami są zachowane. Testy na
+Od 1.5 sprzątanie następuje po sukcesie automatycznego wyjazdu. Progi powrotu i bezpieczeństwo bramy pozostają zachowane. Testy na
 fizycznym DUDU7, w tym dwa rzeczywiste wybudzenia, pozostają do wykonania.
 
 
@@ -98,9 +98,9 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Formularz lub błąd czeka na użytkownika | Nie przerywamy widoku; kolejka ma limit 5 s dla bramy i 120 s dla pozostałych akcji |
 | Sukces | Animacja i 5000 ms prezentacji dla bramy oraz obu rutyn |
 | Informacja o blokadzie bramy | Dotychczasowe 2500 ms |
-| Błąd wykonania | Pozostaje do „Ponów” albo „Zamknij”; brak samoczynnego ponowienia |
+| Błąd wykonania ręcznego lub bramy | Pozostaje do „Ponów” albo „Zamknij”; brak samoczynnego ponowienia |
 | „Ponów” | Nowa, świadoma próba ręczna; po wyniku powrót do menu |
-| Roborock odrzuca autoryzację | Formularz nowego pakietu; zapis lub powrót do menu, bez powtórzenia żądania |
+| Ręczny Roborock odrzuca autoryzację | Formularz nowego pakietu; zapis lub powrót do menu, bez powtórzenia żądania |
 
 Wyjście z ekranu sprzątania nie wysyła żadnego polecenia zatrzymania robota. Żądanie HTTP
 może nadal się kończyć. Kolejna akcja jest wtedy blokowana do zakończenia transportu.
@@ -111,14 +111,14 @@ Niepewny wynik wymaga sprawdzenia aplikacji Roborock przed ręcznym ponowieniem.
 „Anuluj tę próbę” jest dostępne podczas wykrywania, oczekiwania i wykonania: w pasku,
 ekranie akcji oraz powiadomieniu, gdy nakładka jest niedostępna. Jedno dotknięcie blokuje
 przycisk i przerywa dalsze kroki tej próby; Yanosik i Spotify są wspólną grupą.
-Anulowanie przed wysłaniem nie zapisuje trwałej historii ani nie zużywa limitu. Późniejsze
-błędy i wygaśnięcia bez anulowania przez użytkownika zachowują dotychczasowe zużycie limitu.
+Anulowanie przed wysłaniem nie zużywa limitu; pozostaje prywatna historia diagnostyczna.
+Automatyczne sprzątanie nie zużywa limitu także przy błędzie, pominięciu lub wygaśnięciu przed wysyłką.
 Po wysłaniu pozostaje rezerwacja i komunikat „Polecenie już wysłane. Zatrzymano dalsze kroki”.
 Nie oznacza to zatrzymania robota ani zamknięcia wcześniej otwartej aplikacji.
 
 Ta sama próbka GPS nie wznawia akcji. Jazda wymaga ponownego wiarygodnego postoju przez
 10 s poniżej 0,5 m/s (dokładność do 15 m, wiek do 3 s), a następnie świeżego ruchu przez
-10 s i 15 m. Wyjazd/sprzątanie wymaga powrotu do obszaru parkowania 45 m i postoju 5 s.
+10 s i 15 m. Ponowne uzbrojenie anulowanego wyjazdu wymaga powrotu do obszaru parkowania 45 m i postoju 5 s.
 Powrót wymaga opuszczenia obszaru skrzyżowania ponad 300 m przez 5 s i nowej sekwencji.
 Brak dobrego GPS przerywa odliczanie. Restart nie odtwarza kolejki i wymaga świeżej bazy.
 Anulowanie bramy nie omija blokady mediów w jej obszarze ani trwałej blokady dial 60 s.
@@ -151,12 +151,14 @@ wykonuje akcji i nie resetuje cyklu. Brak zgody blokuje automatyczny start Yanos
 |---|---|---|
 | `DEPARTURE_STARTED` | 3 s ciągłego, kwalifikowanego ruchu z okazji parkingowej w dowolnym kierunku | Jedna próba telefonu do bramy |
 | `RETURN_APPROACH` | Potwierdzony powrót przez skrzyżowanie i dojazd do punktu podejścia | Jedna próba telefonu do bramy |
-| `OUTBOUND_CHECKPOINT` | Przecięcie tego samego punktu podejścia w stronę wyjazdu | Pierwsza automatyczna próba Full Cleaning w danym dniu |
+| `OUTBOUND_CHECKPOINT` | Przecięcie tego samego punktu podejścia w stronę wyjazdu | Tylko obserwacja trasy, bez komendy |
 | `JOURNEY_EXIT` | Dalszy wyjazd przez skrzyżowanie w dowolnym obsługiwanym kierunku | Zdarzenie diagnostyczne, bez akcji |
 
-To są dwa różne momenty wyjazdu: brama ma być uruchomiona wcześnie, odkurzacz dopiero przy
-punkcie po zewnętrznej stronie osiedla. Nie przesuwamy sprzątania do dalszego skrzyżowania.
-Powrót nie uruchamia odkurzacza. Sam zapłon, restart i odzyskanie Internetu nie są zdarzeniami akcji.
+Od 1.5 własny sukces automatycznego DEPARTURE_STARTED tworzy niezależną próbę sprzątania,
+potem Yanosika i Spotify. Nie potrzeba postoju ani punktu kontrolnego. Ręczna brama i powrót
+nie tworzą tej kontynuacji. Sprzątanie ma osobne anulowanie; anulowanie mediów go nie anuluje.
+Błąd/pominięcie automatycznego sprzątania pokazuje komunikat przez 2,5 s, bez trwałego ekranu
+błędu ani formularza. Media czekają także na cleanup. Ręczne akcje zachowują istniejące ekrany.
 
 Detektor toleruje sąsiednie miejsca parkingowe w obszarze 45 m od punktu odniesienia. Wymaga
 świeżych i dokładnych pomiarów oraz utrzymującego się ruchu przez 3 s. Początkowa okazja
@@ -167,13 +169,16 @@ rozpoznania zamiaru kierowcy w każdym nieznanym manewrze - to ograniczenie GPS 
 ## Dokładnie co oznacza „raz dziennie”
 
 1. Dzień to data kalendarzowa w `Europe/Warsaw`, niezależnie od strefy ustawionej w radiu.
-2. Pierwszy `OUTBOUND_CHECKPOINT` tworzy oczekującą próbę w RAM; trwała rezerwacja powstaje bezpośrednio przed wysłaniem HTTP. Anulowanie przez użytkownika przed wysłaniem nie zużywa dnia.
-3. Błąd sieci, odrzucona autoryzacja, brak danych, zajęta akcja albo zablokowane UI nie pozwalają
-   spróbować automatycznie drugi raz tego dnia. To świadomie przyjęty wariant konserwatywny.
+2. Sukces własnego automatycznego wyjazdu tworzy próbę w RAM. Trwała rezerwacja dnia powstaje
+   synchronicznie dopiero przy claimSend, bezpośrednio przed wysyłką HTTP. Błąd zapisu blokuje wysyłkę.
+3. Każde niewysłane pominięcie, anulowanie, wygaśnięcie lub błąd pozostawia dzień dostępny dla
+   następnego rzeczywistego wyjazdu, bez retry bieżącej próby. Po dopuszczeniu wysyłki limit
+   pozostaje wykorzystany także przy błędzie serwera, timeoutcie lub niepewnym wyniku.
 4. Rezerwacja pozostaje po restarcie aplikacji/radia, aktualizacji APK i zmianie danych dostępowych.
 5. Cofnięcie daty nie umożliwia dodatkowej próby. Błędnie ustawiona przyszła data może blokować
    automat do następnej daty większej od zapisanej; ręczny kafelek pozostaje dostępny.
-6. Następny dzień sam niczego nie włącza. Potrzebny jest kolejny nowy wyjazd i punkt kontrolny.
+6. Następny dzień sam niczego nie włącza. Potrzebny jest kolejny nowy automatyczny wyjazd zakończony sukcesem bramy.
+   Sprawdzamy dzień także przy wysyłce; zadanie ze starego dnia wygasa. Stary last_attempt_day zachowujemy konserwatywnie.
 7. Ręczny kafelek i ręczne „Ponów” nie odczytują ani nie zużywają limitu dziennego. Można ich użyć
    również po wcześniejszym sprzątaniu automatycznym. Globalna blokada równoległych operacji nadal działa.
 

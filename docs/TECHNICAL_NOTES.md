@@ -29,7 +29,8 @@ and STARTUP_DIAGNOSTICS.md. The new detector's physical acceptance is pending.
 The action screen and progress surfaces now expose current-attempt cancellation. The same
 process-bound token is captured in UI and immutable notification service PendingIntent;
 stale tokens cannot affect a later attempt. Before sending, cancellation drops RAM work and
-has no durable history/quota record. After sending, retain all call reservations and permit
+creates no durable quota reservation. RC4 retains bounded private diagnostic evidence of
+the cancelled occurrence, independently of reservations. After sending, retain all call reservations and permit
 only best-effort cleanup of this attempt's own call. The shared lease lasts through actual
 cleanup; cancellation cannot interrupt a synchronous vendor Binder transact. No dial/hangup
 protocol or 60-second cooldown rule below changes. Hardware acceptance of cancellation is
@@ -462,3 +463,25 @@ Version 1.4.0-rc2 adds a separate GPS-observed time metric on Home Dev and manua
 duration with Start/Pause/Reset on Android. Collector, ingestion and offline queue remain
 unchanged. The local timer cannot reserve/rearm actions or infer an ignition event from a
 GPS gap. See WHERE_AM_I.md and RELEASE_1_4_0_RC2.md for continuity and persistence boundaries.
+
+## Normal local updates - October 18
+
+Computer-side updates preserve the existing raw Binder protocol and all admission/cooldown
+rules above. They validate the actual standalone SQLite map and supplied APK, observe idle,
+persist maintenance/install-verification and observe idle again before stopping the app.
+Normal replacement uses `install -r` with Package Manager signature enforcement; no APK/data
+backup, automatic rollback, downgrade or data clearing. Equal map hashes skip transfer; a
+changed/missing map directly overwrites the sole `places.sqlite` under the persistent block.
+Partial transfer or verification failure retains that block for explicit retry. No config
+rewrite disables automation during installation. Current operations and bounded artifact
+cleanup are in OPERATIONS.md; physical radio/wake acceptance was not performed for this change.
+
+October19 installer compatibility supersedes the direct-map-write path above. Existing Wispr
+adapter `ProbeReceiver` DUMP supplies redacted resource IDs/bounds without attaching a separate
+UIAutomation client. The installer validates connected/fresh/complete schema-1 snapshots and
+fails closed if unavailable. Passive trip smoke verifies structure only; all Dudu text is
+redacted. Running-app idle needs explicit action_busy=false, or verified process absence.
+Changed/missing maps are refused before writing: install-verification prevents actions but
+does not universally guard TripController/OfflinePlaces construction against process restart.
+Equal-map cleanup checks process absence. No claim of an enforced transfer-time file lock or
+new physical-radio acceptance follows from host tests.

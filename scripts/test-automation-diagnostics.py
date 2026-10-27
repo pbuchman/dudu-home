@@ -53,7 +53,7 @@ class Checks(unittest.TestCase):
                 with self.assertRaises(ValueError): tool.private_destination(destination)
                 private.chmod(0o755)
                 with self.assertRaises(ValueError): tool.private_destination(private / 'unsafe')
-            self.assertEqual(len(calls), 4)
+            self.assertEqual(len(calls), 2 + len(tool.JOURNAL_NAMES))
             self.assertTrue(all(c[0] in ('get-state', 'exec-out', 'shell') for c in calls))
             self.assertEqual(calls[-1][:4], ('shell','dumpsys','activity','service'))
         finally:

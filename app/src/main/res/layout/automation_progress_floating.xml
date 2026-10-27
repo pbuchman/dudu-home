@@ -1,0 +1,29 @@
+<com.pbuchman.duduhome.ui.ProgressPanel xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="horizontal" android:gravity="center_vertical" android:padding="16dp"
+    android:background="@drawable/compact_action_panel" android:importantForAccessibility="yes">
+    <ScrollView android:id="@+id/banner_body" android:layout_width="0dp" android:layout_weight="1"
+        android:layout_height="wrap_content" android:fillViewport="false" android:overScrollMode="ifContentScrolls">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <ImageView android:id="@id/banner_icon" android:layout_width="28dp" android:layout_height="28dp"
+                    android:layout_marginEnd="10dp" android:src="@drawable/ic_navigation_arrow" android:tint="#72AFFF"
+                    android:importantForAccessibility="no" />
+                <TextView android:id="@id/banner_title" android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:textSize="20sp" android:fontFamily="sans-serif-medium"
+                    android:textColor="#EEF4FC" />
+            </LinearLayout>
+            <TextView android:id="@id/banner_detail" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="5dp" android:textSize="16sp" android:textColor="#A4B3C5" />
+            <ProgressBar android:id="@id/banner_progress" style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent" android:layout_height="3dp" android:layout_marginTop="9dp"
+                android:indeterminate="false" android:max="1000" />
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@id/banner_cancel_attempt" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:minHeight="48dp" android:minWidth="88dp" android:layout_marginStart="16dp"
+        android:paddingHorizontal="14dp" android:paddingVertical="10dp" android:background="@drawable/button_secondary"
+        android:textColor="#EEF4FC" android:textSize="16sp" android:textAllCaps="false" android:text="Anuluj"
+        android:visibility="gone" />
+</com.pbuchman.duduhome.ui.ProgressPanel>

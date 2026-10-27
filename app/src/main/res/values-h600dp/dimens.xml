@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="action_art_width">220dp</dimen>
+    <dimen name="action_art_height">180dp</dimen>
+    <dimen name="action_indicator_size">96dp</dimen>
+    <dimen name="action_progress_size">72dp</dimen>
+    <dimen name="action_icon_size">88dp</dimen>
+    <dimen name="action_title_gap">22dp</dimen>
+    <dimen name="action_detail_gap">10dp</dimen>
+    <dimen name="action_cancel_gap">20dp</dimen>
+    <dimen name="action_buttons_gap">28dp</dimen>
+</resources>

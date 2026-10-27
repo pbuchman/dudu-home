@@ -9,26 +9,41 @@ taps without focus; the automation banner receives cancellation touches within i
 notification during a protected action defers opening until the menu is safe. See [trip UI](WHERE_AM_I.md).
 
 
-Current candidate `1.3.0-rc3`, versionCode 23; the original progress baseline was `911d18b`. Java 17, native Views/XML,
+Local presentation candidate `1.4.0-rc4-local-layout`, versionCode 31; frozen integration baseline is code 30; the original progress baseline was `911d18b`. Java 17, native Views/XML,
 no added runtime libraries, map editor, exporter, menu redesign or executor architecture.
 Physical acceptance is separate from the local checks described here.
 
 ## Presentation
 
-One top-centred banner, maximum 480 dp, at least 16 dp from available window edges.
-WindowManager fits normal system bars; no fullscreen/layout-no-limits flags. Wrap-content
-supports larger text. Title 22 sp, detail 18 sp, current platform font and dark background.
-Sand identifies gate events, mint cleaning, blue navigation. Icon and text accompany colour.
-No percentages, sound, flashing, focus or screen wake. A visible **Anuluj tę próbę** button
-has a minimum 76 dp touch target and immediately disables after a tap. An open, focused menu hosts
-the same layout inline. Only one host owns it at a time.
+The floating banner starts top-centred and uses up to 560 dp width, bounded by the available
+screen minus 16 dp margins. Its height follows the measured message instead of a fixed minimum.
+The 20 sp title and 16 sp detail share a wide body; the short **Anuluj** control is beside it
+when enough readable width remains. Narrow windows and enlarged fonts move the control below.
+The message scrolls only when it exceeds available height; cancellation retains a fully visible
+minimum 48 dp touch target. No message text is ellipsized.
+
+Hold a non-button area for 350 ms to move its floating instance horizontally; the bounded
+position is saved separately from the location card. Inline menu presentation does not drag.
+WindowManager placement explicitly excludes system bars and display cutouts; the native window
+receives the measured bounded height. No layout-no-limits flag is used. Sand identifies gate
+events, mint cleaning, blue navigation. Icon and text accompany colour.
+There is no separate drag handle. Holding gives visual feedback. The gesture never transfers
+to a button underneath it on release. No percentages, sound, flashing, focus or screen wake.
+Cancellation immediately disables after a tap. An open, focused menu uses up to 720 dp of its
+actual host width, title 22 sp, detail 18 sp and the existing 76 dp cancellation target. The same
+responsive text/control arrangement avoids a separate full-width button row when space permits.
+Only one host owns presentation; both variants use the same cancellation contract.
+
+[Window inventory and reproduction](WINDOW_LAYOUT.md) cover native dialogs, the navigation
+chooser, passive street card and full-screen surfaces. System notifications and Toast geometry
+remain owned by Android or the vendor launcher.
 
 | Detection | Title | Detail | Evidence |
 |---|---|---|---|
 | Departure | Wyjazd z domu | Potwierdzam ruch | Qualified continuous movement in any direction / 3 s requirement |
 | Return before turn | Powrót do domu | Sprawdzam trasę powrotu | Supported road approach, reducing distance to junction |
 | Return after turn | Powrót do domu | Potwierdzam dojazd do bramy | Junction sequence plus inward movement, then inbound checkpoint |
-| Cleaning | Pełne sprzątanie | Potwierdzam wyjazd z osiedla | Consumed departure plus outward movement, then outward checkpoint |
+| Cleaning | Pełne sprzątanie | Oczekiwanie na wykonanie | Independent continuation after successful automatic departure; no detection countdown |
 | Media startup | Rozpoczęcie jazdy | Potwierdzam jazdę | Minimum of qualified duration and displacement requirements |
 
 Return fills 0-30% as junction distance reduces from the existing 300 m approach boundary to
@@ -52,7 +67,8 @@ prediction. Manual buttons bypass detection; Mop stays manual only.
 
 No animation delays dispatch. Full fill means recognized event, not successful execution.
 Gate/cleaning use the existing full screen after bounded priority scheduling: success 5 s,
-errors until retry/close, return to previously open menu or hide. WAITING has no progress fill.
+manual errors until retry/close; automatic cleaning errors/skips/unknown results last 2.5 s
+and still await transport cleanup. WAITING has no progress fill.
 Yanosik request results last 2 s and do not claim a running service or warning display.
 Fresh notification presence prevents reopening a working Yanosik; unknown status skips it.
 Spotify follows after the launch allowance, with startup/resume messages and a 2 s result.
@@ -85,7 +101,8 @@ See AUTOMATION_SEQUENCE for queue deadlines, reservations and presentation prior
 
 HomeActions creates an attempt before checking existing guards. Pending reservations remain
 in RAM; actual external execution commits its durable reservation immediately before sending.
-Non-user skipped, failed or expired attempts retain the conservative consumed-limit behavior. DISPATCH remains intent, not proof of execution. Valid token
+Automatic cleaning uses SEND_ONLY: all unsent skips/failures/expiry leave quota available.
+Other action kinds retain their existing conservative reservation policy. DISPATCH remains intent, not proof of execution. Valid token
 delivery or a ready visible Activity acknowledges the request. Gate startup/HTTP worker
 publishes STARTED. Completion reports independently of a closed view. View closure never
 releases the shared Binder/HTTP lease early or reopens a screen on a late outcome.
@@ -97,22 +114,23 @@ daily-limit-or-storage and busy-or-maintenance cannot be presented as a more spe
 
 ## Cancellation and concurrency
 
-The explicit **Anuluj tę próbę** control is available during detection, queue wait and execution,
+The explicit cancellation control (**Anuluj** on the floating card) is available during detection, queue wait and execution,
 in the banner or existing action screen. Yanosik and Spotify are one cancellation group.
 An immutable token includes process session and attempt ID; stale or terminal tokens are inert.
 Repeated taps cannot schedule another cancellation. **Przerywam…** remains visible during
 transport cleanup; shared exclusion is released only when cleanup finishes. If overlays are
 unavailable, a silent ongoing notification supplies the same immutable explicit service action.
 
-Before external sending, user cancellation drops the pending steps without consuming limits
-or writing durable history of that attempt. It blocks only the current occurrence in RAM.
+Before external sending, user cancellation drops the pending steps without consuming limits.
+RC4 keeps private diagnostic evidence of that attempt; cancellation blocks only the current
+occurrence in RAM and diagnostic rows never restore it after restart.
 After sending, show **Polecenie już wysłane. Zatrzymano dalsze kroki** and preserve reservations;
 no robot stop command or closing of an already launched media app is implied. Gate cancellation
 may only clean up its own call and retains the durable 60-second call block.
 
 New driving evidence requires ten continuous seconds of qualified standstill below 0.5 m/s
 (accuracy <=15 m, age <=3 s), then the unchanged fresh 10-second/15-metre movement test.
-Home departure/cleaning requires a fresh five-second standstill within the 45-metre parking
+Cancelled home departure requires a fresh five-second standstill within the 45-metre parking
 area; return requires five seconds outside the 300-metre junction approach before a new return.
 Bad GPS breaks these intervals. Cancelling a gate attempt does not release the media gate-area
 precondition. Restart does not restore queued work and requires a fresh baseline.
@@ -157,11 +175,13 @@ presentation generation. GPS disable/watchdog, configuration changes and teardow
 invalidate presentation. Late cycle results after teardown are ignored. Force-stop may skip
 teardown; Android removes that process's window. This does not replace the ignition-task fix.
 
-The existing two private journal files of about 128 KiB remain the only logger. Added safe
+RC4 retains up to eight private journal files of 1 MiB for at most seven days. Added safe
 categories: PROGRESS_kind_phase_reason with ID, PROGRESS_RESET_reason with GENERATION,
 ACTION_REQUESTED_kind and ACTION_kind_phase_reason with ID, ACTION_UI_EXPIRED and
 PROGRESS_OVERLAY_UNAVAILABLE. Record state transitions, not each fill change. No positions,
-streets, phone fragments, credentials or server payloads. UI never parses logs.
+streets, phone fragments, credentials or server payloads enter this generic journal. UI never
+parses logs. A separate bounded private location trace records raw and displayed place evidence;
+it is not uploaded automatically. See DIAGNOSTIC_JOURNALS.md for durability and failure limits.
 
 ## Verification and remaining acceptance
 

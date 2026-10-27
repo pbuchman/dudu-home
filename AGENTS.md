@@ -44,20 +44,16 @@ Migration and feature boundaries: docs/MIGRATION.md and docs/PACKAGES.md.
 Do not wire an unverified screen/GPS-gap signal to ignition rearming or claim wake support.
 Installation/recovery: docs/OPERATIONS.md. Evidence and outstanding radio checks:
 docs/VERIFICATION.md and docs/LOCAL_DEVELOPMENT.md. Keep these current with every material change.
-Automatic cleaning has one consumed attempt per Europe/Warsaw day. Pending reservations live
-in RAM; durable protection is committed immediately before external sending. Explicit user
-cancellation before sending discards that occurrence and its buffered diagnostics, without
-consuming quota or durable cancellation history. Non-user failure, missing configuration and
-expired queued work still consume the opportunity. Sent or uncertain external commands retain
-reservations. Gate cleanup may only affect its own call and always preserves the 60-second block.
-Cancellation groups Yanosik and Spotify and never bypasses gate-area priority. Rearm cancelled
-work only after the qualified fresh baseline documented in docs/PROGRESS_UI.md. A busy gate
-defers cleaning in a bounded in-memory queue; no persisted queue or automatic retry. Manual
-cleaning remains independent. Saving configuration never executes an action or resets quota.
-Preserve shared action exclusion until actual Binder/HTTP cleanup, not just until the UI closes.
-Stage complete private configuration outside Git; compare radio phone and APK signature before
-update, back up with checksums, keep maintenance until one-time import completes. Do not print
-headers, account payloads, routine IDs, connection addresses or raw firmware logs.
+Automatic cleaning follows only successful own automatic departure, before Yanosik/Spotify.
+Use a separate SEND_ONLY reservation at claimSend; unsent skips/failures/expiry never consume
+its Europe/Warsaw day. Sent/uncertain requests retain quota; preserve legacy last_attempt_day.
+Cleaning and media cancellation are independent. No checkpoint command, automatic Mop or retry.
+Automatic cleaning errors/skips last 2.5 seconds and wait for cleanup; manual UI is unchanged.
+Keep RAM-only 120-second queues and generation/cycle guards. RC5 documentation remains history.
+Maintain guarded idle/signature/in-place update checks, data/maps and durable safety state.
+Normal updates create no backups, perform no downgrade/data clear/automatic rollback.
+Do not publish stable 1.5.0 until physical departure/robot/audio/daily-limit acceptance passes.
+Never print headers, account payloads, routine IDs, connection addresses or raw firmware logs.
 Do not bypass a browser security refusal to store secrets. Google Password Manager backup is
 not completed; the local owner-only credential bundle is the working source of configuration.
 
@@ -68,7 +64,7 @@ Follow docs/NAVIGATION.md and docs/OPERATIONS.md. Resolve PRIVATE_DIR locally ou
 Schema 2 uses group label/icon and 0..12 destinations per slot. Zero is empty, one launches
 Maps directly, multiple opens a chooser. Schema 1 remains compatible; preserve navigate_by.
 Validate privately, install code 17+ before importing schema 2, then import and verify on the
-radio. Import replaces all slots and never executes an action. Back up before installation.
+radio. Import replaces all slots and never executes an action. Use the guarded in-place installer without new backups.
 Never embed actual labels, address fragments, coordinates or Maps links in public tests,
 docs, PR text, screenshots, CI inputs or APKs. All examples/test data must be invented.
 Run the scanner locally against the entire private navigation file, including all group

@@ -9,7 +9,7 @@ import static com.pbuchman.duduhome.location.HomeDetector.GateArea.*;
 public final class DepartureMediaChecks {
     private static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
     public static void main(String[] args) {
-        var continuation = new DepartureMediaContinuation<Long>();
+        var continuation = new DepartureContinuation<Long>();
         var queue = new AutomationCoordinator();
         var gate = new GatePrecondition();
         var home = new HomeDetector(new HomeDetector.Geometry(new HomeDetector.Point(0,0),
@@ -46,11 +46,11 @@ public final class DepartureMediaChecks {
         check(queue.next(19000,true,true).type()==SPOTIFY,"Spotify follows once, without further movement");
 
         for (HomeEvent origin : new HomeEvent[]{null,HomeEvent.RETURN_APPROACH,HomeEvent.OUTBOUND_CHECKPOINT}) {
-            var other = new DepartureMediaContinuation<Long>();
+            var other = new DepartureContinuation<Long>();
             other.offered(1,origin,0,1L);
             check(!other.succeeded(other.capture(1),0,1L),"manual/return/cleaning cannot continue departure media");
         }
-        var stale = new DepartureMediaContinuation<Long>();
+        var stale = new DepartureContinuation<Long>();
         stale.offered(1,HomeEvent.DEPARTURE_STARTED,0,1L);
         check(stale.capture(2)==null,"wrong attempt is inert");
         var old = stale.capture(1); stale.cancelAttempt(1);
@@ -64,6 +64,11 @@ public final class DepartureMediaChecks {
         stale.offered(5,HomeEvent.DEPARTURE_STARTED,1,null);
         check(stale.capture(5)==null,"unavailable/failed cycle has no continuation");
 
+        var independent = new DepartureContinuation<Long>();
+        independent.offered(7,HomeEvent.DEPARTURE_STARTED,0,1L);
+        var independentBinding=independent.capture(7); independent.cancelMedia();
+        check(independent.succeeded(independentBinding,0,1L) && independent.mediaCancelled(),"media cancellation preserves successful departure cleaning without rearming media");
+        check(home.progress().stream().noneMatch(p -> p.kind()==DetectionProgress.Kind.CLEANING),"checkpoint geometry has no cleaning detection countdown");
         cancellationBaseline();
         var expiry = new AutomationCoordinator();
         expiry.enqueue(1,YANOSIK,null,1000,0); expiry.enqueue(2,SPOTIFY,null,1000,0);
@@ -79,7 +84,7 @@ public final class DepartureMediaChecks {
         return new MotionDetector.Fix(time,x,0,3,speed,true,0,false);
     }
     private static void cancellationBaseline() {
-        var continuation = new DepartureMediaContinuation<Long>();
+        var continuation = new DepartureContinuation<Long>();
         continuation.offered(1,HomeEvent.DEPARTURE_STARTED,0,1L);
         var old=continuation.capture(1);
         continuation.cancelMedia(); continuation.invalidate();
@@ -90,7 +95,7 @@ public final class DepartureMediaChecks {
         for (int n=16;n<=26;n++) motion.observeBaseline(fix(n*1000L,30,0));
         check(continuation.mediaCancelled(),"qualified stop alone cannot rearm cancellation");
         continuation.offered(2,HomeEvent.DEPARTURE_STARTED,0,1L);
-        check(continuation.capture(2)==null,"gate success cannot rearm a media cancellation");
+        check(continuation.capture(2)!=null && continuation.mediaCancelled(),"media cancellation preserves independent departure cleaning provenance");
         for (int n=27;n<37;n++) motion.accept(fix(n*1000L,30+(n-27)*2,2),true);
         check(continuation.mediaCancelled(),"a complete new motion test is required");
         motion.accept(fix(37000,50,2),true);
