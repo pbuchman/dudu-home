@@ -17,3 +17,5 @@ javac -cp build/detector -d build/detector app/src/main/java/com/pbuchman/duduho
 java -cp build/detector com.pbuchman.duduhome.automation.CoordinatorChecks
 javac -cp build/detector -d build/detector app/src/main/java/com/pbuchman/duduhome/automation/GatePrecondition.java scripts/GatePreconditionChecks.java
 java -cp build/detector com.pbuchman.duduhome.automation.GatePreconditionChecks
+javac -cp build/detector -d build/detector app/src/main/java/com/pbuchman/duduhome/automation/DepartureMediaContinuation.java scripts/DepartureMediaChecks.java
+java -cp build/detector com.pbuchman.duduhome.automation.DepartureMediaChecks

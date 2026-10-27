@@ -1,5 +1,19 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
+## RC5 departure-fix update boundary (October 27)
+
+The RC5 source-only candidate fixes departure continuation over public RC3. It does not
+include separate local street/layout candidates. A higher versionCode alone is not proof
+of feature compatibility with the installed radio. Inspect installed source/features and
+signing identity before updating; do not overwrite a newer local feature set.
+
+For this update, preserve application data, maps, gate cooldown and journey reservations.
+Use the maintainer's current safe updater with verified idle/maintenance gates. Do not use
+the historical backup-oriented commands below for this update: no new backups, clearing,
+downgrade or automatic rollback is authorized. Never force-stop an active call.
+The physical radio was unavailable during preparation; installation and road/audio
+acceptance remain pending. Publishing RC5 does not authorize backend deployment or pairing.
+
 ## Read-only failure capture before opening or updating the app
 
 Resolve an owner-only `PRIVATE_DIR` outside every Git repository (0700). With the existing

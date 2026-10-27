@@ -22,8 +22,12 @@ final class GatePriorityChecks {
                         "gate context must not reserve or expire media before the call");
                 check(!runtime.allowsMotionDetection(),"no generic progress before gate");
                 check(HomeActions.begin(),"fake call lock");
-                Runnable success = HomeActions.gateSuccessCallback();
+                long attempt = ProgressBus.requestManual(context, DetectionProgress.Kind.DEPARTURE);
+                ProgressBus.update(context, attempt, DetectionProgress.Phase.STARTED, DetectionProgress.Reason.NONE);
+                check(ProgressBus.claimSend(context, attempt), "synthetic manual call admission");
+                Runnable success = HomeActions.gateSuccessCallback(attempt);
                 success.run();
+                ProgressBus.update(context, attempt, DetectionProgress.Phase.SUCCEEDED, DetectionProgress.Reason.NONE);
                 check(!runtime.allowsMotionDetection(),"success still waits for executor cleanup");
                 HomeActions.end();
                 check(runtime.allowsMotionDetection(),"call completion releases motion after cleanup");

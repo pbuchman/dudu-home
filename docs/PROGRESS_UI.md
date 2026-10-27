@@ -43,7 +43,10 @@ initial five-second stop. Bad fixes, a stop or a gap over two seconds reset the 
 They preserve this cycle's established parking baseline, so fresh movement can restart
 within 85 m without returning inside 45 m. A first good cycle fix outside parking and
 pre-send cancellation still require their qualified new baseline.
-Navigation uses the existing 10 s requirement. All fill values
+Generic navigation detection uses the existing 10 s requirement. RC5 automatic departure
+continuation enters the ordinary cancellable WAITING group after gate-call success, without
+another motion countdown. Gate cleanup/result UI still wins; cancellation also suppresses
+continuation before queue creation. All fill values
 come from the detector. Time passing in UI cannot increase them. Radio start alone gives no
 prediction. Manual buttons bypass detection; Mop stays manual only.
 

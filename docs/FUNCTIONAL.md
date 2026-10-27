@@ -44,7 +44,11 @@ pasują do możliwego wyjazdu do bramy lub powrotu. Jeśli tak, te aplikacje cze
 udane zakończenie telefonu. Samo zgłoszenie, blokada, błąd ani upływ czasu nie zwalniają
 tego oczekiwania. Świeży GPS potwierdzający opuszczenie obszaru pozwala przejść do zwykłego
 rozpoznawania jazdy. Brak wiarygodnego GPS nie oznacza, że jesteśmy poza obszarem.
-Po zwolnieniu warunku nadal wymagany jest świeży ruch przez 10 sekund i co najmniej 15 m.
+Po udanym automatycznym połączeniu przy wyjeździe (DEPARTURE_STARTED) od RC5 kolejkujemy
+Yanosika i Spotify także na postoju, bez kolejnego testu ruchu. Nadal czekamy na cleanup,
+koniec pięciosekundowego ekranu sukcesu, świeżą pozycję i pozostałe blokady uruchomienia.
+Ręczne połączenie i powrót nie tworzą tej kontynuacji. W pozostałych przypadkach po zwolnieniu
+warunku nadal wymagany jest świeży ruch przez 10 sekund i co najmniej 15 m.
 Ręczne menu, wybrana nawigacja Maps i ekran wyniku zachowują pierwszeństwo.
 Nie zmieniają się progi wykrywania telefonu ani warunki bezpieczeństwa połączeń.
 Szczegóły i ograniczenia: [AUTOMATION_SEQUENCE.md](AUTOMATION_SEQUENCE.md).
@@ -74,7 +78,7 @@ Szczegółowy kontrakt kolejki i odtwarzania: [AUTOMATION_SEQUENCE.md](AUTOMATIO
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
 Obecny zakres obejmuje cztery kafelki w pierwszym rzędzie oraz trzy kafelki nawigacji. Full Mop działa wyłącznie ręcznie. Spotify wznawia
-muzykę na radiu po potwierdzeniu jazdy, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
+muzykę na radiu po potwierdzeniu jazdy albo udanym automatycznym połączeniu przy wyjeździe, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
 a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
 ## Menu i akcje
@@ -85,7 +89,7 @@ a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 | Rozpoznawanie GPS | Mały pasek nad obecną aplikacją albo w menu; „Anuluj tę próbę” odbiera dotyk tylko w granicach paska, odczyt stanu nie uruchamia akcji |
 | Unieważnienie rozpoznawania | Dostępny powód przez 2 s, potem ukrycie; nowy kandydat może zastąpić wcześniej |
 | Yanosik już działa | Wykryte powiadomienie usługi: bez ponownego otwarcia i bez powrotu do pulpitu |
-| Yanosik bez sygnału pracy | Potwierdzony ruch, start, po 10 s dopuszczenie Spotify; bez żądania pulpitu |
+| Yanosik bez sygnału pracy | Potwierdzony ruch lub udane automatyczne połączenie przy wyjeździe, start, po 10 s dopuszczenie Spotify; bez żądania pulpitu |
 | Nieznany stan Yanosika | Pominięcie startu z krótkim komunikatem; brak samoczynnego ponowienia |
 | Powrót przed skrętem | „Sprawdzam trasę powrotu”, następnie potwierdzanie dojazdu; postęp z GPS, nie zegara |
 | Ręczne użycie kafelka | Ekran postępu → wynik → menu |

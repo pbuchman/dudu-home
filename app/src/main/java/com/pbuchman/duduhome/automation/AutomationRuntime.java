@@ -22,6 +22,7 @@ public final class AutomationRuntime {
     private long spotifyAttempt;
     private final java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome;
     private final java.util.Set<Long> mediaGroup = new java.util.LinkedHashSet<>();
+    private final DepartureMediaContinuation<JourneySession.Cycle> departureMedia = new DepartureMediaContinuation<>();
     private boolean cancellingMedia;
 
     private long dispatchedHomeAttempt = -1;
@@ -30,14 +31,27 @@ public final class AutomationRuntime {
     private GateArea lastGateArea;
     private boolean homeConfigured = true;
     private long areaFreshUntil;
-    private final java.util.function.Supplier<Runnable> gateSuccessListener = this::gateSuccessCallback;
-    private Runnable gateSuccessCallback() {
+    private final java.util.function.LongFunction<Runnable> gateSuccessListener = this::gateSuccessCallback;
+    private Runnable gateSuccessCallback(long attempt) {
         Runnable success = gate.successCallback();
+        long generation = queue.generation();
+        JourneySession.Cycle cycle = new JourneySession(context).cycle();
+        var departure = departureMedia.capture(attempt);
+        boolean[] completed = {false};
         return () -> {
-            if (closed) return;
+            if (closed || completed[0] || queue.generation() != generation || cycle == null
+                    || !cycle.equals(new JourneySession(context).cycle()) || !ProgressBus.acceptsGateSuccess(attempt)) {
+                if (departure != null) Diagnostics.recordAttempt(context, attempt, "MEDIA_DEPARTURE_CONTINUATION_REJECTED");
+                return;
+            }
+            completed[0] = true;
             boolean before = gate.allowsMedia();
             success.run();
             if (!before && gate.allowsMedia()) Diagnostics.record(context, "MEDIA_GATE_CALL_COMPLETED");
+            if (departureMedia.succeeded(departure, generation, cycle)) {
+                boolean queued = enqueueMedia();
+                Diagnostics.recordAttempt(context, attempt, "MEDIA_DEPARTURE_CONTINUATION_" + (queued ? "QUEUED" : "SUPPRESSED"));
+            }
             changed();
         };
     }
@@ -79,6 +93,7 @@ public final class AutomationRuntime {
         if (closed || (!HomeActions.callsGate(event) && event != HomeEvent.OUTBOUND_CHECKPOINT)) return;
         if (event == HomeEvent.OUTBOUND_CHECKPOINT && queue.contains(Type.CLEANING)) return;
         long id = ProgressBus.request(context, ProgressBus.kind(event));
+        departureMedia.offered(id, event, queue.generation(), new JourneySession(context).cycle());
         long day = day();
         java.util.function.BooleanSupplier homeReservation = reserveHome.apply(event);
         ProgressBus.reserveWith(id, () -> (event != HomeEvent.OUTBOUND_CHECKPOINT || DailyCleaning.reserve(context, day))
@@ -90,10 +105,18 @@ public final class AutomationRuntime {
     }
     public void motion() {
         if (!allowsMotionDetection() || PrivateImport.pending(context)) return;
+        departureMedia.motionConfirmed();
+        enqueueMedia();
+    }
+    /** Both triggers use the same per-target durable reservations at actual sending. */
+    private boolean enqueueMedia() {
+        if (closed || departureMedia.mediaCancelled() || PrivateImport.pending(context)) return false;
         JourneySession session = new JourneySession(context);
-        if (!mediaGroup.isEmpty()) return;
+        if (session.manualNavigationChosen()) return false;
+        if (!mediaGroup.isEmpty()) return false;
         if (session.available(JourneySession.Target.YANOSIK)) addMedia(Type.YANOSIK, Kind.YANOSIK, JourneySession.Target.YANOSIK);
         if (session.available(JourneySession.Target.SPOTIFY)) addMedia(Type.SPOTIFY, Kind.SPOTIFY, JourneySession.Target.SPOTIFY);
+        return !mediaGroup.isEmpty();
     }
     private void addMedia(Type type, Kind kind, JourneySession.Target target) {
         long id = ProgressBus.request(context, kind);
@@ -102,6 +125,7 @@ public final class AutomationRuntime {
         enqueue(id, type, null);
     }
     private void cancelMedia() {
+        departureMedia.cancelMedia();
         if (cancellingMedia) return;
         cancellingMedia = true;
         boolean hadSent = mediaGroup.stream().anyMatch(ProgressBus::sent);
@@ -112,11 +136,24 @@ public final class AutomationRuntime {
         if (spotify != null) { SpotifyController active = spotify; spotify = null; spotifyAttempt = 0; active.cancel(); }
         mediaGroup.clear(); cancellingMedia = false;
     }
+    /** Includes detector candidates, which do not yet have queue cancellation handlers. */
+    public void cancelled(ProgressModel.State attempt) {
+        if (closed) return;
+        if (attempt.kind() == Kind.YANOSIK || attempt.kind() == Kind.SPOTIFY) {
+            Diagnostics.recordAttempt(context, attempt.id(), "MEDIA_DEPARTURE_CONTINUATION_CANCELLED");
+            cancelMedia();
+        } else {
+            if (departureMedia.capture(attempt.id()) != null)
+                Diagnostics.recordAttempt(context, attempt.id(), "MEDIA_DEPARTURE_CONTINUATION_CANCELLED");
+            departureMedia.cancelAttempt(attempt.id());
+        }
+    }
     private void enqueue(long id, Type type, HomeEvent event) {
         queue.enqueue(id, type, event, SystemClock.elapsedRealtime(), day());
         long generation = queue.generation();
         ProgressBus.allowSendWith(id, () -> !closed && queue.generation() == generation);
         ProgressBus.onCancel(id, () -> {
+            departureMedia.cancelAttempt(id);
             queue.cancel(id);
             HomeActions.cancelPending(context, Reason.USER_CANCELLED, id);
             if (type == Type.YANOSIK || type == Type.SPOTIFY) cancelMedia();
@@ -205,6 +242,7 @@ public final class AutomationRuntime {
         spotify.start();
     }
     public void reset(Reason reason) {
+        departureMedia.invalidate();
         gate.reset(); lastGateArea = null; homeConfigured = true; areaFreshUntil = 0;
         handler.removeCallbacksAndMessages(null);
         for (Job j : queue.reset()) ProgressBus.update(context, j.id(), Phase.SKIPPED, reason);

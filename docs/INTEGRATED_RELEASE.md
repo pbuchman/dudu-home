@@ -1,5 +1,15 @@
 # Combined main candidate: 1.4.0-rc3 / code 27
 
+## RC5 delivery supersedes the rollout instructions below
+
+Current candidate: **1.4.0-rc5 / code 32**, scoped to Android departure continuation.
+[Release notes](RELEASE_1_4_0_RC5.md) and VERIFICATION.md govern this delivery.
+No backend deployment or pairing is required. Public source derives from RC3 and excludes
+separate local street/layout candidates. Physical ADB is unavailable; installation is pending.
+Check the actual installed source/features and signature before updating; retain app data,
+maps, cooldowns and reservations. Use the current safe updater, without new backups,
+clearing, downgrading or automatic rollback. The older rollout instructions are historical.
+
 ## Current change and independent delivery
 
 The RC3 candidate adds conservative parking-tail corrections to private Home Dev summaries,

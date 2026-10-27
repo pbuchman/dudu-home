@@ -41,6 +41,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     public static final String CANCEL_SESSION_EXTRA = "cancel_session";
     public static final String CANCEL_ID_EXTRA = "cancel_id";
     private final java.util.function.Consumer<com.pbuchman.duduhome.automation.ProgressModel.State> cancellation = observed -> {
+        if (this.automation != null) this.automation.cancelled(observed);
         if (observed.evidenceId() < 0 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.YANOSIK
                 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.SPOTIFY) return;
         switch (observed.kind()) {

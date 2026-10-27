@@ -1,5 +1,16 @@
 # Development handoff
 
+## Current candidate: 1.4.0-rc5 / code 32
+
+RC5 continues a successful automatic departure with Yanosik and Spotify without requiring
+another stop or movement countdown. Source baseline is public RC3, not the separate local
+street/layout candidates. See RELEASE_1_4_0_RC5.md and AUTOMATION_SEQUENCE.md.
+Physical ADB was unavailable on October 27; installed version, signature and compatibility
+with those local candidates must be checked before any later installation. Never replace a
+newer local feature set merely because this public candidate has a higher versionCode.
+Preserve app state/maps; no clear, downgrade, automatic rollback or new backups for this update.
+No Home Dev deployment, pairing or private configuration change belongs to this release.
+
 ## Current candidate: 1.4.0-rc3 / code 27
 
 RC3 separates recorded GPS coverage from estimated parking-tail exclusions on Home Dev.

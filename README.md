@@ -5,7 +5,9 @@
 A small Android app for a DUDU7 head unit. It opens a gate by asking the Bluetooth-paired
 **phone** to make a short call, and sends existing **Full Cleaning** and **Full Mop** routines to Roborock.
 Private, locally configured route detection connects those actions to leaving and returning home.
-After sustained driving it starts Yanosik, then opens Spotify and requests local music playback.
+After a successful automatic departure gate call, or sustained driving elsewhere, it starts
+Yanosik, then opens Spotify and requests local music playback. Departure continuation works
+while stationary and does not require another movement countdown.
 Ready actions have an explicit order: **gate → cleaning → Yanosik → Spotify**.
 Before generic driving detection, a location precondition gives a possible gate departure or
 return priority even when its call event is not ready yet. Media waits for a successful gate
@@ -13,7 +15,13 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-> **Combined test candidate `1.4.0-rc3` (code 27).**
+> **Departure continuation candidate `1.4.0-rc5` (code 32).**
+> Continues automatic departure after gate-call success, retaining cleanup, result-screen,
+> cancellation and reservation safeguards. [Release notes](docs/RELEASE_1_4_0_RC5.md).
+> Based on public RC3; separate local street/layout candidates are not included.
+> Physical installation and road/audio acceptance remain pending.
+>
+> **Previous combined test candidate `1.4.0-rc3` (code 27).**
 > Home Dev distinguishes observed GPS time from estimated parking-tail corrections.
 > Android adds a passive radio observer with a separate durable event queue.
 > Power-based timer corrections require an independently validated firmware profile.
@@ -103,7 +111,8 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   private JSON and importing it again; no source edit or rebuild is needed. [File format and behavior](docs/NAVIGATION.md).
 - A small **Ustawienia** entry for the gate number and Roborock credentials. No map editor.
 - **Yanosik startup:** one launch attempt per full system boot or identified DUDU wake cycle, after at least
-  ten seconds of qualified GPS movement. First check its foreground-service notification.
+  ten seconds of qualified GPS movement, or after a successful automatic departure gate call.
+  The departure path requires no new standstill or motion test. First check its foreground-service notification.
   If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
   skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
   gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
@@ -174,6 +183,13 @@ the legacy package is `pl.piotrbuchman.dudugate`. Use the explicit migration run
 for that transition, not an ordinary update. Keep the matching signing certificate.
 
 ## Install safely
+
+**RC5 update:** first verify installed source/features and signing identity. The public RC5
+baseline excludes separate local street/layout candidates and must not replace them blindly.
+For this delivery use the current maintainer updater with idle/maintenance checks, preserving
+data/maps and without new backups, clearing, downgrading or automatic rollback. The commands
+below describe the historical public-baseline installer; see the RC5 boundary in OPERATIONS.md.
+
 
 Use the [migration runbook](docs/MIGRATION.md) for the old radio package. For an already
 migrated installation, use the [complete installation runbook](docs/OPERATIONS.md), including private backups,
