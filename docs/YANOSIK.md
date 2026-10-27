@@ -1,5 +1,13 @@
 # Yanosik movement hook - local implementation and remaining integration
 
+## Additional departure trigger (1.4.0-rc5)
+
+A successful automatic departure gate call queues Yanosik and Spotify without another
+standstill/motion countdown, including while stationary. It retains all presence, cleanup,
+result-screen, fresh-location, cancellation and reservation guards below. Manual and return
+calls do not gain this trigger. Generic movement and cancellation rearming are unchanged.
+See AUTOMATION_SEQUENCE.md for attempt/cycle binding and bounded queue behavior.
+
 ## Implemented
 
 ### Current user-cancellation contract

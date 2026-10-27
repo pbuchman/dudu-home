@@ -1,5 +1,21 @@
 # Design decisions
 
+## Departure continuation - October 27, RC5
+
+- A successful automatic DEPARTURE_STARTED call creates the existing Yanosik/Spotify
+  group without a second standstill/motion test, even while waiting at the gate.
+- Capture the attempt, runtime generation and journey cycle at admission. Duplicate,
+  cancelled and obsolete callbacks cannot recreate work. Manual and return calls retain
+  their existing area-release behavior without this new trigger.
+- Queueing is distinct from sending: retain fresh location, action cleanup, five-second
+  result presentation, manual UI/Maps, cleaning priority and ten-second Yanosik grace.
+- Preserve cancellation before queue creation and between steps. Only qualified fresh
+  standstill plus motion can rearm cancelled media; successful gate calls cannot.
+- Keep process-local queues, 120-second media expiry and independent reservations at
+  external sending. No migration, durable commands, new permissions or Binder changes.
+- Release only this fix over public main. APKs and separate local candidates remain private;
+  publication and emulator tests do not establish installation or road/audio acceptance.
+
 ## Parking-tail corrections and passive power observations - October 16 RC3
 
 - Keep raw recorded GPS time unchanged and expose a separate corrected in-car estimate.

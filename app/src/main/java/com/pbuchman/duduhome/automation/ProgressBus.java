@@ -53,6 +53,17 @@ public final class ProgressBus {
     public static boolean active(long id) {
         checkThread(); ProgressModel.State state = model.state(id); return state != null && !ProgressModel.terminal(state.phase());
     }
+    /** Executor completion arrives before SUCCEEDED. A delayed terminal callback is inert. */
+    public static boolean acceptsGateSuccess(long id) {
+        checkThread();
+        ProgressModel.State state = model.attempt(id);
+        if (state == null || (state.kind() != Kind.DEPARTURE && state.kind() != Kind.RETURN)
+                || (state.phase() != Phase.ACCEPTED && state.phase() != Phase.STARTED)) return false;
+        synchronized (controls) {
+            Control c = controls.get(id);
+            return c != null && c.sent && !c.cancelled && !c.finalized && c.admission.getAsBoolean();
+        }
+    }
     public static void markGroupSent(long id) {
         synchronized (controls) { Control c = controls.get(id); if (c != null) c.groupSent = true; }
     }

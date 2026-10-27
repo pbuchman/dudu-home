@@ -20,10 +20,13 @@ final class FirstWakeChecks {
         Store store = new Store();
         JourneySession first = new JourneySession(store.prefs, 42);
         check(first.ensureBoot(), "new boot");
+        var initialCycle=first.cycle();
         check(first.observeAwakeCycle(cold()) == BASELINE_ZERO, "cold baseline recorded");
+        check(initialCycle.equals(first.cycle()), "first vendor baseline preserves continuation cycle");
         check(first.reserve(), "cold attempt");
         JourneySession wake = new JourneySession(store.prefs, 42);
         check(wake.observeAwakeCycle(cycle(1)) == REARMED, "first real wake rearms");
+        check(!initialCycle.equals(wake.cycle()), "verified wake changes continuation cycle");
         check(wake.reserve() && !wake.reserve(), "one first-wake attempt");
         check(wake.observeAwakeCycle(cycle(1)) == UNCHANGED && !wake.available(), "duplicate");
         check(wake.observeAwakeCycle(cycle(0)) == UNCHANGED && !wake.available(), "rollback");
@@ -69,6 +72,7 @@ final class FirstWakeChecks {
             failed.fail = false;
             JourneySession another = new JourneySession(failed.prefs, 20);
             check(!another.ensureBoot() && !another.available() && !another.reserve(), "same store stays blocked");
+            check(another.cycle()==null, "failed-write latch cannot authorize a continuation even with cached state");
             check(!another.available(JourneySession.Target.SPOTIFY) && !another.reserve(JourneySession.Target.SPOTIFY), "Spotify fails closed too");
             check(another.observeAwakeCycle(cycle(2)) == STATE_WRITE_FAILED, "no recovery from cached memory");
             check(failed.writes == writes, "no implicit retry");

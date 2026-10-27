@@ -361,7 +361,7 @@ public final class MainActivity extends Activity {
         int generation = ++uiGeneration;
         if (!HomeActions.begin()) { ProgressBus.update(this, actionAttempt, Phase.SKIPPED, Reason.UI_BUSY); return; }
         final long attempt = actionAttempt;
-        final Runnable gateSuccess = HomeActions.gateSuccessCallback();
+        final Runnable gateSuccess = HomeActions.gateSuccessCallback(attempt);
         final java.util.concurrent.atomic.AtomicBoolean gateCleaned = new java.util.concurrent.atomic.AtomicBoolean();
         ProgressBus.update(this, attempt, Phase.ACCEPTED, Reason.NONE);
         gateLease = true;

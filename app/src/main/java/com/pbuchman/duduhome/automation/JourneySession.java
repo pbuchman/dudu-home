@@ -11,6 +11,7 @@ import java.util.Set;
 /** Reserve before launch, never rearm on process restart, update or a traffic stop. */
 public final class JourneySession {
     public enum Target { YANOSIK, SPOTIFY }
+    public record Cycle(int boot, long generation) { }
     public enum ObservationResult {
         BASELINE_ZERO, BASELINE_COUNTER, REARMED, UNCHANGED, UNAVAILABLE, INVALID_BOOT, STATE_WRITE_FAILED
     }
@@ -24,6 +25,13 @@ public final class JourneySession {
                 Settings.Global.getInt(context.getContentResolver(), Settings.Global.BOOT_COUNT, -1));
     }
     public JourneySession(SharedPreferences state, int boot) { this.state = state; this.boot = boot; }
+    /** Read-only identity for process-local continuations; a first vendor baseline is unchanged. */
+    public Cycle cycle() {
+        synchronized (JourneySession.class) {
+            return !FAILED.contains(state) && boot >= 0 && state.getInt("boot", -1) == boot
+                    ? new Cycle(boot, CYCLES.getOrDefault(state, 0L)) : null;
+        }
+    }
     public boolean ensureBoot() {
         synchronized (JourneySession.class) {
             if (FAILED.contains(state) || boot < 0) return false;

@@ -116,6 +116,7 @@ public final class SafetyChecks extends Instrumentation {
             MonitorCycleChecks.run(this);
             DepartureCycleChecks.run(this);
             GatePriorityChecks.run(this);
+            DepartureMediaChecks.run(this);
             NotificationChecks.run(this);
             WakeChecks.run(this);
             ProgressChecks.run(this);

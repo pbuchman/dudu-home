@@ -43,6 +43,27 @@ Safe diagnostics add `MEDIA_GATE_AREA_UNKNOWN/NONE/DEPARTURE/RETURN` on transiti
 phone data or extra raw GPS logger. The queued-action deadlines below remain unchanged;
 media is not queued/reserved merely because motion occurred inside the blocked area.
 
+## Automatic departure continuation (1.4.0-rc5)
+
+A successful automatic DEPARTURE_STARTED call queues the shared Yanosik/Spotify group
+without requiring the generic detector's startup standstill or ten-second/fifteen-metre
+motion test. The car may remain stationary. Manual and return calls do not create this
+continuation. Their existing gate-area success semantics are unchanged.
+
+The captured attempt, runtime generation and journey cycle must still be valid. Repeated
+callbacks cannot re-create a group, including after cancellation or queue expiry. Cancellation
+at detection time also suppresses continuation; only the existing qualified standstill and
+fresh motion can rearm media. A gate success never resets that suppression.
+
+Queue admission does not launch an app. Actual dispatch retains fresh location/area evidence,
+transport cleanup, five-second result UI, manual menu/Maps exclusion and cleaning priority.
+After a Yanosik launch request, Spotify retains its ten-second grace. Both jobs use existing
+120-second waiting deadlines and separate durable send reservations. A GPS gap defers work;
+it never becomes outside-area evidence. Reset/maintenance/restart discard RAM work without replay.
+
+This specific trigger supersedes the requirement below that all media starts with generic
+motion. All other movement, cancellation-rearm, executor and Spotify transport rules remain.
+
 ## Scheduling contract
 
 `AutomationCoordinator` has explicit numeric priorities: GATE 0, CLEANING 1, YANOSIK 2,

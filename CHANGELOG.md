@@ -1,5 +1,15 @@
 # Change history
 
+## 1.4.0-rc5 (code 32) - 2026-10-27
+
+- Continue automatic departure after a successful gate call with Yanosik then Spotify,
+  including while stationary, without another standstill or movement countdown.
+- Preserve call cleanup, result-screen exclusion, fresh location, cleaning priority,
+  cancellation, manual navigation and independent durable media reservations.
+- Bind continuation to its originating attempt and cycle; never replay it after reset.
+- Source-only candidate based on public RC3. Separate local street/layout candidates are
+  not included. Physical radio installation and road/audio acceptance remain pending.
+
 ## 1.4.0-rc2 (code 26) - 2026-10-15
 
 - Show GPS-observed time in the car on Home Dev day/range, daily-table and period summaries,

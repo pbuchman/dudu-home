@@ -1,5 +1,32 @@
 # Verification ledger
 
+## Departure continuation 1.4.0-rc5 / code 32, 2026-10-27
+
+- Scoped source baseline is public RC3. Separate local street/layout changes are excluded.
+- Local Routebook build passed; backend tests: 53 passed, 7 database-dependent skipped;
+  UI tests: 29 passed. Independent parking checks: 6 passed, 2 database-dependent skipped.
+  Contract, deployment templates (5) and deployment-plan checks (12) passed. No service deployed.
+- Pure Routebook protocol/shared-fixture and trip/timer checks passed. Installer, navigation,
+  private-tooling, public-scanner and diagnostics checks passed. Two optional OSM tests skipped
+  without pyosmium; CI supplies that dependency.
+- Working-tree/history privacy checks with private configuration, robot credentials and full
+  navigation denylist passed. Reported generic schema/icon vocabulary and prose were reviewed;
+  no private values were added. No images or runtime artifacts are publication inputs.
+- Android debug/instrumentation build and lint passed. Pure detector/queue/progress tests
+  passed, including stationary departure without an initial media standstill, cancellation
+  baseline, duplicate callbacks/GPS, origin/cycle/generation binding, grace and expiry.
+- Full emulator SafetyChecks and first-launch/no-dial passed on Android 36. New production
+  runtime/service-adapter checks exercise manual/return/failed/unsent calls, pre-enqueue and
+  between-step cancellation, fresh GPS, manual Maps, unavailable/working Yanosik and expiry.
+  An initial run exposed leaked synthetic gate-attempt state; fixture cleanup was corrected
+  and the full rerun passed. No physical executors were used.
+- Local APK signature verification passed and matches the existing local code-31 artifact.
+  This is not verification against the installed radio. Final PR/main/tag CI gates are
+  recorded by GitHub Actions and the release page, separately from the checks above.
+- Physical ADB was unavailable. Installed version/signature, installation, uninterrupted
+  departure, audible Spotify playback and no repeats after a traffic stop remain unverified.
+  The code-level diagnosis is consistent with the report, not a captured radio incident.
+
 ## Integrated 1.4.0-rc3 / code 27, 2026-10-16
 
 - Corrected in-car time uses full-resolution GPS coverage while preserving the original
