@@ -16,9 +16,9 @@ Backgrounding or turning the screen off does not pause. The full screen shows lo
 street, kilometres (one decimal) and **Czas sesji** as HH:MM:SS (hours may exceed 24).
 The time counter is on this main screen only; the existing location card remains address-only.
 Automatic Routebook recording, offline queue and ingest remain independent of all session controls.
-The card starts at the top right, is at most 286 dp wide and shows locality at 16 sp above
-the primary street at 25 sp, with a minimum height of 112 dp. The 48 dp × button sits beside
-the address; there is no visible drag handle/instruction row. Hold any non-button area for 350 ms, then move horizontally.
+The card starts at the top right and is at most 286 dp wide with a minimum height of 112 dp.
+Its background is 75% opaque. Street text uses 18.75 sp and locality uses 16 sp. The 48 dp
+× button sits beside the address. Hold any non-button area for 350 ms, then move horizontally.
 The held card visibly dims; releasing a drag never opens the trip. The independent
 **×** button hides only the card. **Pokaż panel w tle** / **Ukryj panel w tle** on the passive
 trip screen changes that preference, including before a trip starts. Hiding stays in effect
@@ -29,12 +29,13 @@ Close/toggle and drag release synchronously commit that small file before comple
 change; individual movement events never write. A failed save keeps/restores the prior choice
 and shows an error instead of claiming the new choice will survive restart.
 
-Street names wrap naturally on word boundaries, using up to three lines and the required card height;
-text does not shrink or scroll automatically. If the measured layout overflows, an ellipsis
-and visible **Pełna nazwa** button open the passive full screen. Tapping the card does the
-same. The accessibility label retains the entire address. The full screen keeps unlimited
-street lines in a ScrollView. The silent ongoing notification includes the complete address
-in its expanded BigText presentation and one content intent.
+Street names fit on one row when possible. For a longer name, the first row keeps the words
+that fit at their normal size and stays still. The rest stays still on the second row if it
+fits there. When the remainder overflows, only the second row uses Android's native looping
+marquee. A single unbroken token wider than the available space scrolls on that second row.
+Tap the address to open the passive full screen with the entire street name. The accessibility
+label and expanded silent notification also retain the complete address. The full screen wraps
+the complete street within scrollable content.
 
 Without a fresh fix, show **Brak sygnału GPS** instead of claiming the last name is current.
 Before the first confirmation, missing map/online evidence shows an unknown locality/street

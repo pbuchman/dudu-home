@@ -17,18 +17,29 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.EditText;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /** Dependency-free checks. Refuses to run on a physical radio. */
 public final class SafetyChecks extends Instrumentation {
-    private boolean gallery, national, tripSession, windowLayouts;
+    private boolean national, tripSession, windowLayouts;
+    private String gallery;
     private String tripOverlay;
-    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); windowLayouts="true".equals(arguments.getString("windowLayouts")); tripSession="true".equals(arguments.getString("tripSession")); tripOverlay=arguments.getString("tripOverlay"); gallery = "true".equals(arguments.getString("gallery")); national = "true".equals(arguments.getString("national")); start(); }
+    private Bundle arguments;
+    @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); this.arguments=arguments; windowLayouts="true".equals(arguments.getString("windowLayouts")); tripSession="true".equals(arguments.getString("tripSession")); tripOverlay=arguments.getString("tripOverlay"); gallery = arguments.getString("gallery"); national = "true".equals(arguments.getString("national")); start(); }
 
     @Override public void onStart() {
         Bundle result = new Bundle();
         try {
             require(Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish"),
                     "Emulator only: refusing to touch physical device settings");
+            if ("true".equals(arguments.getString("tripMarquee"))) {
+                boolean moving = TripMarqueeChecks.run(this, arguments);
+                result.putString("result", moving
+                        ? "PASS: focused trip marquee; native motion across 500ms renders, looping and touch"
+                        : "PASS: focused trip marquee; the fitting continuation stays static and opens Trip when tapped");
+                finish(Activity.RESULT_OK, result); return;
+            }
             if (windowLayouts) {
                 com.pbuchman.duduhome.ui.WindowLayoutChecks.run(this);
                 result.putString("result", "PASS: responsive native windows and synthetic progress/street rendering; no GPS or external actions");
@@ -48,8 +59,10 @@ public final class SafetyChecks extends Instrumentation {
                 result.putString("result", "PASS: " + com.pbuchman.duduhome.trip.NationalMapChecks.run(this));
                 finish(Activity.RESULT_OK, result); return;
             }
-            if (gallery) {
-                GalleryChecks.run(this); result.putString("result", "PASS: synthetic gallery captured, no external actions");
+            if ("true".equals(gallery) || "release".equals(gallery)) {
+                if ("release".equals(gallery)) GalleryReleaseChecks.run(this);
+                else GalleryChecks.run(this);
+                result.putString("result", "PASS: synthetic gallery captured, no external actions");
                 finish(Activity.RESULT_OK, result); return;
             }
             SharedPreferences prefs = getTargetContext().getSharedPreferences("gate_settings", 0);
@@ -120,6 +133,7 @@ public final class SafetyChecks extends Instrumentation {
             NavigationChecks.run(this);
             SpotifyChecks.run();
             MonitorCycleChecks.run(this);
+            com.pbuchman.duduhome.location.GpsStartupArchiveChecks.run(this);
             DepartureCycleChecks.run(this);
             GatePriorityChecks.run(this);
             DepartureMediaChecks.run(this);
@@ -131,10 +145,13 @@ public final class SafetyChecks extends Instrumentation {
             com.pbuchman.duduhome.trip.TripChecks.run(this);
             TripUiChecks.run(this);
             store.reserveDial();
-            result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/bounded-touch, wrapped street names, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");
+            result.putString("result", "PASS: gate safety, Roborock, navigation, progress overlay/menu, no-focus/bounded-touch, compact street rows, cancellation, stale generation, token expiry without dial, bounded diagnostics; no real robot or DUDU IPC");
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());
+            StringWriter trace = new StringWriter();
+            error.printStackTrace(new PrintWriter(trace));
+            result.putString("stack", trace.toString());
             finish(Activity.RESULT_CANCELED, result);
         }
     }

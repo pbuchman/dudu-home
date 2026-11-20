@@ -1,5 +1,83 @@
 # Verification ledger
 
+## Stable 1.5.1 / code 38
+
+- The owner reported that the installed 1.5.1-rc2/code37 preview works on DUDU7.
+  Code38 changes the street card. Its physical installation and road observation are separate.
+- The emulator rendered both privately supplied street examples as two complete stationary
+  rows. At normal and enlarged font sizes the synthetic long name moved left only in its
+  second row, reached the last word, looped, and kept moving across 500 ms location renders.
+  A different street with the same long remainder restarted from the beginning. The threshold
+  test compared an exact pixel fit with a viewport one pixel narrower. A single injected tap
+  opened the passive trip screen. Move, hide and restore persisted across process restarts.
+- Android 13 upgraded the signed code37 APK to the signed code38 APK in place. The gate
+  settings, journey safety state, navigation configuration, Routebook database, trip totals
+  and overlay position/visibility were byte-identical after installation. The queued GPS
+  record remained pending. The real Cloudflare smoke test completed on Android 13 and 16.
+- Debug app and instrumentation builds and lint passed (0 errors, 32 warnings). The full
+  safety runners passed on Android 13 and 16 after updating two test-only stream collectors
+  for Android 13. The API 36 speed suite passed 151 controlled assertions and 17 live
+  assertions. Its diagnostic polling retries transient file-read failures during owner-only
+  journal permission updates. Host tests for the detector, diagnostics, map index, installer and
+  Routebook contract passed, as did the 36 Routebook browser tests.
+- Seven reviewed [gallery captures](UI_GALLERY.md#current-151-gallery) record code38 in the
+  Polish locale. The standard APK and the separate emulator HTTPS fixture have individual
+  digests in the [capture manifest](images/1.5.1/manifest.json). The release page links
+  the GitHub Actions runs for the pull request, merged revision and tag.
+
+
+## Manual internet speed test, local 1.5.1-rc2 / code 37
+
+The private candidate was installed over code 36 on an Android 13 emulator.
+The gate preferences, journey session, all three synthetic destinations and the
+Routebook outbox survived the update. A previously pending GPS row remained
+pending. The final APK uses the same signing certificate as code 36 and completed
+live Cloudflare measurements on Android 13 and API 36. Switching the Android 13
+emulator to its cellular transport also produced a completed measurement.
+These results describe the host-backed emulator networks.
+
+The fourth tile was exercised at 1280 by 720 with 160 dpi and on a 480 dp
+display with 1.6 font scale. The regression suite covered the gate/Binder
+guards, navigation, cleaning and media scheduling. In the focused emulator
+checks the first moving fix outside the gate area eventually launched a stand-in
+media activity during a live fixture transfer. The parking scenario delivered
+the gate dispatch to MainActivity and stopped the transfer before the missing
+vendor service was reported. Phone dialing and media playback on the DUDU7
+require the physical radio. Private evidence includes the test APK hashes,
+screenshots, speed-test attempt IDs, normalized stage transitions and termination reasons.
+
+## First movement after wake, local 1.5.1-rc1 / code 36
+
+- A service-level replay used one-second synthetic fixes, a verified higher DUDU counter and
+  a delayed first callback outside the gate area. A callback-free watchdog period, the first
+  usable fix, sustained motion and one enqueue per target were visible in the time-window
+  export. The gate received zero requests. A second replay started near parking, completed
+  one simulated gate call and exercised a network failure in the cleaning transport. The
+  runtime opened Yanosik after cleanup and requested Spotify ten seconds later.
+- Checks cover equal and overlapping accuracy radii, stale and mock fixes, same-cycle
+  restart, manual Maps, duplicate gate success, all four notification/usage access
+  combinations and correlation across delayed callbacks. Separate cases reproduce an
+  in-flight cycle change, a 120-second expiry after a gate-area change and two Spotify
+  requests when a late counter opens a second logical cycle.
+- Android instrumentation held the Routebook worker past the GPS age limit and inspected its
+  real SQLite files. A failed insert did not produce a first-commit marker. Both GPS and power
+  retained their records after a transport error and process restart. Valid synthetic ACKs
+  removed both pending rows and updated the diagnostic counts. The private journal and export
+  use the existing collector protocol.
+- The Android build, lint and full safety suite passed on an API 36 emulator at 1280 by
+  720 and 160 dpi. An in-place update from code 35 retained the Routebook database identity,
+  journey preferences and location access. With network access disabled, a real emulator
+  reboot followed by synthetic GPS yielded one enqueue per target and a working local export.
+  Granting notification and usage access subsequently produced a bound listener, zero Spotify
+  sessions and the launcher category. The emulator had neither target application installed.
+- Routebook's shared fixtures, production build, all 93 backend tests against a disposable
+  PostGIS database and 29 UI unit tests passed. The Android HTTPS integration also passed
+  32 checks against local Fastify, PostGIS and Chromium, including lost ACK, process restart,
+  partial rejection and recovery from an invalid ACK. It committed 244 unique test points.
+- Two natural departures on the physical DUDU7 are pending. Compare the driver observation
+  with a local export for a first good fix already in motion and for a start near parking
+  followed by an automatic call. [Collection instructions](DIAGNOSTIC_JOURNALS.md).
+
 ## Stable 1.5.0 / code 35 - owner acceptance on 2026-10-27
 
 - The owner explicitly confirmed both acceptance scenarios on the installed RC1/code34:

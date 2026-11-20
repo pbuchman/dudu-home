@@ -14,7 +14,23 @@ if [[ ! -x "$DUDU_ADB" || ! -x "$DUDU_EMULATOR" ]]; then
     exit 1
 fi
 
-DUDU_SERIAL="$($DUDU_ADB devices | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1; exit }')"
+select_emulator() {
+    if [[ -n "${DUDU_EMULATOR_SERIAL:-}" ]]; then
+        echo "$DUDU_EMULATOR_SERIAL"
+    else
+        "$DUDU_ADB" devices | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1; exit }'
+    fi
+}
+
+if [[ -n "${DUDU_EMULATOR_SERIAL:-}" ]] && {
+    [[ ! "$DUDU_EMULATOR_SERIAL" =~ ^emulator-[0-9]+$ ]] ||
+    [[ "$("$DUDU_ADB" -s "$DUDU_EMULATOR_SERIAL" shell getprop ro.kernel.qemu 2>/dev/null | tr -d '\r')" != 1 ]];
+}; then
+    echo "Selected target must be a running Android emulator." >&2
+    exit 1
+fi
+
+DUDU_SERIAL="$(select_emulator)"
 if [[ -z "$DUDU_SERIAL" ]]; then
     echo "Uruchamiam emulator $DUDU_AVD_NAME. Pierwszy start może potrwać kilka minut."
     "$DUDU_EMULATOR" -avd "$DUDU_AVD_NAME" -no-snapshot-save \
@@ -23,7 +39,7 @@ if [[ -z "$DUDU_SERIAL" ]]; then
 fi
 
 for _ in $(seq 1 180); do
-    DUDU_SERIAL="$($DUDU_ADB devices | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1; exit }')"
+    DUDU_SERIAL="$(select_emulator)"
     if [[ -n "$DUDU_SERIAL" ]] \
             && [[ "$($DUDU_ADB -s "$DUDU_SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
         break

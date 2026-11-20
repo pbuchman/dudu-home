@@ -94,7 +94,7 @@
     <string name="success_icon_description">Sukces</string>
     <string name="error_icon_description">Błąd</string>
     <string name="error_message_format">%1$s\n\nKod: %2$s</string>
-    <string name="navigation_title">Nawigacja</string>
+    <string name="navigation_title">Skróty</string>
     <string name="navigation_go">Jedź z Google Maps</string>
     <string name="navigation_slot">Miejsce %1$d</string>
     <string name="navigation_empty">Brak konfiguracji</string>
@@ -129,7 +129,6 @@
     <string name="trip_overlay_hide">Ukryj panel w tle</string>
     <string name="trip_overlay_save_error">Nie udało się zapisać ustawień panelu. Spróbuj ponownie.</string>
     <string name="trip_overlay_hint">Panel pokazuje się podczas aktywnego pomiaru. Ukrycie nie zatrzymuje licznika ani zapisu GPS.</string>
-    <string name="trip_full_name">Pełna nazwa</string>
     <string name="cancel_attempt">Anuluj tę próbę</string>
     <string name="cancelling_attempt">Przerywam…</string>
     <string name="attempt_cancelled">Anulowano tę próbę</string>

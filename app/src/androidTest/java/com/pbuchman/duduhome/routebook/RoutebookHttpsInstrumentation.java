@@ -61,9 +61,12 @@ public final class RoutebookHttpsInstrumentation extends Instrumentation {
                     Uploader.Transport real=(cfg,body)->{var response=Uploader.https(cfg,body);if(phase.equals("resume")&&n.incrementAndGet()==2)db.insert(point(300));return response;};
                     try(Uploader uploader=new Uploader(db,config(device,"localhost",phase.equals("auth")),real,reports::add)){
                         uploader.kick();
-                        if(phase.equals("lost")){waitFor(()->reports.contains("UPLOAD_NETWORK_RETRY"),5);check(db.pending(true,1).get(0).json().equals(point(239).json()),"lost ACK keeps identical point");}
-                        else if(phase.equals("auth")||phase.equals("redirect")){waitFor(()->reports.contains("UPLOAD_BLOCKED_HTTP"),5);check(db.pending(true,1).size()==1,"blocked HTTP keeps pending");}
-                        else if(phase.equals("invalid")){waitFor(()->reports.contains("UPLOAD_INVALID_ACK"),5);check(db.pending(true,1).size()==1,"invalid ACK keeps pending");}
+                        if(phase.equals("lost")){waitFor(()->reports.stream().anyMatch(r->r.startsWith("UPLOAD_NETWORK_RETRY ")),5);check(db.pending(true,1).get(0).json().equals(point(239).json()),"lost ACK keeps identical point");}
+                        else if(phase.equals("auth")||phase.equals("redirect")){waitFor(()->reports.stream().anyMatch(r->r.startsWith("UPLOAD_BLOCKED_HTTP ")),5);check(db.pending(true,1).size()==1,"blocked HTTP keeps pending");}
+                        else if(phase.equals("invalid")){
+                            waitFor(()->reports.stream().anyMatch(r->r.startsWith("UPLOAD_INVALID_ACK STATE=HTTP_200 WAIT_MS=")),5);
+                            check(db.pending(true,1).size()==1,"invalid ACK keeps pending");
+                        }
                         else {waitFor(()->db.pending(true,1).isEmpty(),20);if(phase.equals("partial"))check(db.counts().contains("REJECTED_INVALID=1"),"actual server rejection retained terminally");}
                     }
                 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="speed_stage" type="id" />
+    <item name="speed_network" type="id" />
+    <item name="speed_error_title" type="id" />
+    <item name="speed_error_copy" type="id" />
+    <item name="speed_download_value" type="id" />
+    <item name="speed_upload_value" type="id" />
+    <item name="speed_ping_value" type="id" />
+    <item name="speed_cancel" type="id" />
+    <item name="speed_retry" type="id" />
+    <item name="speed_back" type="id" />
+</resources>

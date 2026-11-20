@@ -22,6 +22,8 @@ public final class GatePrecondition {
         return area == GateArea.NONE || (area != GateArea.UNKNOWN && callSucceeded);
     }
 
+    long generation() { return generation; }
+
     /** Capture when the executor accepts a call, not when a result screen is observed. */
     public Runnable successCallback() {
         long captured = generation;

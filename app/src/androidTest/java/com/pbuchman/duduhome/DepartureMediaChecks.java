@@ -2,6 +2,7 @@ package com.pbuchman.duduhome;
 
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
@@ -9,6 +10,7 @@ import com.pbuchman.duduhome.automation.*;
 import com.pbuchman.duduhome.location.HomeMonitorService;
 import com.pbuchman.duduhome.location.MotionDetector;
 import java.lang.ref.WeakReference;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -298,7 +300,7 @@ final class DepartureMediaChecks {
         final java.util.Set<Long> previousIds;
         final AutomationRuntime runtime;
         final AutomationCoordinator queue;
-        final HomeMonitorService monitor = new HomeMonitorService();
+        final HomeMonitorService monitor;
         final Consumer<ProgressModel.State> cancellation;
         int opens;
         @SuppressWarnings("unchecked") Fixture(Context context) {
@@ -311,6 +313,7 @@ final class DepartureMediaChecks {
             epoch=ProgressBus.reset(context,Reason.RESET);
             session=new JourneySession(context); check(session.ensureBoot(),"journey boot");
             runtime=new AutomationRuntime(context); queue=(AutomationCoordinator)get(runtime,"queue");
+            monitor=attachMonitor(context);
             set(monitor,"automation",runtime);
             cancellation=(Consumer<ProgressModel.State>)get(monitor,"cancellation");
             ProgressBus.setCancellationListener(cancellation);
@@ -331,7 +334,7 @@ final class DepartureMediaChecks {
             return new Call(id,success);
         }
         @SuppressWarnings("unchecked") Map<Long,AutomationCoordinator.Job> jobs() { return (Map<Long,AutomationCoordinator.Job>)get(queue,"queued"); }
-        List<AutomationCoordinator.Type> types() { return jobs().values().stream().map(AutomationCoordinator.Job::type).toList(); }
+        List<AutomationCoordinator.Type> types() { return jobs().values().stream().map(AutomationCoordinator.Job::type).collect(Collectors.toList()); }
         long id(AutomationCoordinator.Type type) { return jobs().values().stream().filter(j -> j.type()==type).findFirst().orElseThrow().id(); }
         boolean mediaReady() { return (boolean)invoke(runtime,"mediaReady"); }
         void fakeYanosik(YanosikPresence.State presence,boolean installed) {
@@ -367,6 +370,17 @@ final class DepartureMediaChecks {
             check(prefs.edit().clear().commit(),"journey fixture cleanup");
             var restore=daily.edit().clear(); if(hadDaily) restore.putLong("last_attempt_day",previousDay);
             check(restore.commit(),"daily fixture cleanup");
+        }
+    }
+    private static HomeMonitorService attachMonitor(Context context) {
+        HomeMonitorService monitor = new HomeMonitorService();
+        try {
+            var attach = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            attach.setAccessible(true);
+            attach.invoke(monitor, context);
+            return monitor;
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError("Attach synthetic monitor to the instrumentation context", error);
         }
     }
     private static MotionDetector.Fix motion(long t,double x,double speed) { return new MotionDetector.Fix(t,x,0,3,speed,true,0,false); }

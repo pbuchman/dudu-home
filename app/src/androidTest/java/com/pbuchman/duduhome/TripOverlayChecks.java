@@ -98,7 +98,9 @@ final class TripOverlayChecks {
             ProgressChecks.capture(i,"trip-overlay-compact-named.png");
             main(i,()->panel[0].render(fixture(before,"")));i.waitForIdleSync();
             ProgressChecks.capture(i,"trip-overlay-compact-unnamed.png");
-            main(i,()->ProgressChecks.check(overlay(panel[0]).findViewById(R.id.trip_street).getVisibility()==View.GONE,"typed unnamed actual overlay hides street row"));
+            main(i,()->ProgressChecks.check(overlay(panel[0]).findViewById(R.id.trip_street).getVisibility()==View.GONE
+                    &&overlay(panel[0]).findViewById(R.id.trip_street_tail).getVisibility()==View.GONE,
+                    "typed unnamed actual overlay hides both street rows"));
             main(i,()->overlay(panel[0]).findViewById(R.id.trip_overlay_close).performClick());
             main(i,()->{panel[0].render(before);ProgressChecks.check(overlay(panel[0])==null,"close remains hidden on next rendering");});
         }

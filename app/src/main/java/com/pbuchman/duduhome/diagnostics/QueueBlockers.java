@@ -3,7 +3,7 @@ package com.pbuchman.duduhome.diagnostics;
 /** Stable schema-2 blocker bit positions; combinations preserve simultaneous gating causes. */
 public final class QueueBlockers {
     public enum Cause { RESOURCE_CLEANUP, ACTIVE_OPERATION, UI_REQUEST_PENDING, PRESENTATION_BUSY,
-        MENU_VISIBLE, GATE_PRECONDITION, PRIORITY, YANOSIK_GRACE }
+        MENU_VISIBLE, GATE_PRECONDITION, PRIORITY, YANOSIK_GRACE, CLEANING_FEEDBACK }
     private long mask;
     public void add(String reason) {
         try { mask|=1L<<Cause.valueOf(reason).ordinal(); } catch(IllegalArgumentException ignored) { }

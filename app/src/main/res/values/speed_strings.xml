@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="speed_title">Test internetu</string>
+    <string name="speed_network_wifi">Wi-Fi</string>
+    <string name="speed_network_cellular">Sieć komórkowa</string>
+    <string name="speed_network_ethernet">Ethernet</string>
+    <string name="speed_network_vpn">VPN</string>
+    <string name="speed_network_other">Inna sieć</string>
+    <string name="speed_network_offline">Brak internetu</string>
+    <string name="speed_connecting">Łączenie z serwerem…</string>
+    <string name="speed_ping_running">Pomiar opóźnienia…</string>
+    <string name="speed_download_running">Pomiar pobierania…</string>
+    <string name="speed_upload_running">Pomiar wysyłania…</string>
+    <string name="speed_result">Pomiar zakończony</string>
+    <string name="speed_download">Pobieranie</string>
+    <string name="speed_upload">Wysyłanie</string>
+    <string name="speed_ping">Ping</string>
+    <string name="speed_mbps">Mb/s</string>
+    <string name="speed_ms">ms</string>
+    <string name="speed_provider" translatable="false">Cloudflare</string>
+    <string name="speed_cancel">Anuluj</string>
+    <string name="speed_retry">Spróbuj ponownie</string>
+    <string name="speed_repeat">Powtórz test</string>
+    <string name="speed_back">Wróć do menu</string>
+    <string name="speed_no_access">Brak dostępu do internetu</string>
+    <string name="speed_no_network_copy">Radio nie ma teraz połączenia z siecią.</string>
+    <string name="speed_unvalidated_copy">Android nie potwierdził dostępu do internetu w tej sieci.</string>
+    <string name="speed_network_changed">Połączenie zmieniło się</string>
+    <string name="speed_network_changed_copy">Pomiar został przerwany. Możesz rozpocząć nowy test na aktualnym łączu.</string>
+    <string name="speed_network_ready">Łącze dostępne</string>
+    <string name="speed_network_ready_copy">Możesz teraz ponowić pomiar.</string>
+    <string name="speed_server_unavailable">Serwer testu nie odpowiada</string>
+    <string name="speed_server_copy">Radio ma dostęp do internetu. Spróbuj powtórzyć pomiar za chwilę.</string>
+    <string name="speed_timeout">Przekroczono czas pomiaru</string>
+    <string name="speed_timeout_copy">Serwer nie zakończył pomiaru w wyznaczonym czasie.</string>
+    <string name="speed_data_limit">Osiągnięto limit danych</string>
+    <string name="speed_data_limit_copy">Próba została przerwana po wyczerpaniu budżetu pomiaru.</string>
+    <string name="speed_engine_error">Nie można uruchomić pomiaru</string>
+    <string name="speed_engine_error_copy">Spróbuj ponownie. Jeśli błąd powróci, sprawdź Android System WebView.</string>
+    <string name="speed_empty">&#x2014;</string>
+</resources>

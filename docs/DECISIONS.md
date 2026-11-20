@@ -1,5 +1,19 @@
 # Design decisions
 
+## 1.5.1 release and compact street card
+
+- Keep first-fix motion gated by a verified new boot or DUDU wake, with private startup,
+  motion, media and queue diagnostics. Retain the existing v1 Routebook ingest contract.
+- Run the internet test from an explicit menu action on the current default network.
+  Bound measurement payloads and time. End the measurement when the activity loses focus
+  through a lifecycle transition, while automation keeps its ordinary admission rules.
+- Use a 286 dp maximum width, 75% opaque background, 18.75 sp street and 16 sp locality.
+  Keep the first street row static. Use native marquee only for a second-row overflow.
+  An address tap opens the full passive view. Retain the close control and persisted placement.
+- Capture only the updated gallery states for 1.5.1 and keep historical images with their
+  original provenance. The speed captures use a test-only TLS overlay and local HTTPS
+  measurement with on-screen synthetic labeling.
+
 ## Stable 1.5 promotion - October 27
 
 - The owner explicitly requested stable 1.5.0 after confirming both acceptance scenarios on

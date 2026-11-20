@@ -1,5 +1,13 @@
 # Yanosik movement hook - local implementation and remaining integration
 
+## First movement after a verified cycle (1.5.1-rc1)
+
+On an increase of a trusted boot or wake counter, ten seconds of qualified movement can
+queue media even when the first good position arrives during the drive. Before an observed
+stop the displacement must also exceed the combined accuracy of both end positions.
+Same-cycle restarts and user cancellation still need a stationary baseline.
+[Thresholds and gate priority](AUTOMATION_SEQUENCE.md) · [Local evidence](DIAGNOSTIC_JOURNALS.md).
+
 ## Additional departure trigger (1.4.0-rc5)
 
 A successful automatic departure gate call queues Yanosik and Spotify without another

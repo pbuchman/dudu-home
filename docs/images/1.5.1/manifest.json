@@ -1,0 +1,58 @@
+{
+  "application_commit": "b80ca2f0c5e9609e0d46d4ecf3919ada34d14e7c",
+  "working_tree_changes": true,
+  "build_sources_sha256": "9e0990001f9be291870ab07eceef1166860c7feb20472dc05b096e50bbcebcfc",
+  "version": "1.5.1",
+  "version_code": 38,
+  "capture_date": "2026-11-20",
+  "emulator_build_fingerprint": "google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.D1/13818094:user/release-keys",
+  "dimensions": [
+    2000,
+    1200
+  ],
+  "density": 240,
+  "locale": "pl-PL",
+  "font_scale": 1.0,
+  "synthetic": true,
+  "builds": {
+    "standard_debug": {
+      "apk_sha256": "b443dd0ac600b6dd53f46414b8f3fe939f44beabac59545b1ce24992712b0166",
+      "instrumentation_apk_sha256": "8a180e53cf4829d1b7e6edf4cb5cda187409e1b5445bb1327c27404fef1c2018",
+      "notes": "Standard source build with synthetic navigation and renderer fixtures. Street frames use the map drawn by the test APK.",
+      "files": [
+        "home-speed.png",
+        "street-two-line.png",
+        "street-marquee-a.png",
+        "street-marquee-b.png",
+        "street-full-after-tap.png"
+      ]
+    },
+    "loopback_https_fixture_debug": {
+      "apk_sha256": "a36987f5a15ec645b1514b6612ec06d9d0efa8aa19ec84cdfc123943aef05ac4",
+      "instrumentation_apk_sha256": "8a180e53cf4829d1b7e6edf4cb5cda187409e1b5445bb1327c27404fef1c2018",
+      "notes": "Same application source with emulator-only loopback TLS trust. Instrumentation labels local synthetic measurements in the provider field.",
+      "files": [
+        "speed-running.png",
+        "speed-result.png"
+      ]
+    }
+  },
+  "files": [
+    "home-speed.png",
+    "speed-running.png",
+    "speed-result.png",
+    "street-two-line.png",
+    "street-marquee-a.png",
+    "street-marquee-b.png",
+    "street-full-after-tap.png"
+  ],
+  "file_sha256": {
+    "home-speed.png": "d1e586ad94ff45c4d25a3b5f806fa17c02c984de4665f0f9eb566d4669a641b5",
+    "speed-running.png": "41dfe82e6a63f3286c5449e1fa30bb8b45bc645e34ee3347b8bdeeb59c265d7d",
+    "speed-result.png": "7d68583d203760203b11989be074bad9f386d01a7e8a9dfb45644c86c7bee0e6",
+    "street-two-line.png": "c7aafebbd910f746c849bfd4c53442e9b53c7149be50687d240c3509a4bd2b5b",
+    "street-marquee-a.png": "70a23276d3d07b7cec7d41720b876cebc8041301a36511fbc88671f056acc3d3",
+    "street-marquee-b.png": "d74736f33f5bd0a55bfbcd861037758fd24f03abcac936aa1ca02c3635e43d23",
+    "street-full-after-tap.png": "62f8c6332e5b7de2ecdb544e66519365c78c46bbbcc2881e11b1f7f6505127e0"
+  }
+}

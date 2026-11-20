@@ -5,11 +5,16 @@ import java.util.Set;
 /** Closed field vocabulary prevents accidentally logging payloads through the category API. */
 public final class CategoryFormat {
     private CategoryFormat() { }
-    private static final Set<String> NUMERIC=Set.of("ID","STARTUP","GENERATION","CYCLE","ELIGIBLE","FIXES","POOR","HOME",
-            "FLAGS","BLOCKS","ELAPSED_MS","BLOCKER_ID","WAIT_MS","VENDOR_CYCLE");
-    private static final Set<String> ENUM=Set.of("ACCURACY","AGE","SPEED","STATE","REASON","ACTION","BLOCKER_ACTION");
+    private static final Set<String> NUMERIC=Set.of("ID","STARTUP","OBSERVATION","GENERATION","CYCLE","ELIGIBLE","FIXES","POOR","HOME",
+            "FLAGS","BLOCKS","ELAPSED_MS","BLOCKER_ID","WAIT_MS","VENDOR_CYCLE","COUNT");
+    private static final Set<String> BOOL=Set.of("YANOSIK","SPOTIFY");
+    private static final Set<String> ENUM=Set.of("ACCURACY","AGE","SPEED","STATE","REASON","ACTION","BLOCKER_ACTION",
+            "GAP","SOURCE","BLOCKER","BASELINE","STAGE","Y_ACCESS","Y_LISTENER","Y_FGS",
+            "S_ACCESS","S_SESSIONS","S_SCOPE","S_PLAYBACK");
     public static boolean valid(String category) {
-        if (category==null || category.length()>240 || category.isEmpty()) return false;
+        if (category==null || category.length()>320 || category.isEmpty()) return false;
+        if (category.length()>240 && !category.startsWith("MEDIA_TARGET_SNAPSHOT ")
+                && !category.startsWith("MOTION_STATE ")) return false;
         String[] words=category.split(" ",-1);
         if (!words[0].matches("[A-Z][A-Z0-9_]{1,239}(=[0-9]{1,18})?")) return false;
         // The sole historical counter-only category is a vendor cycle observation.
@@ -18,6 +23,7 @@ public final class CategoryFormat {
             String[] field=words[i].split("=",-1);
             if (field.length!=2) return false;
             if (NUMERIC.contains(field[0])) { if(!field[1].matches("-?[0-9]{1,18}"))return false; }
+            else if (BOOL.contains(field[0])) { if(!field[1].matches("[01]"))return false; }
             else if (ENUM.contains(field[0])) { if(!field[1].matches("[A-Z][A-Z0-9_]{0,63}"))return false; }
             else return false;
         }

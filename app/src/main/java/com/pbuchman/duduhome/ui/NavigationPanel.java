@@ -9,22 +9,32 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
 import com.pbuchman.duduhome.R;
 import com.pbuchman.duduhome.automation.HomeActions;
 import com.pbuchman.duduhome.navigation.*;
+import com.pbuchman.duduhome.speed.SpeedConnection;
 import java.io.InputStream;
 
-/** Owns only manual destination UI. Text and file data never become diagnostics. */
+/** Owns the manual destination and internet test shortcuts. */
 final class NavigationPanel {
     private static final int PICK_DOCUMENT = 201;
+    private static final int[] SLOT_IDS = {R.id.navigation_slot_1, R.id.navigation_slot_2, R.id.navigation_slot_3};
+    private static final int[] SLOT_BACKGROUNDS = {R.drawable.tile_gate, R.drawable.tile_cleaning, R.drawable.tile_mop};
     private final Activity activity;
     private final MapsLauncher maps;
     private final android.content.res.Resources polishResources;
     private final java.util.function.BooleanSupplier allowed;
+    private final ConnectivityManager connectivity;
+    private final Handler main;
+    private ConnectivityManager.NetworkCallback networkCallback;
     private boolean picking, reading, launching;
     private Dialog selector;
     private int selectedSlot = -1, restoreSlot = -1;
@@ -33,6 +43,8 @@ final class NavigationPanel {
     }
     NavigationPanel(Activity activity, java.util.function.BooleanSupplier allowed, Bundle saved, MapsLauncher maps) {
         this.activity = activity; this.allowed = allowed; this.maps = maps;
+        connectivity = activity.getSystemService(ConnectivityManager.class);
+        main = new Handler(activity.getMainLooper());
         // The current UI copy is Polish even when the head unit uses another system language.
         android.content.res.Configuration language = new android.content.res.Configuration(activity.getResources().getConfiguration());
         language.setLocale(java.util.Locale.forLanguageTag("pl"));
@@ -45,73 +57,79 @@ final class NavigationPanel {
         state.putBoolean("navigation_picker", picking);
         state.putInt("navigation_selector", selectedSlot);
     }
-    void destroy() { if (selector != null) selector.dismiss(); }
-    void resumed() { launching = false; }
+    void destroy() {
+        paused();
+        if (selector != null) selector.dismiss();
+    }
+    void resumed() {
+        launching = false;
+        if (connectivity != null && networkCallback == null) {
+            ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+                @Override public void onAvailable(Network network) { changed(); }
+                @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) { changed(); }
+                @Override public void onLost(Network network) { changed(); }
+
+                private void changed() {
+                    main.post(() -> {
+                        if (networkCallback == this) refreshSpeedTile();
+                    });
+                }
+            };
+            try {
+                connectivity.registerDefaultNetworkCallback(callback);
+                networkCallback = callback;
+            } catch (RuntimeException ignored) {
+                // The menu still reads a current snapshot when resumed or rendered.
+            }
+        }
+        refreshSpeedTile();
+    }
+    void paused() {
+        if (networkCallback != null) {
+            connectivity.unregisterNetworkCallback(networkCallback);
+            networkCallback = null;
+        }
+    }
+
     void render() {
+        render(activity.getResources().getConfiguration().screenWidthDp);
+    }
+
+    void render(int screenWidthDp) {
         NavigationConfig config;
         try { config = new NavigationStore(activity).load(); }
         catch (Exception ignored) { config = NavigationConfig.empty(); toast(R.string.navigation_invalid); }
         LinearLayout row = activity.findViewById(R.id.navigation_tiles);
+        View focused = row.findFocus();
+        int focusedId = focused == null ? View.NO_ID : focused.getId();
         row.removeAllViews();
-        boolean narrow = activity.getResources().getConfiguration().screenWidthDp < 600;
+        boolean narrow = screenWidthDp < 600;
         row.setOrientation(narrow ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        // The root menu has 32dp on either side, with three 16dp gaps in the wide row.
+        int tileWidth = narrow ? screenWidthDp - 64 : (screenWidthDp - 64 - 48) / 4;
+        boolean compact = tileWidth < 220;
+        boolean showArrow = tileWidth >= 155;
         for (int slot = 0; slot < NavigationConfig.SLOT_COUNT; slot++) {
             NavigationConfig.Slot group = config.slot(slot);
             boolean empty = group == null;
             boolean multiple = !empty && group.destinations().size() > 1;
             final int slotIndex = slot;
-            LinearLayout tile = new LinearLayout(activity);
-            tile.setId(new int[]{R.id.navigation_slot_1, R.id.navigation_slot_2, R.id.navigation_slot_3}[slot]);
-            tile.setOrientation(LinearLayout.HORIZONTAL); tile.setGravity(Gravity.CENTER_VERTICAL);
-            tile.setPadding(dp(16), dp(12), dp(16), dp(12));
-            tile.setMinimumHeight(dp(132));
-            tile.setBackgroundResource(empty ? R.drawable.navigation_empty
-                    : new int[]{R.drawable.tile_gate, R.drawable.tile_cleaning, R.drawable.tile_mop}[slot]);
-            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(narrow ? -1 : 0, -2, narrow ? 0 : 1);
-            if (slot > 0) { if (narrow) size.topMargin = dp(12); else size.setMarginStart(dp(16)); }
-            row.addView(tile, size);
-            ImageView icon = new ImageView(activity);
-            icon.setImageResource(empty ? R.drawable.ic_navigation_empty : switch (group.icon()) {
+            int image = empty ? R.drawable.ic_navigation_empty : switch (group.icon()) {
                 case "home" -> R.drawable.art_navigation_home;
                 case "squash" -> R.drawable.art_navigation_squash;
                 default -> R.drawable.art_navigation_pin;
-            });
-            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            tile.addView(icon, new LinearLayout.LayoutParams(dp(88), dp(94)));
-            LinearLayout words = new LinearLayout(activity); words.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams wordsSize = new LinearLayout.LayoutParams(0, -2, 1); wordsSize.setMarginStart(dp(10));
-            tile.addView(words, wordsSize);
+            };
             String title = empty ? activity.getString(R.string.navigation_slot, slot + 1) : group.label();
-            TextView label = new TextView(activity); label.setText(title); label.setTextSize(22);
-            label.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
-            label.setTextColor(activity.getColor(empty ? R.color.text_secondary : R.color.tile_ink));
-            label.setMaxLines(2); label.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); words.addView(label);
-            TextView subtitle = new TextView(activity);
             String hint = empty ? activity.getString(R.string.navigation_empty)
                     : multiple ? polishResources.getQuantityString(R.plurals.navigation_places,
                             group.destinations().size(), group.destinations().size())
                     : activity.getString(R.string.navigation_go);
-            subtitle.setText(hint); subtitle.setTextSize(16);
-            subtitle.setTextColor(activity.getColor(empty ? R.color.text_secondary : R.color.tile_ink));
-            subtitle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            LinearLayout.LayoutParams subSize = new LinearLayout.LayoutParams(-1, -2); subSize.topMargin = dp(6);
-            words.addView(subtitle, subSize);
-            if (!empty) {
-                ImageView arrow = new ImageView(activity); arrow.setImageResource(multiple ? R.drawable.ic_navigation_chevron : R.drawable.ic_navigation_arrow);
-                arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-                LinearLayout.LayoutParams arrowSize = new LinearLayout.LayoutParams(dp(28), dp(28)); arrowSize.setMarginStart(dp(8));
-                tile.addView(arrow, arrowSize);
-            }
+            int arrow = empty || !showArrow ? 0 : multiple ? R.drawable.ic_navigation_chevron : R.drawable.ic_navigation_arrow;
+            int background = empty ? R.drawable.navigation_empty : SLOT_BACKGROUNDS[slot];
+            int color = empty ? R.color.text_secondary : R.color.tile_ink;
+            LinearLayout tile = addTile(row, SLOT_IDS[slot], background, narrow, compact);
+            addTileContent(tile, image, arrow, title, hint, color, compact);
             tile.setContentDescription(title + ", " + hint);
-            tile.setClickable(true); tile.setFocusable(true);
-            tile.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-            tile.setAccessibilityDelegate(new View.AccessibilityDelegate() {
-                @Override public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
-                    super.onInitializeAccessibilityNodeInfo(host, info); info.setClassName(Button.class.getName());
-                }
-            });
             tile.setOnClickListener(v -> {
                 if (busy() || launching || !allowed.getAsBoolean()) return;
                 if (empty) {
@@ -123,11 +141,115 @@ final class NavigationPanel {
                 else launch(group.destinations().get(0));
             });
         }
+        LinearLayout speed = addTile(row, R.id.internet_speed_tile, R.drawable.tile_mop, narrow, compact);
+        TextView status = addTileContent(speed, R.drawable.ic_speed_tile_gauge,
+                showArrow ? R.drawable.ic_navigation_chevron : 0,
+                activity.getString(R.string.speed_title), "", R.color.tile_ink, compact);
+        status.setId(R.id.internet_speed_status);
+        speed.setOnClickListener(v -> openSpeedTest());
+        refreshSpeedTile();
+        if (focusedId != View.NO_ID) {
+            View replacement = row.findViewById(focusedId);
+            if (replacement != null) replacement.requestFocus();
+        }
         int restore = restoreSlot;
         restoreSlot = -1;
         if (restore >= 0 && restore < NavigationConfig.SLOT_COUNT && !busy() && allowed.getAsBoolean()) {
             NavigationConfig.Slot group = config.slot(restore);
             if (group != null && group.destinations().size() > 1) showSelector(restore, group);
+        }
+    }
+
+    private LinearLayout addTile(LinearLayout row, int id, int background, boolean narrow, boolean compact) {
+        LinearLayout tile = new LinearLayout(activity);
+        tile.setId(id);
+        tile.setGravity(Gravity.CENTER_VERTICAL);
+        int padding = compact ? 10 : 16;
+        tile.setPadding(dp(padding), dp(12), dp(padding), dp(12));
+        tile.setMinimumHeight(dp(compact ? 108 : 132));
+        tile.setBackgroundResource(background);
+        LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(
+                narrow ? LinearLayout.LayoutParams.MATCH_PARENT : 0,
+                narrow ? LinearLayout.LayoutParams.WRAP_CONTENT : LinearLayout.LayoutParams.MATCH_PARENT,
+                narrow ? 0 : 1);
+        if (row.getChildCount() > 0) {
+            if (narrow) size.topMargin = dp(12);
+            else size.setMarginStart(dp(16));
+        }
+        row.addView(tile, size);
+        tile.setClickable(true);
+        tile.setFocusable(true);
+        tile.setDescendantFocusability(android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        tile.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName(Button.class.getName());
+            }
+        });
+        return tile;
+    }
+
+    private TextView addTileContent(LinearLayout tile, int image, int arrow, String title, String hint,
+                                    int color, boolean compact) {
+        ImageView icon = new ImageView(activity);
+        icon.setImageResource(image);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        int iconWidth = compact ? (arrow == 0 ? 28 : 38) : 64;
+        tile.addView(icon, new LinearLayout.LayoutParams(dp(iconWidth), dp(compact ? 44 : 80)));
+
+        LinearLayout copy = new LinearLayout(activity);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams copySize = new LinearLayout.LayoutParams(0, -2, 1);
+        copySize.setMarginStart(dp(compact ? 6 : 10));
+        tile.addView(copy, copySize);
+        TextView label = words(title, compact ? 18 : 22, color);
+        label.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        if (tile.getId() != R.id.internet_speed_tile) {
+            label.setMaxLines(2);
+            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        }
+        label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        copy.addView(label);
+        TextView subtitle = words(hint, compact ? 14 : 16, color);
+        subtitle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams subtitleSize = new LinearLayout.LayoutParams(-1, -2);
+        subtitleSize.topMargin = dp(compact ? 3 : 6);
+        copy.addView(subtitle, subtitleSize);
+        if (arrow != 0) {
+            ImageView indicator = new ImageView(activity);
+            indicator.setImageResource(arrow);
+            indicator.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            int width = dp(compact ? 18 : 24);
+            LinearLayout.LayoutParams arrowSize = new LinearLayout.LayoutParams(width, width);
+            arrowSize.setMarginStart(dp(compact ? 4 : 6));
+            tile.addView(indicator, arrowSize);
+        }
+        return subtitle;
+    }
+
+    private void refreshSpeedTile() {
+        View tile = activity.findViewById(R.id.internet_speed_tile);
+        if (tile == null) return;
+        SpeedConnection connection = SpeedConnection.current(activity);
+        String network = activity.getString(connection.network() == null ? R.string.speed_tile_no_network : connection.label());
+        String budget = activity.getString(R.string.speed_tile_budget);
+        String status = activity.getString(R.string.speed_tile_status, network, budget);
+        TextView subtitle = tile.findViewById(R.id.internet_speed_status);
+        if (status.contentEquals(subtitle.getText())) return;
+        subtitle.setText(status);
+        tile.setContentDescription(activity.getString(R.string.speed_tile_description,
+                activity.getString(R.string.speed_title), network, budget));
+    }
+
+    private void openSpeedTest() {
+        if (busy() || launching || !allowed.getAsBoolean() || !HomeActions.allowsExternalLaunch()) return;
+        launching = true;
+        try {
+            activity.startActivity(new Intent(activity, SpeedTestActivity.class));
+        } catch (RuntimeException ignored) {
+            launching = false;
+            toast(R.string.speed_tile_unavailable);
         }
     }
     private boolean launch(NavigationConfig.Destination destination) {
@@ -274,7 +396,7 @@ final class NavigationPanel {
         selector = null; selectedSlot = -1;
         activity.findViewById(R.id.menu_content).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
         if (!activity.isDestroyed() && !activity.isFinishing()) {
-            View tile = activity.findViewById(new int[]{R.id.navigation_slot_1, R.id.navigation_slot_2, R.id.navigation_slot_3}[slot]);
+            View tile = activity.findViewById(SLOT_IDS[slot]);
             if (tile != null) tile.requestFocus();
         }
         HomeActions.schedulingChanged();

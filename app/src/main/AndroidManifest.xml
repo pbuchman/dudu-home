@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
@@ -9,12 +11,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Optional special access granted by the owner in Android settings. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
     <queries>
         <package android:name="com.syu.ms" />
         <package android:name="pl.neptis.yanosik.mobi.android" />
         <package android:name="com.spotify.music" />
         <package android:name="com.google.android.apps.maps" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
     </queries>
 
     <application
@@ -32,6 +40,7 @@
              concurrent vendor startup tasks take the foreground. Remove it after handoff. -->
         <activity android:name="com.pbuchman.duduhome.startup.HomeWakeActivity" android:exported="true" android:theme="@android:style/Theme.NoDisplay" android:taskAffinity="" android:launchMode="singleInstance" />
         <activity android:name="com.pbuchman.duduhome.ui.TripActivity" android:exported="false" />
+        <activity android:name="com.pbuchman.duduhome.ui.SpeedTestActivity" android:exported="false" />
         <service android:name="com.pbuchman.duduhome.location.HomeMonitorService" android:exported="false" android:foregroundServiceType="location" />
         <service android:name="com.pbuchman.duduhome.automation.YanosikPresence"
             android:label="@string/yanosik_notification_access"

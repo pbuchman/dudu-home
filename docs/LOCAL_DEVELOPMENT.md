@@ -1,6 +1,32 @@
 # Development handoff
 
-## Current stable preparation: 1.5.0 / code 35
+## 1.5.1 / code 38
+
+Build and test with JDK 17 and SDK 36. The release combines first-fix motion, private startup
+and media diagnostics, Routebook queue evidence, the manual internet test and the compact
+street card. Keep the real HTTPS measurement checks separate from the controlled gallery
+fixture. The emulator gallery command builds the standard APK and creates a temporary fixture
+APK for the speed views. [Release notes](RELEASE_1_5_1.md) · [Gallery and reproduction](UI_GALLERY.md).
+
+## Manual internet speed test, local 1.5.1-rc2 / code 37
+
+The speed test uses the MIT-licensed Cloudflare speedtest 1.17.0 ESM distribution
+bundled in the Android app. Retain the upstream license and verify the package
+integrity when updating. Run a live smoke test from the menu on API 33 and API 36.
+The private release receipt records the Android System WebView versions used.
+For the regression suite, set `DUDU_EMULATOR_SERIAL` to the dedicated emulator
+serial before running `bash scripts/run-emulator-check.sh`. This suite clears the
+app data. Run in-place upgrade checks on a separate emulator.
+
+## First movement on wake, local 1.5.1-rc1 / code 36
+
+This update extends stable code 35 with a verified-wake motion path, local GPS startup and
+media diagnostics, and offline Routebook queue evidence. Build the debug and Android test
+APKs with JDK 17 and SDK 36. Run the detector, diagnostic export, Routebook and emulator
+checks before comparing either natural DUDU7 departure with the local trace.
+[Motion contract](AUTOMATION_SEQUENCE.md) · [Diagnostics](DIAGNOSTIC_JOURNALS.md).
+
+## Stable preparation history: 1.5.0 / code 35
 
 The owner requested official stable promotion on 2026-10-27 after confirming two scenarios
 on installed RC1/code34: the complete automatic gate → observed robot start → Yanosik →

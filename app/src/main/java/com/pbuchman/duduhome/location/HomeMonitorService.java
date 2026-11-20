@@ -45,7 +45,11 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (observed.evidenceId() < 0 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.YANOSIK
                 && observed.kind() != com.pbuchman.duduhome.automation.DetectionProgress.Kind.SPOTIFY) return;
         switch (observed.kind()) {
-            case YANOSIK, SPOTIFY -> { this.motion.cancel(); this.motionOrigin = null; }
+            case YANOSIK, SPOTIFY -> {
+                this.motion.cancel();
+                this.motionOrigin = null;
+                recordMotion("USER_CANCELLED", true);
+            }
             case DEPARTURE, RETURN -> { if (this.detector != null) this.detector.cancel(observed.kind()); }
             default -> { }
         }
@@ -61,6 +65,7 @@ public final class HomeMonitorService extends Service implements LocationListene
     private SharedPreferences state;
     private DepartureCycle departureCycle;
     private long startupId;
+    private GpsStartupTrace gpsStartup;
     private Boolean initialParking;
     private String lastDepartureDiagnostic;
     private String accuracyBucket = "NO_FIX", ageBucket = "NO_FIX", speedBucket = "NO_FIX";
@@ -95,6 +100,33 @@ public final class HomeMonitorService extends Service implements LocationListene
     private long progressEpoch;
     private final MotionHook motion = new MotionHook(() -> automation.motion());
     private Location motionOrigin;
+    private JourneySession journey;
+    private boolean movingBurst, motionConfirmed;
+    private long lastMotionLog = -1;
+    private MotionPhase lastMotionPhase;
+    private MotionReading motionReading = MotionReading.NO_FIX;
+    private volatile MotionTrace motionTrace;
+    private record MotionPhase(MotionDetector.State state, MotionDetector.Reason reason,
+                               MotionDetector.Source source, boolean needsStop, String blocker) { }
+    private record MotionReading(String accuracy, String age, String speed) {
+        static final MotionReading NO_FIX = new MotionReading("NO_FIX", "NO_FIX", "NO_FIX");
+        static MotionReading of(MotionDetector.Fix fix, String accuracy, String age) {
+            String speed = !fix.hasSpeed() ? "MISSING"
+                    : !Double.isFinite(fix.speed()) || fix.speed() < 0 ? "INVALID"
+                    : fix.speed() < .5 ? "LT_0_5_MPS" : fix.speed() < 1 ? "LT_1_MPS" : "GE_1_MPS";
+            return new MotionReading(accuracy, age, speed);
+        }
+    }
+    private record MotionTrace(MotionPhase phase, MotionReading reading, long elapsed, String gap,
+                               long cycle, long generation, boolean yanosik, boolean spotify) {
+        String baseline() { return phase.needsStop ? "REQUIRED" : "READY"; }
+        String dump() {
+            return "motion_state=" + phase.state + " motion_reason=" + phase.reason + " motion_blocker=" + phase.blocker
+                    + " motion_source=" + phase.source + " motion_baseline=" + baseline()
+                    + " motion_gap=" + gap + " motion_elapsed_ms=" + elapsed + " motion_cycle=" + cycle
+                    + " motion_generation=" + generation;
+        }
+    }
     private final Runnable watchdog = new Runnable() {
         @Override public void run() {
             if (!ready(HomeMonitorService.this) || PrivateImport.pending(HomeMonitorService.this)) {
@@ -102,12 +134,14 @@ public final class HomeMonitorService extends Service implements LocationListene
                 stopSelf();
                 return;
             }
-            if (SystemClock.elapsedRealtime() - lastFix > 15000) {
+            long now = SystemClock.elapsedRealtime();
+            if (now - lastFix > 15000) {
+                if (gpsStartup != null) gpsStartup.current().watchdog(now);
                 Diagnostics.record(HomeMonitorService.this, "GPS_GAP_RESUBSCRIBE");
                 progressEpoch = ProgressBus.reset(HomeMonitorService.this, Reason.GPS_UNRELIABLE);
                 if (detector != null) detector.clearEvidence();
                 updateGateArea(0);
-                motion.clear(); motionOrigin = null;
+                clearMotion("GPS_GAP");
                 if (registered) locations.removeUpdates(HomeMonitorService.this);
                 registered = false;
                 subscribe();
@@ -137,6 +171,8 @@ public final class HomeMonitorService extends Service implements LocationListene
     @Override public void onCreate() {
         super.onCreate();
         startupId = Diagnostics.startup();
+        Context application = getApplicationContext();
+        gpsStartup = new GpsStartupTrace(startupId, category -> Diagnostics.record(application, category));
         Diagnostics.record(this, "MONITOR_CREATE STARTUP=" + startupId);
         progressEpoch = ProgressBus.reset(this, Reason.RESET);
         NotificationManager manager = getSystemService(NotificationManager.class);
@@ -156,10 +192,14 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (!departureCycle.ensureBoot(Settings.Global.getInt(getContentResolver(), Settings.Global.BOOT_COUNT, -1),
                 state.getInt("flags", 0))) Diagnostics.record(this, "DEPARTURE_STATE_BLOCKED STARTUP=" + startupId);
         locations = getSystemService(LocationManager.class);
-        automation = new AutomationRuntime(this, this::homeReservation);
+        automation = new AutomationRuntime(this, this::homeReservation, startupId, journey()::wakeCounter,
+                () -> gpsStartup == null ? -1 : gpsStartup.current().id());
         motion.requireStationaryBaseline();
         ProgressBus.setCancellationListener(cancellation);
-        new JourneySession(this).ensureBoot();
+        JourneySession.BootResult boot = journey().observeBoot();
+        if (boot == JourneySession.BootResult.NEW_BOOT) motion.verifiedCycle(MotionDetector.Source.VERIFIED_BOOT);
+        Diagnostics.record(this, "MOTION_BOOT STARTUP=" + startupId + " STATE=" + boot);
+        recordMotion("CYCLE_PENDING", true);
         try { progressOverlay = new ProgressOverlay(this); }
         catch (RuntimeException unavailable) { Diagnostics.record(this, "PROGRESS_OVERLAY_UNAVAILABLE"); }
     }
@@ -221,7 +261,10 @@ public final class HomeMonitorService extends Service implements LocationListene
 
     private void onCycleRead(DuduCycle.Observation cycle) {
         if (destroyed) return;
+        long observedAt = SystemClock.elapsedRealtime();
         cyclePending = false;
+        JourneySession session = journey();
+        long previousCounter = Math.max(session.wakeCounter(), departureWakeCounter());
         DepartureCycle.Result departureResult = departureCycle == null ? DepartureCycle.Result.UNAVAILABLE
                 : departureCycle.observe(cycle);
         if (departureResult == DepartureCycle.Result.REARMED && detector != null) {
@@ -235,15 +278,25 @@ public final class HomeMonitorService extends Service implements LocationListene
                 + " GENERATION=" + (departureCycle == null ? 0 : departureCycle.state().generation());
         if (!departureCategory.equals(lastDepartureDiagnostic)) Diagnostics.record(this, departureCategory);
         lastDepartureDiagnostic = departureCategory;
-        JourneySession session = new JourneySession(this);
         JourneySession.ObservationResult result = session.observeAwakeCycle(cycle);
+        if (gpsStartup != null) {
+            long observedCounter = cycle == null ? -1 : cycle.counter();
+            boolean verified = observedCounter > previousCounter && (departureResult == DepartureCycle.Result.REARMED
+                    || result == JourneySession.ObservationResult.REARMED);
+            if (verified) gpsStartup.verifiedWake(observedAt, observedCounter, registered);
+            long currentCounter = Math.max(session.wakeCounter(), departureWakeCounter());
+            gpsStartup.current().cycleRead(observedAt, verified ? "REARMED" : result.name(), observedCounter, currentCounter);
+        }
         if (result == JourneySession.ObservationResult.REARMED) {
             if (automation != null) automation.reset(Reason.WAKE);
             progressEpoch = ProgressBus.reset(this, Reason.WAKE);
             if (trip != null) trip.breakSegment();
             if (routebook != null) routebook.breakSegment();
             // Never carry pre-sleep movement evidence into a new cycle.
-            motion.clear(); motionOrigin = null;
+            motion.verifiedCycle(MotionDetector.Source.VERIFIED_WAKE);
+            motionOrigin = null;
+            movingBurst = motionConfirmed = false;
+            motionReading = MotionReading.NO_FIX;
             if (detector != null) detector.clearEvidence();
         }
         String category = switch (result) {
@@ -259,7 +312,13 @@ public final class HomeMonitorService extends Service implements LocationListene
         if (session.takeStorageFailureReport()) Diagnostics.record(this, "YANOSIK_SESSION_STATE_WRITE_FAILED");
         if (category != null && !category.equals(lastCycleDiagnostic)) Diagnostics.record(this, category);
         lastCycleDiagnostic = category;
+        boolean firstRead = !cycleReady;
         cycleReady = true;
+        if (firstRead || result == JourneySession.ObservationResult.REARMED) recordMotion(motionBlocker(), true);
+    }
+
+    private long departureWakeCounter() {
+        return departureCycle == null || departureCycle.blocked() ? -1 : departureCycle.state().counter();
     }
 
     @SuppressWarnings("MissingPermission")
@@ -268,13 +327,25 @@ public final class HomeMonitorService extends Service implements LocationListene
         try {
             locations.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this, Looper.getMainLooper());
             registered = true;
+            if (gpsStartup != null) gpsStartup.current().subscription(SystemClock.elapsedRealtime(), true);
             Diagnostics.record(this, "GPS_SUBSCRIBED");
-        } catch (RuntimeException denied) { Diagnostics.record(this, "GPS_SUBSCRIPTION_DENIED"); }
+        } catch (RuntimeException denied) {
+            if (gpsStartup != null) gpsStartup.current().subscription(SystemClock.elapsedRealtime(), false);
+            Diagnostics.record(this, "GPS_SUBSCRIPTION_DENIED");
+        }
     }
 
     @Override public void onLocationChanged(Location location) {
+        long callbackMono = SystemClock.elapsedRealtime();
+        GpsStartupTrace.Observation observation = destroyed || gpsStartup == null ? null : gpsStartup.current();
+        if (observation != null) observation.callback(callbackMono, location != null);
         if (!ready(this) || PrivateImport.pending(this)) { stopSelf(); return; }
-        lastFix = SystemClock.elapsedRealtime();
+        if (location == null) {
+            if (observation != null) observation.motionRejected(callbackMono, "EMPTY_CALLBACK");
+            return;
+        }
+        long callbackWall = System.currentTimeMillis();
+        lastFix = callbackMono;
         long fixTime = location.getElapsedRealtimeNanos() / 1000000;
         fixes++;
         double accuracy = location.hasAccuracy() ? location.getAccuracy() : Double.NaN;
@@ -292,36 +363,115 @@ public final class HomeMonitorService extends Service implements LocationListene
                     + " FLAGS=" + (detector == null ? 0 : detector.committedFlags()));
             fixes = poorFixes = 0; lastSummary = lastFix;
         }
+        try {
+            // Home actions get first opportunity on this fix.
+            if (detector != null && !acceptHome(location, fixTime)) return;
+            updateGateArea(fixTime + 3000);
+            acceptMotion(location, fixTime, accuracy, age, observation);
+        } finally {
+            try { if (trip != null) trip.offer(location); }
+            finally {
+                if (routebook != null) routebook.offer(location, callbackMono, callbackWall,
+                        observation == null ? null : observation.archiveObserver());
+            }
+        }
+    }
+
+    private void acceptMotion(Location location, long fixTime, double accuracy, long age,
+                              GpsStartupTrace.Observation observation) {
         if (motionOrigin == null) motionOrigin = new Location(location);
         float[] distance = new float[2];
         Location.distanceBetween(motionOrigin.getLatitude(), motionOrigin.getLongitude(),
                 location.getLatitude(), location.getLongitude(), distance);
         double bearing = Math.toRadians(distance[1]);
-        MotionDetector.Fix motionFix = new MotionDetector.Fix(fixTime, distance[0] * Math.sin(bearing),
-                distance[0] * Math.cos(bearing), location.hasAccuracy() ? location.getAccuracy() : Double.POSITIVE_INFINITY,
-                location.getSpeed(), location.hasSpeed(), lastFix - fixTime, location.isFromMockProvider());
-        try {
-        // Home actions get first opportunity on the same fix; Yanosik never masks their result.
-        if (detector != null && !acceptHome(location, fixTime)) return;
-        updateGateArea(fixTime + 3000);
+        MotionDetector.Fix fix = new MotionDetector.Fix(fixTime, distance[0] * Math.sin(bearing),
+                distance[0] * Math.cos(bearing), accuracy, location.getSpeed(),
+                location.hasSpeed(), age, location.isFromMockProvider());
+        motionReading = MotionReading.of(fix, accuracyBucket, ageBucket);
+        String blocker = motionBlocker();
         if (!automation.allowsMotionDetection()) {
-            motion.observeBaseline(motionFix);
-            motion.clearMovementEvidence(); motionOrigin = null;
+            motion.observeBaseline(fix);
+            recordMotion(blocker, false, observation);
             ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION, java.util.List.of());
-            return;
+        } else {
+            motion.accept(fix, cycleReady && !PrivateImport.pending(this), observed -> {
+                recordMotion(blocker, false, observation);
+                ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION,
+                        (journey().available(JourneySession.Target.SPOTIFY)
+                         || (journey().available() && com.pbuchman.duduhome.automation.YanosikPresence.read(this)
+                                != com.pbuchman.duduhome.automation.YanosikPresence.State.WORK_DETECTED))
+                                ? observed : java.util.List.of());
+            });
         }
-        motion.accept(motionFix, cycleReady && !PrivateImport.pending(this),
-                observed -> ProgressBus.offer(this, progressEpoch, ProgressBus.MOTION,
-                        (new JourneySession(this).available(JourneySession.Target.SPOTIFY)
-                                || (new JourneySession(this).available()
-                                && com.pbuchman.duduhome.automation.YanosikPresence.read(this)
-                                   != com.pbuchman.duduhome.automation.YanosikPresence.State.WORK_DETECTED))
-                                ? observed : java.util.List.of()));
-        if (!motion.fresh(lastFix)) motionOrigin = null;
-        } finally {
-            try { if (trip != null) trip.offer(location); }
-            finally { if (routebook != null) routebook.offer(location); }
+        // Both the stationary and moving continuity checks need one coordinate origin.
+        if (!motion.hasSpatialEvidence()) motionOrigin = null;
+    }
+
+    private JourneySession journey() {
+        if (journey == null) journey = new JourneySession(this);
+        return journey;
+    }
+
+    private String motionBlocker() {
+        if (!cycleReady) return "CYCLE_PENDING";
+        if (automation == null) return "MONITOR_STARTING";
+        String block = automation.motionBlocker();
+        if (!"NONE".equals(block)) return block;
+        if (journey().cycle() == null) return "SESSION_UNAVAILABLE";
+        if (journey().manualNavigationChosen()) return "MANUAL_NAVIGATION";
+        return journey().available() || journey().available(JourneySession.Target.SPOTIFY) ? "NONE" : "CYCLE_CONSUMED";
+    }
+
+    private void clearMotion(String blocker) {
+        motion.clear();
+        motionOrigin = null;
+        movingBurst = motionConfirmed = false;
+        motionReading = MotionReading.NO_FIX;
+        recordMotion(blocker, true);
+    }
+
+    private void recordMotion(String blocker, boolean force) {
+        recordMotion(blocker, force, null);
+    }
+
+    private void recordMotion(String blocker, boolean force, GpsStartupTrace.Observation observation) {
+        MotionDetector.Evidence evidence = motion.evidence();
+        if (observation != null) observation.motionFix(SystemClock.elapsedRealtime(), evidence);
+        MotionPhase phase = new MotionPhase(evidence.state(), evidence.reason(), evidence.source(),
+                evidence.needsStop(), blocker);
+        JourneySession.Cycle cycle = journey().cycle();
+        long counter = journey().wakeCounter();
+        String gap = evidence.reason() == MotionDetector.Reason.NONMONOTONIC ? "NONMONOTONIC"
+                : evidence.gap() < 0 ? "NO_PREVIOUS" : evidence.gap() <= 1000 ? "LE_1S"
+                : evidence.gap() <= 3000 ? "LE_3S" : "OVER_3S";
+        MotionTrace trace = new MotionTrace(phase, motionReading, evidence.elapsed(), gap, counter,
+                cycle == null ? -1 : cycle.generation(), journey().available(), journey().available(JourneySession.Target.SPOTIFY));
+        motionTrace = trace;
+        boolean firstMoving = evidence.moving() && !movingBurst;
+        boolean confirmed = evidence.state() == MotionDetector.State.CONFIRMED && "NONE".equals(blocker);
+        boolean firstConfirmation = confirmed && !motionConfirmed;
+        movingBurst = evidence.moving();
+        motionConfirmed = confirmed;
+        if (automation != null) {
+            if (firstMoving) automation.observeMotionTransition("FIRST_MOVING");
+            if (firstConfirmation) automation.observeMotionTransition("MOTION_CONFIRMED");
         }
+        long now = SystemClock.elapsedRealtime();
+        long sinceLog = lastMotionLog < 0 ? Long.MAX_VALUE : now - lastMotionLog;
+        boolean keyTransition = firstConfirmation || (evidence.state() == MotionDetector.State.BASELINE_READY
+                && (lastMotionPhase == null || lastMotionPhase.state != phase.state));
+        boolean changed = !phase.equals(lastMotionPhase);
+        if (!force && !keyTransition && sinceLog < 30000 && (!changed || sinceLog < 5000)) return;
+        lastMotionLog = now;
+        lastMotionPhase = phase;
+        String correlation = " STARTUP=" + startupId + " CYCLE=" + trace.cycle
+                + (gpsStartup == null ? "" : " OBSERVATION=" + gpsStartup.current().id());
+        Diagnostics.record(this, "MOTION_STATE" + correlation + " GENERATION=" + trace.generation
+                + " STATE=" + phase.state + " REASON=" + phase.reason + " SOURCE=" + phase.source
+                + " BASELINE=" + trace.baseline() + " BLOCKER=" + blocker + " ELAPSED_MS=" + trace.elapsed);
+        Diagnostics.record(this, "MOTION_FIX" + correlation + " ACCURACY=" + trace.reading.accuracy
+                + " AGE=" + trace.reading.age + " SPEED=" + trace.reading.speed + " GAP=" + trace.gap
+                + " YANOSIK=" + (trace.yanosik ? 1 : 0) + " SPOTIFY=" + (trace.spotify ? 1 : 0));
     }
 
     private boolean acceptHome(Location location, long fixTime) {
@@ -412,7 +562,7 @@ public final class HomeMonitorService extends Service implements LocationListene
         progressEpoch = ProgressBus.reset(this, Reason.GPS_UNRELIABLE);
         if (detector != null) detector.clearEvidence();
         updateGateArea(0);
-        motion.clear(); motionOrigin = null;
+        clearMotion("GPS_PROVIDER_DISABLED");
     }
     @Override public void onProviderEnabled(String provider) { Diagnostics.record(this, "GPS_PROVIDER_ENABLED"); }
     @Override public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -447,6 +597,8 @@ public final class HomeMonitorService extends Service implements LocationListene
         writer.println("departure_reason=" + (detector == null ? "CONFIG_MISSING_OR_DISABLED" : detector.departureReason())
                 + " candidate_elapsed_ms=" + (detector == null ? 0 : detector.departureElapsedMs()));
         writer.println("gps_accuracy=" + accuracyBucket + " gps_age=" + ageBucket + " gps_speed=" + speedBucket);
+        MotionTrace trace = motionTrace;
+        if (trace != null) writer.println(trace.dump());
         writer.println("diagnostic_pending=" + Diagnostics.pendingWrites() + " dropped=" + Diagnostics.droppedWrites());
         if (automation != null) writer.println(automation.diagnostic());
         if (trip != null) writer.println(trip.diagnostic());

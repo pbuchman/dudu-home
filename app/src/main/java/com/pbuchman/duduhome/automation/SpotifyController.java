@@ -16,8 +16,10 @@ import java.util.function.Consumer;
 public final class SpotifyController {
     public static final String PACKAGE = "com.spotify.music";
     public enum Result { PLAYING, NO_ACCESS, MISSING, NO_SESSION, AMBIGUOUS, REMOTE, UNKNOWN, TIMEOUT, FAILED, CANCELLED }
+    public enum PlaybackScope { LOCAL, REMOTE, UNKNOWN }
     public interface Session {
         Object key(); boolean local(); Integer state(); long actions(); void play();
+        default PlaybackScope scope() { return local() ? PlaybackScope.LOCAL : PlaybackScope.REMOTE; }
     }
     public interface Access {
         boolean permitted(); boolean open(); List<Session> sessions();
@@ -30,6 +32,7 @@ public final class SpotifyController {
     private final Consumer<Result> complete;
     private final Runnable playSent;
     private java.util.function.BooleanSupplier admission = () -> true;
+    private Runnable launchRequested = () -> { };
     private Object sessionKey;
     private boolean finished, sent, started;
     private final Runnable timeout = () -> finish(sessionKey == null ? Result.NO_SESSION : Result.TIMEOUT);
@@ -44,6 +47,11 @@ public final class SpotifyController {
     public SpotifyController(Context context, BooleanSupplier allowed, BooleanSupplier admission, Runnable playSent, Consumer<Result> complete) {
         this(context, allowed, playSent, complete); this.admission = admission;
     }
+    SpotifyController(Context context, BooleanSupplier allowed, BooleanSupplier admission, Runnable launchRequested,
+                      Runnable playSent, Consumer<Result> complete) {
+        this(context, allowed, admission, playSent, complete);
+        this.launchRequested = launchRequested;
+    }
     public SpotifyController(Access access, Timer timer, BooleanSupplier allowed, Runnable playSent, Consumer<Result> complete) {
         this.access = access; this.timer = timer; this.allowed = allowed;
         this.playSent = playSent; this.complete = complete;
@@ -56,6 +64,7 @@ public final class SpotifyController {
             if (!allowed.getAsBoolean()) { finish(Result.CANCELLED); return; }
             if (!admission.getAsBoolean()) { finish(Result.CANCELLED); return; }
             if (!access.open()) { finish(Result.MISSING); return; }
+            launchRequested.run();
             access.observe(this::inspect);
             timer.replace(timeout, 15000);
             inspect();
@@ -78,7 +87,11 @@ public final class SpotifyController {
             if (session.key() == null) { finish(Result.UNKNOWN); return; }
             if (sessionKey != null && !sessionKey.equals(session.key())) { finish(Result.UNKNOWN); return; }
             if (sessionKey == null) { sessionKey = session.key(); timer.replace(timeout, 10000); }
-            if (!session.local()) { finish(Result.REMOTE); return; }
+            PlaybackScope scope = session.scope();
+            if (scope != PlaybackScope.LOCAL) {
+                finish(scope == PlaybackScope.REMOTE ? Result.REMOTE : Result.UNKNOWN);
+                return;
+            }
             Integer state = session.state();
             if (state == null) return;
             if (state == PlaybackState.STATE_PLAYING) { finish(Result.PLAYING); return; }
@@ -149,12 +162,19 @@ public final class SpotifyController {
     }
     private record AndroidSession(MediaController controller) implements Session {
         public Object key() { return controller.getSessionToken(); }
-        public boolean local() {
-            var info = controller.getPlaybackInfo();
-            return info != null && info.getPlaybackType() == MediaController.PlaybackInfo.PLAYBACK_TYPE_LOCAL;
-        }
+        public boolean local() { return scope() == PlaybackScope.LOCAL; }
+        public PlaybackScope scope() { return scopeOf(controller.getPlaybackInfo()); }
         public Integer state() { var s = controller.getPlaybackState(); return s == null ? null : s.getState(); }
         public long actions() { var s = controller.getPlaybackState(); return s == null ? 0 : s.getActions(); }
         public void play() { controller.getTransportControls().play(); }
+    }
+
+    static PlaybackScope scopeOf(MediaController.PlaybackInfo info) {
+        if (info == null) return PlaybackScope.UNKNOWN;
+        return switch (info.getPlaybackType()) {
+            case MediaController.PlaybackInfo.PLAYBACK_TYPE_LOCAL -> PlaybackScope.LOCAL;
+            case MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE -> PlaybackScope.REMOTE;
+            default -> PlaybackScope.UNKNOWN;
+        };
     }
 }

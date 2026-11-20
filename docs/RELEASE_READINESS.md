@@ -1,6 +1,14 @@
-# Release readiness - 2026-10-27
+# Release readiness
 
-## Stable 1.5.0 / code 35
+## 1.5.1 / code 38
+
+The [release notes](RELEASE_1_5_1.md) describe the first-fix motion changes, diagnostics,
+Routebook compatibility, manual internet test and street card. The [verification ledger](VERIFICATION.md)
+records completed checks. The [gallery](UI_GALLERY.md#current-151-gallery) identifies the
+standard and fixture builds separately. Physical installation and hardware acceptance use
+the separate [guarded update procedure](OPERATIONS.md).
+
+## Stable 1.5.0 / code 35, October 27
 
 See [stable release notes](RELEASE_1_5_0.md) and VERIFICATION.md. On 2026-10-27 the owner
 confirmed both required scenarios on installed RC1/code34: automatic gate → observed robot

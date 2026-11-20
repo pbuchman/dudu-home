@@ -1,12 +1,33 @@
 # Kontrakt funkcjonalny - Dudu Home
 
-## Where am I (1.2 candidate)
+## Test internetu w 1.5.1
 
-The first action row now has four tiles: gate, Full Cleaning, Full Mop and Gdzie jestem.
-The trip screen supports explicit start/pause/resume/end, current locality/street and session
-kilometres. Backgrounding keeps counting. Its wrapping location card and full-address expanded notification open
-the full view when tapped. Automation presentation and execution take priority. No trip
-operation dispatches a gate/robot command or resets an automation reservation.
+Kafelek **Test internetu** w rzędzie skrótów uruchamia ręczny pomiar opóźnienia
+żądań HTTP przez HTTPS, pobierania i wysyłania przez aktualne domyślne łącze radia.
+Ekran podaje typ łącza. Jedna próba może wysłać i odebrać do 16 MiB danych pomiarowych
+w każdym kierunku. Można anulować trwający pomiar albo świadomie powtórzyć zakończoną
+próbę. Utrata lub zmiana sieci przerywa pomiar. Wyjście z ekranu, w tym przejęcie przez
+automatykę, kończy próbę. Test działa bez rezerwowania akcji automatyki.
+
+## Pierwszy ruch po wybudzeniu w 1.5.1
+
+Wzrost zapisanego licznika uruchomień Androida lub wybudzeń DUDU pozwala zacząć ocenę
+jazdy od pierwszego dobrego GPS. Poza obszarem bramy Yanosik i Spotify mogą wejść
+do kolejki po 10 s ruchu i co najmniej 15 m przemieszczenia. Bez wcześniej zaobserwowanego
+postoju odległość musi też przekraczać sumę dokładności pomiaru początkowego i końcowego.
+Pierwsza instalacja, nieznany cykl, restart w tym samym cyklu i ręczne anulowanie wymagają
+10 s postoju. Warunkiem automatycznej bramy nadal jest okazja wyjazdu z parkingu.
+[Szczegółowe progi](AUTOMATION_SEQUENCE.md) · [Diagnostyka na urządzeniu](DIAGNOSTIC_JOURNALS.md).
+
+## Gdzie jestem
+
+The first action row has four tiles: gate, Full Cleaning, Full Mop and Gdzie jestem.
+The passive trip screen shows locality, street, distance and session time. It supports
+Start/Pause and Reset. Backgrounding keeps counting. The floating card uses up to two street
+rows. The first stays fixed and the second scrolls only when its text overflows.
+Tap the address or expanded notification to open the complete passive view.
+Automation presentation and execution take priority. Trip operations are independent of
+gate/robot commands and automation reservations.
 See [the complete trip contract](WHERE_AM_I.md) and [current UI gallery](UI_GALLERY.md).
 
 ## Wczesny wyjazd - 1.3.0-rc3 / code 23
@@ -77,7 +98,7 @@ Szczegółowy kontrakt kolejki i odtwarzania: [AUTOMATION_SEQUENCE.md](AUTOMATIO
 
 Jedna prywatnie skonfigurowana lokalizacja, jedno radio, jeden numer bramy i istniejąca rutyna
 **Full Cleaning** i **Full Mop** robota Roborock QV35A. Nie budujemy uniwersalnego edytora automatyzacji.
-Obecny zakres obejmuje cztery kafelki w pierwszym rzędzie oraz trzy kafelki nawigacji. Full Mop działa wyłącznie ręcznie. Spotify wznawia
+Menu obejmuje cztery główne kafelki oraz rząd skrótów z trzema kafelkami nawigacji i Testem internetu. Full Mop działa wyłącznie ręcznie. Spotify wznawia
 muzykę na radiu po potwierdzeniu jazdy albo udanym automatycznym połączeniu przy wyjeździe, bez nowego kafelka. Hook Yanosika opisuje [YANOSIK.md](YANOSIK.md),
 a jego pasek i komunikację z tłem [PROGRESS_UI.md](PROGRESS_UI.md).
 
