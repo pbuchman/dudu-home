@@ -31,6 +31,9 @@ fi
 "${adb[@]}" shell wm fixed-to-user-rotation enabled
 "${adb[@]}" shell wm user-rotation lock 1
 "${adb[@]}" shell settings put system font_scale 1.0
+# The native marquee pauses when Android puts the display to sleep.
+"${adb[@]}" shell svc power stayon true
+"${adb[@]}" shell settings put system screen_off_timeout 1800000
 "${adb[@]}" shell input keyevent KEYCODE_WAKEUP
 "${adb[@]}" shell wm dismiss-keyguard
 "${adb[@]}" install -r "$APP_APK"
@@ -50,6 +53,7 @@ if [[ "$report" == *"FAIL:"* ]] \
         || ! grep -q '^INSTRUMENTATION_RESULT: result=PASS: focused trip marquee;' <<<"$report" \
         || ! grep -Fxq 'INSTRUMENTATION_CODE: -1' <<<"$report"; then
     grep -E '^INSTRUMENTATION_(RESULT|CODE):' <<<"$report" >&2 || true
+    "${adb[@]}" shell dumpsys power | grep -m 1 'mWakefulness=' >&2 || true
     echo "The trip overlay did not pass the focused instrumentation check." >&2
     exit 1
 fi

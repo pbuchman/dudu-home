@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -74,9 +75,9 @@ final class TripMarqueeChecks {
         }
     }
 
-    private record Row(float offset, int[] pixels) {
+    private record Row(float offset, int width, int height, int[] pixels) {
         static Row read(TextView view) {
-            if (view.getVisibility() != View.VISIBLE) return new Row(0, new int[0]);
+            if (view.getVisibility() != View.VISIBLE) return new Row(0, 0, 0, new int[0]);
             int width = view.getWidth(), height = view.getHeight();
             Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             PaintTrace canvas = new PaintTrace(bitmap);
@@ -84,11 +85,52 @@ final class TripMarqueeChecks {
             int[] pixels = new int[width * height];
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
             bitmap.recycle();
-            return new Row(canvas.leftwardTravel, pixels);
+            return new Row(canvas.leftwardTravel, width, height, pixels);
+        }
+        boolean hasInk(float left, float right) {
+            int start = Math.max(0, (int) Math.ceil(left)), end = Math.min(width, (int) Math.floor(right));
+            for (int y = 0; y < height; y++) {
+                for (int x = start; x < end; x++) {
+                    if ((pixels[y * width + x] >>> 24) > 0) return true;
+                }
+            }
+            return false;
         }
     }
 
-    private record Frame(Row fixed, Row tail, int renders) { }
+    private record Frame(Row fixed, Row tail, int renders, long elapsed, boolean shown, int windowVisibility) {
+        String describe(long started) {
+            return "offset=" + tail.offset + "px, renders=" + renders + ", t=" + (elapsed - started)
+                    + "ms, shown=" + shown + ", windowVisibility=" + windowVisibility;
+        }
+    }
+
+    private record MarqueeGeometry(float viewportWidth, float lineWidth, float lastWordStart, float density,
+            int paddingLeft, int screenWidth, int screenHeight) {
+        static MarqueeGeometry read(TextView tail) {
+            String value = tail.getText().toString();
+            int lastWordIndex = value.length();
+            while (lastWordIndex > 0 && !Character.isWhitespace(value.charAt(lastWordIndex - 1))) lastWordIndex--;
+            Layout layout = tail.getLayout();
+            int paddingLeft = tail.getCompoundPaddingLeft();
+            var metrics = tail.getResources().getDisplayMetrics();
+            return new MarqueeGeometry(tail.getWidth() - paddingLeft - tail.getCompoundPaddingRight(),
+                    layout.getLineWidth(0), layout.getPrimaryHorizontal(lastWordIndex), metrics.density,
+                    paddingLeft, metrics.widthPixels, metrics.heightPixels);
+        }
+
+        boolean lastWordVisible(Row row) {
+            float left = lastWordStart - row.offset;
+            float right = lineWidth - row.offset;
+            return left >= 0 && right <= viewportWidth && row.hasInk(paddingLeft + left, paddingLeft + right);
+        }
+
+        long loopBudgetMs() {
+            // Allow time for several cycles if a slow emulator skips the last-word viewport.
+            long nominalCycleMs = Math.round((lineWidth + viewportWidth / 3f) * 1000 / (30 * density)) + 1200;
+            return Math.min(120_000, Math.max(45_000, nominalCycleMs * 3 + 6000));
+        }
+    }
 
     private static final class LiveOverlay {
         final TripPresentation presentation;
@@ -119,8 +161,9 @@ final class TripMarqueeChecks {
         Frame frame(TripLocationCard expected) {
             TripLocationCard card = card();
             check(card == expected && card.isAttachedToWindow(), "500ms updates keep the same attached card");
-            return new Frame(Row.read(card.findViewById(R.id.trip_street)),
-                    Row.read(card.findViewById(R.id.trip_street_tail)), renders);
+            TextView tail = card.findViewById(R.id.trip_street_tail);
+            return new Frame(Row.read(card.findViewById(R.id.trip_street)), Row.read(tail), renders,
+                    SystemClock.elapsedRealtime(), tail.isShown(), tail.getWindowVisibility());
         }
 
         void changeFixture(Fixture fixture) {
@@ -227,43 +270,89 @@ final class TripMarqueeChecks {
 
     private static void checkLoop(Instrumentation i, LiveOverlay overlay, TripLocationCard card, Frame initial, File output)
             throws IOException {
-        float[] dimensions = main(i, () -> {
-            TextView tail = card.findViewById(R.id.trip_street_tail);
-            float width = tail.getWidth() - tail.getCompoundPaddingLeft() - tail.getCompoundPaddingRight();
-            return new float[]{width, tail.getLayout().getLineWidth(0), tail.getResources().getDisplayMetrics().density};
-        });
-        float width = dimensions[0], lineWidth = dimensions[1], density = dimensions[2];
-        long deadline = SystemClock.uptimeMillis() + (long) ((lineWidth + width) * 1000 / (30 * density)) + 6500;
-        float previous = initial.tail.offset;
-        float restartedAt = -1f;
+        MarqueeGeometry geometry = main(i, () -> MarqueeGeometry.read(card.findViewById(R.id.trip_street_tail)));
+        long started = initial.elapsed;
+        long budget = geometry.loopBudgetMs();
+        float minimumDrop = geometry.viewportWidth / 2f;
+        Frame last = initial, highest = initial, cyclePeak = initial, restarted = null;
+        int samples = 1;
+        long widestSamplingGap = 0;
         boolean advanced = false, endShown = false;
+        String failureReason = "native text must keep moving to the end, reset, and start moving again";
         do {
-            SystemClock.sleep(55);
+            SystemClock.sleep(45);
             Frame current = main(i, () -> overlay.frame(card));
-            check(current.fixed.offset == 0 && Arrays.equals(initial.fixed.pixels, current.fixed.pixels),
-                    "the first street row stays pixel-identical throughout marquee playback");
+            widestSamplingGap = Math.max(widestSamplingGap, current.elapsed - last.elapsed);
+            samples++;
+            last = current;
             float offset = current.tail.offset;
-            if (!advanced && current.renders - initial.renders >= 2 && offset - initial.tail.offset >= 20 * density) {
-                check(!Arrays.equals(initial.tail.pixels, current.tail.pixels), "the moving row's painted glyphs change");
+            if (offset > highest.tail.offset) highest = current;
+            if (offset > cyclePeak.tail.offset) cyclePeak = current;
+            if (current.fixed.offset != 0 || !Arrays.equals(initial.fixed.pixels, current.fixed.pixels)) {
+                failureReason = "the first street row changed during marquee playback";
+                break;
+            }
+
+            if (!advanced && current.renders - initial.renders >= 2 && offset - initial.tail.offset >= 20 * geometry.density
+                    && !Arrays.equals(initial.tail.pixels, current.tail.pixels)) {
                 advanced = true;
                 capture(i, output, "trip-marquee-moving.png");
             }
-            if (!endShown && offset >= lineWidth - width + 3 * density && offset <= lineWidth - width + 22 * density) {
+            if (!endShown && geometry.lastWordVisible(current.tail)) {
                 endShown = true;
                 capture(i, output, "trip-marquee-end.png");
             }
-            if (previous > lineWidth && offset < 6 * density) {
-                check(endShown, "the final word crossed into view before the loop reset");
-                restartedAt = offset;
-                capture(i, output, "trip-marquee-loop.png");
+
+            // The native scroll travels past the line width before looping. Compare with its
+            // measured peak so a delayed sample into the next cycle can still see the drop.
+            if (cyclePeak.tail.offset >= geometry.lineWidth && cyclePeak.tail.offset - offset >= minimumDrop) {
+                cyclePeak = current;
+                if (endShown && advanced) {
+                    restarted = current;
+                    capture(i, output, "trip-marquee-loop.png");
+                }
             }
-            if (restartedAt >= 0 && offset - restartedAt >= 10 * density) {
-                check(advanced, "motion continued across repeated 500ms renders");
-                return;
+            if (restarted != null && current.renders > restarted.renders
+                    && offset - restarted.tail.offset >= 10 * geometry.density
+                    && !Arrays.equals(restarted.tail.pixels, current.tail.pixels)) return;
+        } while (SystemClock.elapsedRealtime() - started < budget);
+
+        String message = failureReason + " (API " + Build.VERSION.SDK_INT
+                + ", screen=" + geometry.screenWidth + "x" + geometry.screenHeight + ", density=" + geometry.density
+                + ", viewport=" + geometry.viewportWidth + "px, textWidth=" + geometry.lineWidth
+                + "px, endWordBounds=" + geometry.lastWordStart + ".." + geometry.lineWidth + "px"
+                + ", budget=" + budget + "ms, samples=" + samples + ", maxGap=" + widestSamplingGap
+                + "ms, advancedAcrossRenders=" + advanced + ", endWordVisible=" + endShown
+                + ", baseline=[" + initial.describe(started) + "], last=[" + last.describe(started)
+                + "], max=[" + highest.describe(started) + "], restart=["
+                + (restarted == null ? "unobserved" : restarted.describe(started)) + "])";
+        AssertionError failure = new AssertionError(message);
+        if (output != null) {
+            try {
+                saveFrame(output, "trip-marquee-failure-baseline.png", initial);
+                saveFrame(output, "trip-marquee-failure-last.png", last);
+                saveFrame(output, "trip-marquee-failure-max.png", highest);
+                capture(i, output, "trip-marquee-failure-screen.png");
+            } catch (IOException | RuntimeException captureFailure) {
+                failure.addSuppressed(captureFailure);
             }
-            previous = offset;
-        } while (SystemClock.uptimeMillis() < deadline);
-        throw new AssertionError("native text must keep moving to the end, reset, and start moving again");
+        }
+        throw failure;
+    }
+
+    private static void saveFrame(File directory, String filename, Frame frame) throws IOException {
+        Row fixed = frame.fixed, tail = frame.tail;
+        try (var stream = new FileOutputStream(new File(directory, filename))) {
+            Bitmap bitmap = Bitmap.createBitmap(Math.max(fixed.width, tail.width), fixed.height + tail.height,
+                    Bitmap.Config.ARGB_8888);
+            try {
+                if (fixed.width > 0) bitmap.setPixels(fixed.pixels, 0, fixed.width, 0, 0, fixed.width, fixed.height);
+                if (tail.width > 0) bitmap.setPixels(tail.pixels, 0, tail.width, 0, fixed.height, tail.width, tail.height);
+                if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) throw new IOException("Could not save sampled rows");
+            } finally {
+                bitmap.recycle();
+            }
+        }
     }
 
     private static void checkRestartOnChangedStreet(Instrumentation i, LiveOverlay overlay, TripLocationCard card,
