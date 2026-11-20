@@ -1,10 +1,16 @@
 # Street display and floating-panel acceptance
 
+The 1.5.1 card uses 18.75 sp street text, a static first row and a native marquee for an
+overflowing second row. The [current contract](WHERE_AM_I.md#user-contract) and
+[emulator captures](UI_GALLERY.md#current-151-gallery) describe the updated presentation.
+
+## October 2026 street and panel candidate
+
 This source candidate changes retained presentation, typed unnamed-road evidence and panel
 input handling. It does not establish physical DUDU7 road correctness, radio touch behavior,
 GNSS reception or gate/controller acceptance. All checked-in names are invented.
 
-## Contract and verification
+### Contract and verification
 
 | Case | Expected result | Evidence |
 | --- | --- | --- |
@@ -40,7 +46,7 @@ resize). Both computer OSM parser suites passed with the optional osmium depende
 are recorded with the maintainer's private implementation receipt. Source-only evidence does
 not imply an installation on the radio.
 
-## Retained evidence replay
+### Retained evidence replay
 
 A private replay runs the actual previous/new Java stabilizers over the same final schema-3
 road-match results and event order. It reuses map results; it does not rematch altered geometry.

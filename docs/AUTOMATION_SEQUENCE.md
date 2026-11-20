@@ -1,6 +1,6 @@
 # Ordered automation and local Spotify playback
 
-## First movement after a verified wake (1.5.1-rc1)
+## First movement after a verified wake (1.5.1)
 
 An increase from a previously persisted Android boot count or DUDU wake counter arms generic
 media at the first usable fix. Each sample needs a reported speed of at least 1 m/s, accuracy

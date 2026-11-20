@@ -1,5 +1,23 @@
 # Change history
 
+## 1.5.1 (code 38)
+
+- Add **Test internetu** for manual HTTP latency, download and upload measurement on
+  the default network, with transport display and up to 16 MiB of payload per direction.
+- Give the 286 dp location card a 75% opaque background, 18.75 sp street text and 16 sp locality.
+  Keep the first street row still and use native marquee only when the second row overflows.
+  A tap on the address opens the full passive trip view.
+- Carry forward first-fix motion after a verified boot or wake, private GPS and media
+  diagnostics, and durable Routebook acknowledgement and retry evidence.
+- Refresh the affected gallery views with synthetic emulator captures and per-build provenance.
+  See [release notes](docs/RELEASE_1_5_1.md) and [verification](docs/VERIFICATION.md).
+
+## 1.5.1-rc2 (code 37) - local candidate
+
+- Add the manual internet test shortcut and packaged Cloudflare measurement client.
+- Exercise the candidate with emulator HTTPS fixtures and live Cloudflare measurements.
+  The code-37 evidence is recorded in [the verification ledger](docs/VERIFICATION.md#manual-internet-speed-test-local-151-rc2--code-37).
+
 ## 1.5.1-rc1 (code 36) - local candidate
 
 - Recognize sustained driving from the first usable GPS fix after an increase in a trusted

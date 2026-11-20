@@ -55,6 +55,7 @@ final class GalleryChecks {
         return new TripController.Snapshot(state,1,state.equals("OFF") ? 0 : 12840,fix,place,"",true);
     }
     static void run(Instrumentation i) throws Exception {
+        shots.clear();
         Context c=i.getTargetContext();
         // Capture runner clears emulator data and grants no GPS permission: monitor startup is blocked.
         ProgressChecks.check(c.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED,"gallery GPS permission disabled");
@@ -134,7 +135,7 @@ final class GalleryChecks {
             WindowManager.LayoutParams params=(WindowManager.LayoutParams)overlay.getLayoutParams();
             ProgressChecks.check((params.flags&WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)!=0,"location cannot steal focus");
             ProgressChecks.check((params.flags&WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)==0,"location receives taps within rectangle");
-            ProgressChecks.check(overlay.findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"short location hides expansion button");
+            ProgressChecks.check(overlay.findViewById(R.id.trip_street_tail).getVisibility()==View.GONE,"short location fits one street row");
         });i.waitForIdleSync();SystemClock.sleep(1500);shot(i,"trip-overlay");
         i.runOnMainSync(()->panel[0].render(snapshot("ACTIVE",new PlaceResult("Miejscowość Testowa","Aleja Błękitnych Chmur Testowych","offline",true,true),SystemClock.elapsedRealtime())));
         i.waitForIdleSync();shot(i,"trip-overlay-long-name");
@@ -142,16 +143,16 @@ final class GalleryChecks {
         i.waitForIdleSync();SystemClock.sleep(500);
         i.runOnMainSync(()->{
             View overlay=(View)ProgressChecks.field(panel[0],"overlay");
-            View button=overlay.findViewById(R.id.trip_full_name);
+            TextView tail=overlay.findViewById(R.id.trip_street_tail);
             View city=overlay.findViewById(R.id.trip_locality);
-            int minimum=Math.round(76*c.getResources().getDisplayMetrics().density);
-            ProgressChecks.check(button.getVisibility()==View.VISIBLE && button.getHeight()>=minimum,"overflow action has full touch height in attached window");
+            ProgressChecks.check(tail.getVisibility()==View.VISIBLE && tail.getEllipsize()==android.text.TextUtils.TruncateAt.MARQUEE,
+                    "overflow uses a second scrolling TextView");
             android.graphics.Rect cityBounds=new android.graphics.Rect(0,0,city.getWidth(),city.getHeight());
             ((android.view.ViewGroup)overlay).offsetDescendantRectToMyCoords(city,cityBounds);
             ProgressChecks.check(cityBounds.top>=overlay.getPaddingTop(),"locality remains inside attached card");
-            ProgressChecks.check(button.getBottom()+overlay.getPaddingBottom()<=overlay.getHeight(),"entire overflow button fits attached card");
             android.graphics.Rect visible=new android.graphics.Rect();
-            ProgressChecks.check(button.getGlobalVisibleRect(visible)&&visible.height()==button.getHeight(),"overflow action entirely visible on screen");
+            ProgressChecks.check(tail.getGlobalVisibleRect(visible)&&visible.height()==tail.getHeight(),
+                    "second street row entirely visible on screen");
         });shot(i,"trip-overlay-overflow");
         shell(i,"cmd statusbar expand-notifications");SystemClock.sleep(1500);shot(i,"trip-notification");
         shell(i,"cmd statusbar collapse");SystemClock.sleep(1500);

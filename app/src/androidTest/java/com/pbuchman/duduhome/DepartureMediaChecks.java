@@ -10,6 +10,7 @@ import com.pbuchman.duduhome.automation.*;
 import com.pbuchman.duduhome.location.HomeMonitorService;
 import com.pbuchman.duduhome.location.MotionDetector;
 import java.lang.ref.WeakReference;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -333,7 +334,7 @@ final class DepartureMediaChecks {
             return new Call(id,success);
         }
         @SuppressWarnings("unchecked") Map<Long,AutomationCoordinator.Job> jobs() { return (Map<Long,AutomationCoordinator.Job>)get(queue,"queued"); }
-        List<AutomationCoordinator.Type> types() { return jobs().values().stream().map(AutomationCoordinator.Job::type).toList(); }
+        List<AutomationCoordinator.Type> types() { return jobs().values().stream().map(AutomationCoordinator.Job::type).collect(Collectors.toList()); }
         long id(AutomationCoordinator.Type type) { return jobs().values().stream().filter(j -> j.type()==type).findFirst().orElseThrow().id(); }
         boolean mediaReady() { return (boolean)invoke(runtime,"mediaReady"); }
         void fakeYanosik(YanosikPresence.State presence,boolean installed) {

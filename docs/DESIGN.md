@@ -1,13 +1,21 @@
 # Dudu Home - wygląd i materiały
 
-## 1.4 location card and Home Dev analytics
+## Current 1.5.1 menu and location card
 
-The card initially uses the top-right position, then follows the user's saved relative
-placement within safe screen bounds. A separate drag handle and close control remain
-visible above a scrollable address in short windows. The trip screen restores a hidden
-card; visibility does not control recording. The four-tile menu remains unchanged.
-Detailed charts, journey replay, places and comparisons belong to the Routebook web UI.
-Their desktop/mobile acceptance uses synthetic data and keeps captures outside Git.
+The four main actions stay in the first row. **Test internetu** appears alongside the
+navigation shortcuts and opens a separate native screen. Its running and result states show
+connection type and three measurements. On narrow screens the metrics stack vertically.
+
+The street card starts in the top-right corner, then follows the saved relative position
+within safe window bounds. Its 75% opaque background keeps underlying content visible.
+Street typography is 18.75 sp with two rows at most, and locality is 16 sp. The first row
+stays still. Only an overflowing second row uses the native marquee. The independent × and
+350 ms hold-and-drag gesture remain available. Tap the address to see the complete street
+in the passive trip view. Its [display and input contract](WHERE_AM_I.md) covers short
+viewports, accessibility and automation priority.
+
+The [current gallery](UI_GALLERY.md) records how to reproduce the seven updated captures
+and distinguishes the standard APK from the loopback HTTPS fixture APK.
 
 ## Historical four-tile layout and trip presentation
 
@@ -15,20 +23,14 @@ The 1.2 candidate adds a fourth tile using the existing pin illustration and min
 All four actions share equal width in the landscape row; narrow screens retain the existing
 vertical layout. The current trip view uses the existing dark gradient, 24 sp locality,
 32 sp primary street, 36 sp distance and 56 dp trip-session buttons in a scrollable layout.
-The full street has unlimited lines. The top-right location card is at most 390 dp wide,
+The full street has unlimited lines. In the October 9 implementation, the top-right location card was at most 390 dp wide,
 with 16 dp window margins and content-dependent height. The street naturally wraps into up
 to three lines; text does not shrink or scroll. Measured overflow exposes an ellipsis and
 **Pełna nazwa** with a minimum 76 dp touch target. The complete address stays available in
 accessibility text and the expanded notification. The card yields to automation presentation.
 
-Capture current screens with `python3 scripts/capture-readme.py emulator-5554` after building
-both APKs. The runner refuses physical devices, resets only emulator app data and uses
-2000 x 1200 landscape, density 240 and font scale 1.0. Fixtures contain invented places and
-no executors. Review every pixel before copying files from build/ui-checks/gallery into
-`docs/images/current` for a regenerated complete gallery. The October 9 street-only captures
-are separately preserved in `docs/images/cancellation`; their manifest explicitly identifies
-the code 21 dirty implementation build, not a code 22 rebuild. Mockups are not captures.
-See [gallery](UI_GALLERY.md). Earlier three-tile imagery below is historical.
+The October 9 street-only captures in `docs/images/cancellation` identify their
+code 21 implementation build. The earlier three-tile assets below are also historical.
 
 
 ## Kierunek
@@ -79,7 +81,7 @@ akcji jest podglądem renderera, nie dowodem telefonu do bramy.
 - `app/src/main/res/drawable-nodpi/art_cleaning.png`: wygenerowany robot dla Full Cleaning.
 - `app/src/main/res/drawable-nodpi/art_mop.png`: wariant tego robota z wodną kroplą dla Full Mop.
 - `docs/images/menu-v3.png`: rzeczywisty zrzut emulatora, bez prywatnej konfiguracji.
-- `docs/images/menu-dudu7.png`: finalny zrzut z fizycznego radia DUDU7, użyty w README.
+- `docs/images/menu-dudu7.png`: historyczny zrzut z fizycznego radia DUDU7 z wcześniejszej wersji README.
 - `docs/images/routine-success-v3.png`: ekran wyniku z testu syntetycznego, nie dowód wykonania rutyny na robocie.
 
 Grafiki rasterowe powstały wbudowanym narzędziem image generation (nie CLI), zachowują kanał

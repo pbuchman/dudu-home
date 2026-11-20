@@ -1,5 +1,13 @@
 # Development handoff
 
+## 1.5.1 / code 38
+
+Build and test with JDK 17 and SDK 36. The release combines first-fix motion, private startup
+and media diagnostics, Routebook queue evidence, the manual internet test and the compact
+street card. Keep the real HTTPS measurement checks separate from the controlled gallery
+fixture. The emulator gallery command builds the standard APK and creates a temporary fixture
+APK for the speed views. [Release notes](RELEASE_1_5_1.md) · [Gallery and reproduction](UI_GALLERY.md).
+
 ## Manual internet speed test, local 1.5.1-rc2 / code 37
 
 The speed test uses the MIT-licensed Cloudflare speedtest 1.17.0 ESM distribution
@@ -18,7 +26,7 @@ APKs with JDK 17 and SDK 36. Run the detector, diagnostic export, Routebook and 
 checks before comparing either natural DUDU7 departure with the local trace.
 [Motion contract](AUTOMATION_SEQUENCE.md) · [Diagnostics](DIAGNOSTIC_JOURNALS.md).
 
-## Current stable preparation: 1.5.0 / code 35
+## Stable preparation history: 1.5.0 / code 35
 
 The owner requested official stable promotion on 2026-10-27 after confirming two scenarios
 on installed RC1/code34: the complete automatic gate → observed robot start → Yanosik →

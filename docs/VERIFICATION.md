@@ -1,5 +1,29 @@
 # Verification ledger
 
+## Stable 1.5.1 / code 38
+
+- The owner reported that the installed 1.5.1-rc2/code37 preview works on DUDU7.
+  Code38 changes the street card. Its physical installation and road observation are separate.
+- The emulator rendered both privately supplied street examples as two complete stationary
+  rows. At normal and enlarged font sizes the synthetic long name moved left only in its
+  second row, reached the last word, looped, and kept moving across 500 ms location renders.
+  A different street with the same long remainder restarted from the beginning. The threshold
+  test compared an exact pixel fit with a viewport one pixel narrower. A single injected tap
+  opened the passive trip screen. Move, hide and restore persisted across process restarts.
+- Android 13 upgraded the signed code37 APK to the signed code38 APK in place. The gate
+  settings, journey safety state, navigation configuration, Routebook database, trip totals
+  and overlay position/visibility were byte-identical after installation. The queued GPS
+  record remained pending. The real Cloudflare smoke test completed on Android 13 and 16.
+- Debug app and instrumentation builds and lint passed (0 errors, 32 warnings). The full
+  Android 13 safety runner passed after updating two test-only stream collectors for that
+  Android runtime. Host tests for the detector, diagnostics, map index, installer and
+  Routebook contract passed, as did the 36 Routebook browser tests.
+- Seven reviewed [gallery captures](UI_GALLERY.md#current-151-gallery) record code38 in the
+  Polish locale. The standard APK and the separate emulator HTTPS fixture have individual
+  digests in the [capture manifest](images/1.5.1/manifest.json). The release page links
+  the GitHub Actions runs for the pull request, merged revision and tag.
+
+
 ## Manual internet speed test, local 1.5.1-rc2 / code 37
 
 The private candidate was installed over code 36 on an Android 13 emulator.

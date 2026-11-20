@@ -1,31 +1,29 @@
 # App-owned windows and content sizing
 
-Local code 31 (`1.4.0-rc4-local-layout`) is a presentation candidate based on frozen code 30.
-It changes no automation timing, detector, command, cancellation token or safety reservation.
-
-The reported narrow media panel came from a 350 dp floating window with a horizontal icon,
-text column and cancellation button competing for that width. Padding and side controls left
-less than 190 dp for some messages. Longer Polish text consequently wrapped into a tall stack.
-The inline variant also reserved a separate 76 dp full-width cancellation row.
+The current app-owned layout incorporates the code-31 content sizing and the code-38
+passive street overlay. Code 31 widened floating and inline automation messages to give
+longer Polish text room alongside cancellation. Code 38 adjusts the street card's typography,
+background and overflow behavior.
 
 | Surface | Source | Sizing and behavior |
 | --- | --- | --- |
 | Detection, queued/running media, cancellation and result overlay | `ProgressOverlay`, `ProgressPanel`, `automation_progress_floating.xml` | Up to 560 dp wide inside system-bar/cutout-safe bounds; actual measured height; 20/16 sp text; cancellation beside text when readable width permits, below otherwise. Only overflowing message content scrolls; cancel stays visible and at least 48 dp. |
 | Inline progress in focused menu | `automation_progress.xml` | Up to 720 dp and no wider than its actual host; natural height, same responsive arrangement, existing 22/18 sp text and 76 dp cancel target. |
-| Passive street overlay | `TripPresentation`, `TripLocationCard` | Selected card remains at most 286 dp, 25 sp street and 16 sp locality. Existing full-name overflow, X, 350 ms horizontal drag and saved preferences remain. Shared placement now supplies measured bounded native window height. |
+| Passive street overlay | `TripPresentation`, `TripLocationCard` | Up to 286 dp wide and 112 dp minimum height when space allows. Background is 75% opaque; street text is 18.75 sp and locality 16 sp. First street row is static, and only an overflowing second row uses native marquee. Tap the address for the full view. The 48 dp X remains reachable within safe bounds. |
 | Navigation group chooser | `NavigationPanel` | At most 840 dp, or available width minus 32 dp. Less decorative padding/art and 88 dp minimum rows; destination labels/addresses wrap inside a measured scroll area. Full group title can scroll beside a persistent 48 dp X. |
 | Settings list | `MainActivity`, `ContentDialogs` | Native list alert up to 600 dp. Platform list scrolling, selection and dismissal remain. |
 | Map attribution, location configuration status, media-access explanation/unavailable, empty navigation guidance | `MainActivity`/`NavigationPanel`, `ContentDialogs` | Native message alerts up to 520 dp, capped by actual available width minus 32 dp; native scrolling and buttons remain. |
 | Manual trip Reset confirmation | `TripActivity`, `ContentDialogs` | Same bounded native message alert. Reset/Cancel callbacks are unchanged. |
 | Menu, number/Roborock setup, action progress/success/error/cooldown | `activity_main.xml` | Full-screen, vertically scrollable content. Below 600 dp available height, smaller action art/indicator and gaps keep ordinary errors and controls together. Text/buttons retain their sizes; oversized content still scrolls. |
-| Full passive trip screen | `activity_trip.xml` | Existing full-screen ScrollView and naturally wrapping address. No data collection or action lease change. |
+| Full passive trip screen | `activity_trip.xml` | Full-screen ScrollView with the complete naturally wrapping address. The screen is passive and yields to automation. |
+| Internet test | `SpeedTestView` | Scrollable native layout with a centered content area up to 820 dp wide. Narrow windows stack the network label and metric rows. The test is foreground-only and closes when another action takes over. |
 | Automation/trip notifications, Toast messages, Android permission/settings/document picker | Android/vendor UI | The app supplies content/actions or launches standard system UI. Their container dimensions are owned by Android/DUDU; this change cannot resize Dudu Auto's own windows. |
 
 There are no app-owned PopupWindow instances. All seven native AlertDialog creation sites use
 the bounded width helper. Window resizing rechecks native alert reading width; overlay position
 and chooser list height remeasure content against available bounds.
 
-## Synthetic rendering
+## Code-31 synthetic window evidence
 
 Build with the installed JDK 17 / Android SDK and then use an explicitly selected emulator:
 

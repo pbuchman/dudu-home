@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity
+            android:name="com.pbuchman.duduhome.GalleryBackdropActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <activity
             android:name="com.pbuchman.duduhome.speedqa.SpeedTakeoverActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />

@@ -14,19 +14,18 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
-**Local candidate `1.5.1-rc2` (code 37).** Tap **Test internetu** in the shortcuts row
-to measure HTTP latency, download and upload through the radio's default network.
-A manual attempt allows up to 16 MiB of download payload and 16 MiB of upload payload.
-Cloudflare's measurement client is included in the APK. The on-screen result identifies
-the transport. Opening the test does not reserve a departure action.
+**Stable `1.5.1` (code 38).** **Test internetu** measures HTTP latency, download and
+upload through the radio's default network and displays its transport. The translucent
+**Gdzie jestem** card fits up to two street rows at 18.75 sp. When the second row
+overflows, it scrolls while the first stays fixed. Tap the address to see the whole street.
 
-**Local candidate `1.5.1-rc1` (code 36).** After a verified new boot or DUDU wake,
-the first good GPS position may already be moving. Ten seconds of qualified driving can
-queue Yanosik and Spotify outside the gate area. The private journal records the wait for
-GPS, the motion decision, media requests and Routebook acknowledgements, including after
-an offline drive. [Detection rules](docs/AUTOMATION_SEQUENCE.md) · [Local export](docs/DIAGNOSTIC_JOURNALS.md).
+After a verified new boot or DUDU wake, the first usable GPS position may already be moving.
+Ten seconds of qualified driving can queue Yanosik and Spotify outside the gate area. The
+private journal records the wait for GPS, the motion decision, media requests and Routebook
+acknowledgements, including after an offline drive.
+[Release notes](docs/RELEASE_1_5_1.md) · [Detection rules](docs/AUTOMATION_SEQUENCE.md) · [Local export](docs/DIAGNOSTIC_JOURNALS.md).
 
-**Stable `1.5.0` (code 35).** A successful automatic departure call continues with
+**Previous stable release `1.5.0` (code 35).** A successful automatic departure call continues with
 Full Cleaning, Yanosik and Spotify while the car may still be waiting at the gate. No extra
 standstill or outbound checkpoint is required. The release includes reviewed street stability,
 map-schema-3 support, compact panels, window layouts and private diagnostics.
@@ -42,23 +41,19 @@ Release checks cover Android, the existing v1 collector and private Routebook an
 PR/main/tag publication gates are enforced separately. [Evidence and limits](docs/VERIFICATION.md)
 distinguish emulator/server verification from physical-radio acceptance.
 
-![Four-action menu and navigation groups - historical synthetic emulator capture](docs/images/current/home-complete.png)
+![Dudu Home 1.5.1 menu with the Test internetu shortcut and invented destinations](docs/images/1.5.1/home-speed.png)
 
-These are captures of running Android Views with invented fixture data. The menu and earlier
-action screenshots are the historical 1.2 baseline; they predate cancellation controls. The
-new street captures below include local implementation changes on code 21 before the code 22
-version bump. [Gallery manifests and provenance](docs/UI_GALLERY.md) distinguish both sets.
-Screenshots do not certify physical gate/robot actions, radio touch, driving or sleep/wake.
+The current screenshots use invented data on an Android emulator. The two internet-test
+screens show a controlled local HTTPS measurement. The overlay frames use a fictional map
+drawn by the test APK. [Current gallery, historical screenshots and build provenance](docs/UI_GALLERY.md).
 
-| Navigation groups | Gate execution |
+| Local test running | Local test result |
 | --- | --- |
-| ![Three-place chooser](docs/images/current/navigation-chooser.png) | ![Gate execution renderer](docs/images/current/gate-executing.png) |
-| **Cleaning and manual mop** | **Settings and private setup** |
-| ![Manual mop accepted renderer](docs/images/current/mop-accepted.png) | ![Settings](docs/images/current/settings-menu.png) |
-| **Current place and trip distance** | **Minimal background overlay** |
-| ![Full location screen with invented long names](docs/images/cancellation/trip-long-names.png) | ![Readable wrapped street card](docs/images/cancellation/trip-overlay-long-name.png) |
-| **Automation progress** | **Media playback feedback** |
-| ![Departure detection renderer](docs/images/current/detection-departure.png) | ![Spotify PLAYING renderer](docs/images/current/spotify-playing.png) |
+| ![Internet test running with an explicitly labeled synthetic measurement](docs/images/1.5.1/speed-running.png) | ![Synthetic local speed-test result](docs/images/1.5.1/speed-result.png) |
+| **Static two-line card** | **Full street after tapping** |
+| ![Two static street rows over a synthetic map](docs/images/1.5.1/street-two-line.png) | ![Full passive location screen with the invented long street](docs/images/1.5.1/street-full-after-tap.png) |
+
+[Compare two frames of the scrolling street row](docs/UI_GALLERY.md#current-151-gallery).
 
 ## Routebook build
 
@@ -81,15 +76,20 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   the routine's rooms and settings remain managed in the Roborock phone app.
 - **Mopowanie (Full Mop):** send its separate saved routine, **manual only**. No GPS trigger or daily quota.
   Missing Mop configuration never starts Full Cleaning instead.
-- **Gdzie jestem:** Start/Pause continues or pauses the current session; Reset clears its
-  time and kilometres while preserving active/paused state. Show locality, street, distance
-  and session time including observed stops. Count in the background; show a silent card with up to three readable street lines
-  and an expanded full-address notification that open the full screen when tapped. Move the card
-  by holding a non-button area for 350 ms and dragging horizontally, or hide it with **×**;
+- **Gdzie jestem:** Start/Pause continues or pauses the current session. Reset clears time
+  and kilometres while preserving active/paused state. The full screen shows locality, street,
+  distance and session time including observed stops. Counting continues in the background.
+  The silent card uses one static street row when the name fits, a static second row when needed,
+  or a scrolling second row when the remainder overflows. Tap the address or the expanded
+  notification for the complete street. Move the card by holding a non-button area for 350 ms
+  and dragging horizontally, or hide it with **×**;
   position and visibility survive restarts.
   **Pokaż panel w tle** on the trip screen restores it without changing the trip. Local OSM data works offline;
   keyless Photon can supplement incomplete results. Gate, cleaning and media retain priority.
   [Behavior, data, privacy and limitations](docs/WHERE_AM_I.md).
+- **Test internetu:** manually measure HTTP latency, download and upload using the current
+  default connection. The bundled Cloudflare client allows up to 16 MiB of measurement
+  payload per direction. Cancelling or leaving closes the test. Automation can take over the screen.
 - **Routebook:** automatically collect GPS independently of the manual trip counter, retain
   unacknowledged points in SQLite and send the newest fix before historical backlog. The
   private web map shows live/day/range history plus a journey diary, movement/stop/unknown
@@ -249,7 +249,7 @@ even when Dudu Home does not log it. Automated privacy scans supplement manual r
 ## Documentation for the next developer
 
 - [Where am I](docs/WHERE_AM_I.md): trip sessions, OSM/Photon, distance and background priority.
-- [Current full-app gallery](docs/UI_GALLERY.md): synthetic emulator captures and reproduction.
+- [Current and historical gallery](docs/UI_GALLERY.md): synthetic emulator captures and reproduction.
 - [Private navigation destinations](docs/NAVIGATION.md): JSON schema, import and Maps launch.
 - [Functional contract](docs/FUNCTIONAL.md): buttons, triggers, once-a-day behavior and failure cases.
 - [Architecture and Roborock protocol](docs/ROBOROCK.md): native HTTPS, credentials and boundaries.

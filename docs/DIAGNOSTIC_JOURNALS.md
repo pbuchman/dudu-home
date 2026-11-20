@@ -85,7 +85,7 @@ an allowlisted app category and age band, subject to the radio's existing access
 unknown snapshot remains ambiguous. `MEDIA_ENQUEUE_SUPPRESSED`, the queue blockers and
 action result rows distinguish movement recognition, requests and resolutions.
 
-### Startup and post-motion summary in 1.5.1-rc1
+### Startup and post-motion summary in 1.5.1
 
 `GPS_STARTUP` adds category-only timings to schema 2. `PROCESS`, `STARTUP` and
 `OBSERVATION` identify the monitor's observation. `OBSERVATION=0` begins at service creation.

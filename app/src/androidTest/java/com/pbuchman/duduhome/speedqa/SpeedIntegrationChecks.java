@@ -31,7 +31,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -46,11 +49,13 @@ public final class SpeedIntegrationChecks extends Instrumentation {
     private int port;
     private String scenario;
     private int assertions;
+    private boolean galleryLabel;
 
     @Override public void onCreate(Bundle args) {
         super.onCreate(args);
         port = Integer.parseInt(args.getString("port", "0"));
         scenario = args.getString("scenario", "all");
+        galleryLabel = "true".equals(args.getString("gallery_label"));
         start();
     }
 
@@ -60,6 +65,7 @@ public final class SpeedIntegrationChecks extends Instrumentation {
             check(Build.VERSION.SDK_INT == 36 && (Build.HARDWARE.contains("ranchu")
                     || Build.HARDWARE.contains("goldfish")), "API 36 emulator required");
             check(port > 0 || scenario.equals("cloudflare"), "fixture port required");
+            check(!galleryLabel || scenario.equals("success"), "gallery label applies only to loopback success");
             check(getTargetContext().getPackageManager().resolveService(new Intent().setClassName(
                     "com.syu.ms", "app.ToolkitService"), 0) == null, "no vendor service on emulator");
             check(new GateNumberStore(getTargetContext()).save("000000000"), "synthetic number saved");
@@ -113,6 +119,7 @@ public final class SpeedIntegrationChecks extends Instrumentation {
         mode("ok");
         Activity speed = startSpeed();
         await(() -> count("down") > 0, 14_000, "first HTTPS download reached fixture");
+        if (galleryLabel) addGalleryLabel(speed);
         check(!HomeActions.busy(), "manual speed test holds no action lease");
         check(shown(speed, "speed_cancel"), "running UI exposes cancellation");
         capture("running");
@@ -129,6 +136,18 @@ public final class SpeedIntegrationChecks extends Instrumentation {
         capture("result");
         click(speed, "speed_back");
         awaitMenu();
+    }
+
+    private void addGalleryLabel(Activity speed) {
+        check(onMain(() -> {
+            var labels = new ArrayList<View>();
+            CharSequence provider = speed.getText(R.string.speed_provider);
+            speed.getWindow().getDecorView().findViewsWithText(labels, provider, View.FIND_VIEWS_WITH_TEXT);
+            if (labels.size() != 1 || !(labels.get(0) instanceof TextView label)
+                    || !provider.toString().contentEquals(label.getText())) return false;
+            label.setText("Pomiar syntetyczny · serwer lokalny");
+            return true;
+        }), "fixture capture identifies synthetic local measurement");
     }
 
     private void runFailures() throws Exception {
@@ -348,11 +367,13 @@ public final class SpeedIntegrationChecks extends Instrumentation {
     private List<String> journalAfter(long from) {
         try {
             File file = new File(getTargetContext().getNoBackupFilesDir(), "diagnostics.txt");
-            if (!file.exists()) return List.of();
             return Files.readAllLines(file.toPath(), StandardCharsets.UTF_8).stream().filter(line -> {
                 String[] fields = line.split(" ", 3);
                 return fields.length == 3 && fields[1].matches("\\d+") && Long.parseLong(fields[1]) >= from;
             }).toList();
+        } catch (AccessDeniedException | NoSuchFileException pending) {
+            // Creation, rotation and owner-only permission changes can race with this poll.
+            return List.of();
         } catch (Exception failure) {
             throw new AssertionError("cannot read synthetic diagnostics", failure);
         }

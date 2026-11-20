@@ -1,8 +1,15 @@
 # Combined source delivery
 
-## 1.5 delivery supersedes earlier rollout instructions
+## 1.5.1 / code 38
 
-Current stable preparation is 1.5.0/code35. See RELEASE_1_5_0.md and VERIFICATION.md.
+The Android update includes the accepted preview and a revised location card. See the
+[release notes](RELEASE_1_5_1.md), [current emulator gallery](UI_GALLERY.md) and
+[verification ledger](VERIFICATION.md). The release publishes the combined source tree.
+The existing Routebook server continues to serve the same protocol.
+
+## Historical 1.5.0 delivery
+
+The 1.5.0 preparation targeted code35. See RELEASE_1_5_0.md and VERIFICATION.md.
 One source line contains RC5 plus reviewed local features. On 2026-10-27 the owner confirmed
 both departure/robot/audio and same-day quota scenarios on installed RC1/code34 and requested
 stable promotion. Code35 changes only metadata/documentation; its radio installation remains

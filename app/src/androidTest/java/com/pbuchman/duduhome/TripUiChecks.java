@@ -9,6 +9,7 @@ import android.content.res.Configuration;
 import com.pbuchman.duduhome.ui.*;
 import com.pbuchman.duduhome.trip.*;
 import com.pbuchman.duduhome.automation.*;
+import java.util.Arrays;
 
 final class TripUiChecks {
     static void check(boolean value,String why){if(!value)throw new AssertionError(why);}
@@ -119,62 +120,97 @@ final class TripUiChecks {
         check(preferences.horizontal()==1f&&preferences.vertical()==0f,"failed position write restores prior memory position");
     }
     /** Uses invented names and different font scales without touching the GPS resolver. */
-    private static void checkLocationCard(Instrumentation i, Context context) {
+    static void checkLocationCard(Instrumentation i, Context context) {
         for (float scale : new float[]{1f, 1.4f}) {
             Configuration configuration = new Configuration(context.getResources().getConfiguration());
             configuration.fontScale = scale;
             Context themed = new android.view.ContextThemeWrapper(context.createConfigurationContext(configuration), R.style.Theme_DuduGate);
-            TripLocationCard[] card = {null};
-            i.runOnMainSync(() -> {
-                card[0] = new TripLocationCard(themed, v -> { });
-                card[0].render("Miejscowość Testowa", "Aleja Błękitnych Chmur Testowych");
-                layout(card[0], themed, 286);
-            });
-            i.waitForIdleSync();
-            i.runOnMainSync(() -> {
-                TextView road = card[0].findViewById(R.id.trip_street);
-                check(card[0].findViewById(R.id.trip_overlay_drag)==null,"compact card has no separate handle/instruction row");
-                check(card[0].getHeight()>=Math.round(112*themed.getResources().getDisplayMetrics().density),"compact location min112dp");
-                check(card[0].findViewById(R.id.trip_overlay_close).getWidth()==Math.round(48*themed.getResources().getDisplayMetrics().density),"adjacent close target48dp");
-                check(Math.abs(road.getTextSize()-android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,25,themed.getResources().getDisplayMetrics()))<.01,"street25sp");
-                check(Math.abs(((TextView)card[0].findViewById(R.id.trip_locality)).getTextSize()-android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,16,themed.getResources().getDisplayMetrics()))<.01,"locality16sp");
-                check(road.getMaxLines() == 3, "road bounded to three readable lines");
-                check(road.getLayout().getLineCount() >= 2, "long road naturally wraps");
-                check(card[0].getContentDescription().toString().contains(road.getText().toString()), "accessibility retains full name");
-                if (scale == 1f) {
-                    check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.GONE, "normal long name needs no expansion");
-                    for (int n = 0; n < road.getLayout().getLineCount(); n++) check(road.getLayout().getEllipsisCount(n) == 0, "normal long name fully visible");
-                }
-                card[0].render("Miejscowość Testowa", "Przykładowa Aleja Bardzo Długich Błękitnych Obłoków Testowych przy Bajkowych Wzgórzach i Srebrzystych Ogrodach");
-                layout(card[0], themed, 260);
-            });
-            i.waitForIdleSync();
-            i.runOnMainSync(() -> {
-                check(card[0].findViewById(R.id.trip_full_name).getVisibility() == View.VISIBLE, "overflow has visible full-name action");
-                card[0].setMaximumHeight(Math.round(180 * themed.getResources().getDisplayMetrics().density));
-                layout(card[0], themed, 260);
-                for(int id:new int[]{R.id.trip_overlay_close}) {
-                    View control=card[0].findViewById(id);
-                    View row=(View)control.getParent();
-                    check(control.getTop()>=0 && control.getBottom()<=row.getHeight(),"whole control remains inside short-viewport header");
-                    if(control instanceof android.widget.Button button)check(button.getWidth()-button.getCompoundPaddingLeft()-button.getCompoundPaddingRight()>=button.getPaint().measureText(button.getText().toString()),"hide glyph fits");
-                }
-                android.widget.ScrollView address=(android.widget.ScrollView)card[0].findViewById(R.id.trip_street).getParent().getParent();
-                check(address.canScrollVertically(1),"short viewport scrolls full address and expansion control");
-                card[0].setMaximumHeight(Integer.MAX_VALUE);
-                card[0].render("Miejscowość Testowa", "Testowa"); layout(card[0], themed, 286);
-            });
-            i.waitForIdleSync();
-            i.runOnMainSync(() -> {
-                check(card[0].findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"short name removes expansion");
-                card[0].render("Miejscowość Testowa","");layout(card[0],themed,286);
-                check(card[0].findViewById(R.id.trip_street).getVisibility()==View.GONE,"unnamed road hides street row");
-                check(card[0].findViewById(R.id.trip_full_name).getVisibility()==View.GONE,"unnamed hides expansion");
+            ProgressChecks.main(i, () -> {
+                TripLocationCard card = new TripLocationCard(themed, v -> { });
+                TextView road = card.findViewById(R.id.trip_street);
+                TextView tail = card.findViewById(R.id.trip_street_tail);
+                TextView city = card.findViewById(R.id.trip_locality);
+                View close = card.findViewById(R.id.trip_overlay_close);
+                var metrics = themed.getResources().getDisplayMetrics();
+                String locality = "Miejscowość Testowa";
+                String longName = "Przykładowa Aleja Bardzo Długich Błękitnych Obłoków Testowych przy Bajkowych Wzgórzach i Srebrzystych Ogrodach";
+                card.render(locality, longName);
+                layout(card, themed, 286);
+
+                check(card.findViewById(R.id.trip_overlay_drag) == null, "compact card has no separate drag handle");
+                check(card.getHeight() >= Math.round(112 * metrics.density), "compact location minimum 112dp");
+                check(close.getWidth() == Math.round(48 * metrics.density), "adjacent close target is 48dp");
+                check(Math.abs(road.getTextSize() - android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 18.75f, metrics)) < .01f,
+                        "street is 18.75sp");
+                check(tail.getTextSize() == road.getTextSize(), "both road rows use the same size");
+                check(Math.abs(city.getTextSize() - android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 16, metrics)) < .01f,
+                        "locality is 16sp");
+                check(((android.graphics.drawable.GradientDrawable) card.getBackground()).getColor().getDefaultColor() == 0xBF142133,
+                        "only the card fill has 75 percent opacity");
+                check(card.getAlpha() == 1f, "card content stays opaque");
+                check(card.getContentDescription().toString().contains(longName), "accessibility retains the full name");
+                check(Arrays.equals(longName.split(" "), (road.getText() + " " + tail.getText()).split(" ")),
+                        "two rows retain every road word in order");
+                check(road.getMaxLines() == 1 && tail.getMaxLines() == 1, "street rows are both limited to one line");
+                check(road.getEllipsize() == null && tail.getEllipsize() == android.text.TextUtils.TruncateAt.MARQUEE,
+                        "only overflowing continuation uses marquee");
+                check(road.getLayout().getEllipsisCount(0) == 0, "the first line never ellipsizes");
+                checkMaximalPrefix(road, tail);
+
+                layout(card, themed, 240);
+                checkMaximalPrefix(road, tail);
+                card.setMaximumHeight(Math.round(78 * metrics.density));
+                layout(card, themed, 240);
+                check(close.getTop() >= 0 && close.getBottom() <= card.getHeight(),
+                        "the whole close target stays within the short viewport");
+                check(((android.widget.ScrollView) card.getChildAt(0)).canScrollVertically(1),
+                        "the short viewport can scroll the full address");
+
+                card.setMaximumHeight(Integer.MAX_VALUE);
+                card.render(locality, "Testowa");
+                layout(card, themed, 286);
+                check("Testowa".contentEquals(road.getText()) && tail.getVisibility() == View.GONE && !tail.isSelected(),
+                        "a short road uses only the fixed row");
+                String first = "Fikcyjna", second = "Koralowoszafirowa";
+                int chrome = card.getWidth() - road.getWidth();
+                int exactFit = (int) Math.ceil(android.text.Layout.getDesiredWidth(second, tail.getPaint()));
+                card.render(locality, first + " " + second);
+                layoutPixels(card, chrome + exactFit);
+                check(second.contentEquals(tail.getText()) && !tail.isSelected() && tail.getEllipsize() == null,
+                        "continuation at its rounded-up pixel width stays static");
+                layoutPixels(card, chrome + exactFit - 1);
+                check(second.contentEquals(tail.getText()) && tail.isSelected()
+                        && tail.getEllipsize() == android.text.TextUtils.TruncateAt.MARQUEE,
+                        "continuation one pixel narrower enables marquee");
+                String wideWord = "Bardzodługiepojedynczesłowoniewpasowującysięwpanel";
+                card.render(locality, wideWord + " Druga");
+                layout(card, themed, 240);
+                check(road.getVisibility() == View.GONE && (wideWord + " Druga").contentEquals(tail.getText()) && tail.isSelected(),
+                        "an overwide first word puts the whole name in the moving row");
+                check(tail.getTop() == 0, "an overwide first word leaves no blank road row");
+
+                card.render(locality, "");
+                layout(card, themed, 286);
+                check(road.getVisibility() == View.GONE && tail.getVisibility() == View.GONE && !tail.isSelected(),
+                        "an unnamed road hides and stops both rows");
             });
         }
     }
+
+    private static void checkMaximalPrefix(TextView road, TextView tail) {
+        String prefix = road.getText().toString();
+        String nextWord = tail.getText().toString().split(" ")[0];
+        int width = road.getWidth() - road.getCompoundPaddingLeft() - road.getCompoundPaddingRight();
+        check(android.text.Layout.getDesiredWidth(prefix, road.getPaint()) <= width, "the full first row fits its actual viewport");
+        check(android.text.Layout.getDesiredWidth(prefix + " " + nextWord, road.getPaint()) > width,
+                "the first row takes the longest fitting full-word prefix");
+    }
+
     private static void layout(View view, Context c, int widthDp) {
-        int width = Math.round(widthDp * c.getResources().getDisplayMetrics().density);
+        layoutPixels(view, Math.round(widthDp * c.getResources().getDisplayMetrics().density));
+    }
+
+    private static void layoutPixels(View view, int width) {
         view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         view.layout(0, 0, width, view.getMeasuredHeight());
     }

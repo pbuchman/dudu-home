@@ -104,13 +104,20 @@ def passed(report):
     return "PASS:" in report and "FAIL:" not in report and "INSTRUMENTATION_CODE: -1" in report
 
 
-def run(adb, app_apk, test_apk, out, scenario, port, check_tile=False):
+def run(adb, app_apk, test_apk, out, scenario, port, check_tile=False, locale=None, gallery_label=False):
     out.mkdir(mode=0o700, parents=True, exist_ok=True)
     command(*adb, "install", "-r", app_apk)
     installed_proof(adb, app_apk, out / "apk-sha256.txt")
     command(*adb, "install", "-r", test_apk)
+    installed_proof(adb, test_apk, out / "test-apk-sha256.txt", PACKAGE + ".test")
     command(*adb, "shell", "pm", "clear", PACKAGE)
     command(*adb, "shell", "pm", "clear", f"{PACKAGE}.test")
+    if locale:
+        adb_text(adb, "shell", "cmd", "locale", "set-app-locales", PACKAGE, "--user", "0", "--locales", locale)
+        actual = adb_text(adb, "shell", "cmd", "locale", "get-app-locales", PACKAGE, "--user", "0")
+        if f"[{locale}]" not in actual:
+            raise RuntimeError("fixture locale was not applied")
+        (out / "application-locale.txt").write_text(locale + "\n")
     tile_ok = True
     if check_tile:
         report = adb_text(adb, "shell", "am", "instrument", "-w", TILE_RUNNER)
@@ -118,8 +125,9 @@ def run(adb, app_apk, test_apk, out, scenario, port, check_tile=False):
         print(report, flush=True)
         tile_ok = passed(report)
     print(f"Running {scenario} on {adb[-1]}", flush=True)
+    gallery_args = ("-e", "gallery_label", "true") if gallery_label else ()
     report = adb_text(adb, "shell", "am", "instrument", "-w", "-e", "scenario", scenario,
-                      "-e", "port", str(port), RUNNER)
+                      "-e", "port", str(port), *gallery_args, RUNNER)
     (out / "instrumentation.txt").write_text(report + "\n")
     print(report, flush=True)
     try:
@@ -136,9 +144,13 @@ def main():
     parser.add_argument("evidence", type=Path)
     parser.add_argument("--scenario", choices=["all", "success", "failures", "bounds", "lifecycle", "network", "cloudflare"],
                         default="all")
+    parser.add_argument("--locale", choices=["pl-PL"], help="set Polish app locale after clearing emulator data")
+    parser.add_argument("--gallery-label", action="store_true", help="label the synthetic success captures in the UI")
     parser.add_argument("--cloudflare", action="store_true", help="also test the unmodified APK against Cloudflare")
     parser.add_argument("--tile", action="store_true", help="also check the speed tile on clean emulator app data")
     args = parser.parse_args()
+    if args.gallery_label and (args.scenario != "success" or args.cloudflare):
+        parser.error("--gallery-label requires the local success fixture")
     if not args.serial.startswith("emulator-") or not args.serial[9:].isdigit():
         parser.error("use the dedicated local emulator serial")
     sdk = Path(os.environ.get("ANDROID_SDK_ROOT") or os.environ.get("ANDROID_HOME") or Path.home() / "Library/Android/sdk")
@@ -166,7 +178,7 @@ def main():
         command(*adb, "shell", "svc", "wifi", "enable")
         command(ROOT / "gradlew", "assembleDebug", "assembleDebugAndroidTest", env=env)
         if args.scenario == "cloudflare" or args.cloudflare:
-            results.append(run(adb, standard, standard_test, evidence / "cloudflare", "cloudflare", 0, args.tile))
+            results.append(run(adb, standard, standard_test, evidence / "cloudflare", "cloudflare", 0, args.tile, args.locale))
         if args.scenario != "cloudflare":
             with tempfile.TemporaryDirectory(prefix="dudu-speed-fixture-") as tmp:
                 temp = Path(tmp)
@@ -185,7 +197,8 @@ def main():
                     try:
                         results.append(run(adb, temp / "build/outputs/apk/debug/app-debug.apk",
                                            temp / "build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
-                                           output, args.scenario, port, args.tile and not args.cloudflare))
+                                           output, args.scenario, port, args.tile and not args.cloudflare,
+                                           args.locale, args.gallery_label))
                     finally:
                         try:
                             server.shutdown()

@@ -1,5 +1,6 @@
 package com.pbuchman.duduhome;
 
+import java.util.stream.Collectors;
 import android.app.Instrumentation;
 import com.pbuchman.duduhome.automation.*;
 import com.pbuchman.duduhome.diagnostics.Diagnostics;
@@ -86,7 +87,7 @@ public final class CancellationChecks {
             runtime.noHomeConfiguration();
             try {
                 runtime.motion();
-                var media = ProgressBus.snapshot().stream().filter(s -> ProgressBus.active(s.id()) && (s.kind()==Kind.YANOSIK || s.kind()==Kind.SPOTIFY)).toList();
+                var media = ProgressBus.snapshot().stream().filter(s -> ProgressBus.active(s.id()) && (s.kind()==Kind.YANOSIK || s.kind()==Kind.SPOTIFY)).collect(Collectors.toList());
                 var y = media.stream().filter(s -> s.kind()==Kind.YANOSIK).findFirst().orElseThrow();
                 var spotify = media.stream().filter(s -> s.kind()==Kind.SPOTIFY).findFirst().orElseThrow();
                 check(session.available() && session.available(JourneySession.Target.SPOTIFY), "media queue reserves only RAM");
