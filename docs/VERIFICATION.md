@@ -15,8 +15,10 @@
   and overlay position/visibility were byte-identical after installation. The queued GPS
   record remained pending. The real Cloudflare smoke test completed on Android 13 and 16.
 - Debug app and instrumentation builds and lint passed (0 errors, 32 warnings). The full
-  Android 13 safety runner passed after updating two test-only stream collectors for that
-  Android runtime. Host tests for the detector, diagnostics, map index, installer and
+  safety runners passed on Android 13 and 16 after updating two test-only stream collectors
+  for Android 13. The API 36 speed suite passed 151 controlled assertions and 17 live
+  assertions. Its diagnostic polling retries transient file-read failures during owner-only
+  journal permission updates. Host tests for the detector, diagnostics, map index, installer and
   Routebook contract passed, as did the 36 Routebook browser tests.
 - Seven reviewed [gallery captures](UI_GALLERY.md#current-151-gallery) record code38 in the
   Polish locale. The standard APK and the separate emulator HTTPS fixture have individual

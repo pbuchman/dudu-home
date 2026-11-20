@@ -60,16 +60,28 @@ jobs:
           "$ANDROID_HOME/emulator/emulator" -accel-check
       - name: Run compact overlay instrumentation on Android 13
         run: |
+          # This hosted job builds Java only. Leave space for the system image and writable AVD.
+          if (( $(df -Pk "$RUNNER_TEMP" | awk 'END { print $4 }') < 16777216 )); then
+            sudo rm -rf -- "$ANDROID_HOME/ndk"
+          fi
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/trip-avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           image='system-images;android-33;google_apis;x86_64'
           sdkmanager "$image"
-          printf 'no\n' | avdmanager create avd --name trip-overlay --package "$image"
+          printf 'no\n' | avdmanager create avd --name trip-overlay --device pixel_2 --package "$image"
+          sed -i '/^disk.dataPartition.size=/d' "$ANDROID_AVD_HOME/trip-overlay.avd/config.ini"
+          echo 'disk.dataPartition.size=2048M' >> "$ANDROID_AVD_HOME/trip-overlay.avd/config.ini"
+          df -h "$ANDROID_AVD_HOME"
           adb start-server
+          boot_log="$RUNNER_TEMP/trip-emulator.log"
           "$ANDROID_HOME/emulator/emulator" -avd trip-overlay -port 5554 -accel on \
-            -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader >/dev/null 2>&1 &
+            -no-window -no-audio -no-snapshot -no-boot-anim -camera-back none -camera-front none \
+            -memory 2048 -cores 2 -gpu software >"$boot_log" 2>&1 &
           emulator_pid=$!
           trap 'kill "$emulator_pid" 2>/dev/null || true' EXIT
           for attempt in {1..150}; do
             if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              tail -80 "$boot_log" >&2
               echo 'The Android emulator exited before boot.' >&2
               exit 1
             fi
@@ -79,6 +91,7 @@ jobs:
             fi
             sleep 2
           done
+          tail -80 "$boot_log" >&2
           echo 'The Android emulator did not boot within five minutes.' >&2
           exit 1
 

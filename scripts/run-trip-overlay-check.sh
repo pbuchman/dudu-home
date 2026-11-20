@@ -49,6 +49,7 @@ fi
 if [[ "$report" == *"FAIL:"* ]] \
         || ! grep -q '^INSTRUMENTATION_RESULT: result=PASS: focused trip marquee;' <<<"$report" \
         || ! grep -Fxq 'INSTRUMENTATION_CODE: -1' <<<"$report"; then
+    grep -E '^INSTRUMENTATION_(RESULT|CODE):' <<<"$report" >&2 || true
     echo "The trip overlay did not pass the focused instrumentation check." >&2
     exit 1
 fi
