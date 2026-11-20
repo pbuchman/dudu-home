@@ -1,5 +1,15 @@
 # Change history
 
+## 1.5.1-rc1 (code 36) - local candidate
+
+- Recognize sustained driving from the first usable GPS fix after an increase in a trusted
+  boot or DUDU wake counter. Require displacement beyond the combined endpoint accuracy
+  when the car has not been observed stationary.
+- Trace GPS subscription, callback quality, first SQLite commit, movement and individual media
+  decisions in the local diagnostic journal. Optional usage access adds the last visible app category.
+- Evaluate GPS archive age at callback receipt. Report pending GPS and power records after
+  acknowledgements and preserve offline retry evidence across process restarts.
+
 ## 1.5.0 (code 35) - 2026-10-27
 
 - Promote the unchanged 1.5.0-rc1 application behavior with stable version metadata.

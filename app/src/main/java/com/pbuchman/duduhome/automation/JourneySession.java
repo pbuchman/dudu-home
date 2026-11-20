@@ -12,6 +12,7 @@ import java.util.Set;
 public final class JourneySession {
     public enum Target { YANOSIK, SPOTIFY }
     public record Cycle(int boot, long generation) { }
+    public enum BootResult { FIRST_OBSERVATION, CURRENT, NEW_BOOT, INVALID_BOOT, STATE_WRITE_FAILED }
     public enum ObservationResult {
         BASELINE_ZERO, BASELINE_COUNTER, REARMED, UNCHANGED, UNAVAILABLE, INVALID_BOOT, STATE_WRITE_FAILED
     }
@@ -33,12 +34,28 @@ public final class JourneySession {
         }
     }
     public boolean ensureBoot() {
+        return switch (observeBoot()) {
+            case FIRST_OBSERVATION, CURRENT, NEW_BOOT -> true;
+            case INVALID_BOOT, STATE_WRITE_FAILED -> false;
+        };
+    }
+    /** A first install or migration cannot prove the monitor saw a new boot. */
+    public BootResult observeBoot() {
         synchronized (JourneySession.class) {
-            if (FAILED.contains(state) || boot < 0) return false;
+            if (FAILED.contains(state)) return BootResult.STATE_WRITE_FAILED;
             int previous = state.getInt("boot", -1);
-            if (previous > boot) return false;
-            return previous == boot || commitOrBlock(state.edit().putInt("boot", boot).putBoolean("consumed", false)
-                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false).remove("wake_id"));
+            if (boot < 0 || previous > boot) return BootResult.INVALID_BOOT;
+            if (previous == boot) return BootResult.CURRENT;
+            if (!commitOrBlock(state.edit().putInt("boot", boot).putBoolean("consumed", false)
+                    .putBoolean("spotify_consumed", false).putBoolean("manual_navigation", false).remove("wake_id")))
+                return BootResult.STATE_WRITE_FAILED;
+            return previous < 0 ? BootResult.FIRST_OBSERVATION : BootResult.NEW_BOOT;
+        }
+    }
+    /** Last persisted, trusted vendor counter, including when the latest read was unavailable. */
+    public long wakeCounter() {
+        synchronized (JourneySession.class) {
+            return cycle() == null ? -1 : state.getLong("wake_id", -1);
         }
     }
     public boolean reserve() {

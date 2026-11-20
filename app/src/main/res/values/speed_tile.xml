@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="internet_speed_tile" />
+    <item type="id" name="internet_speed_status" />
+    <string name="speed_tile_description">%1$s, %2$s, %3$s</string>
+    <string name="speed_tile_status">%1$s\n%2$s</string>
+    <string name="speed_tile_no_network">Brak sieci</string>
+    <string name="speed_tile_budget">Do 32 MiB na test</string>
+    <string name="speed_tile_unavailable">Nie udało się otworzyć testu internetu.</string>
+</resources>

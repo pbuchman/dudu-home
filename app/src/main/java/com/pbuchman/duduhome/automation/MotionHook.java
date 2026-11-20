@@ -18,9 +18,11 @@ public final class MotionHook {
     }
     public boolean fresh(long now) { return detector.fresh(now); }
     public java.util.List<DetectionProgress> progress() { return detector.progress(); }
+    public MotionDetector.Evidence evidence() { return detector.evidence(); }
+    public boolean hasSpatialEvidence() { return detector.hasSpatialEvidence(); }
     public void clear() { detector.clear(); }
     public void observeBaseline(MotionDetector.Fix fix) { detector.observeBaseline(fix); }
-    public void clearMovementEvidence() { detector.clearMovementEvidence(); }
     public void cancel() { detector.cancel(); }
     public void requireStationaryBaseline() { detector.requireStationaryBaseline(); }
+    public void verifiedCycle(MotionDetector.Source source) { detector.verifiedCycle(source); }
 }

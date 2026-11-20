@@ -1,5 +1,20 @@
 # Ordered automation and local Spotify playback
 
+## First movement after a verified wake (1.5.1-rc1)
+
+An increase from a previously persisted Android boot count or DUDU wake counter arms generic
+media at the first usable fix. Each sample needs a reported speed of at least 1 m/s, accuracy
+at most 15 m, age at most 3 s and a gap of at most 3 s. Movement needs at least 10 seconds
+and 15 m displacement. Until the detector observes a full stop, displacement must also be
+strictly greater than the sum of the first and last position accuracies.
+
+Initial installation, unknown cycle, same-cycle service recovery and user cancellation require
+10 seconds of observed standstill below 0.5 m/s before this movement countdown. Screen or
+network state alone cannot grant a cycle. The gate still requires a parking opportunity
+within 45 m. A first fix outside the gate area can qualify generic media on its own.
+The local journal correlates the GPS decision and each queued or suppressed target.
+[Read the first-departure trace](DIAGNOSTIC_JOURNALS.md).
+
 ## Full departure continuation (1.5.0)
 
 A successful own automatic DEPARTURE_STARTED call queues independent Full Cleaning,
@@ -133,7 +148,7 @@ before its external operation, and atomically rearm both on a new boot or verifi
 increasing wake counter. Baseline-zero, conservative legacy migration and failed-write locking
 are preserved. Missing Spotify state on update permits one attempt only after fresh motion.
 Notification grants, process restarts and manual music pauses never create another sent attempt.
-Restart requires fresh standstill before recognizing unsent driving work.
+A same-cycle process restart requires fresh standstill before recognizing unsent driving work.
 
 Yanosik uses its existing notification-presence guard. Working, missing or unknown Yanosik
 does not block Spotify. A sent launch request starts a ten-second allowance, not a readiness

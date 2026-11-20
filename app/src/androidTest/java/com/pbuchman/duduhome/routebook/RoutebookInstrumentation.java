@@ -79,13 +79,21 @@ public final class RoutebookInstrumentation extends Instrumentation {
         }
         try(Outbox db=fresh("lost")) {
             db.insert(point(0));AtomicInteger requests=new AtomicInteger();List<String> ids=new CopyOnWriteArrayList<>();
+            List<String> reports=new CopyOnWriteArrayList<>();
             Uploader.Transport lost=(cfg,bytes)-> {
                 Map<?,?> body=(Map<?,?>)Json.parse(new String(bytes,StandardCharsets.UTF_8));
                 ids.add((String)((Map<?,?>)((List<?>)body.get("points")).get(0)).get("event_id"));
                 if(requests.incrementAndGet()==1) throw new IOException("synthetic lost ack");
                 return new Uploader.Response(200,ack(body,"duplicate",null),0);
             };
-            try(Uploader up=new Uploader(db,config(db.device()),lost,c->{})) {up.kick();waitEmpty(db);}
+            try(Uploader up=new Uploader(db,config(db.device()),lost,reports::add)) {
+                check(up.diagnostic().contains("PENDING=1 "),"GPS pending reported at startup");
+                up.kick();waitEmpty(db);
+                String health=up.diagnostic();
+                check(health.contains("PENDING=0 ")&&health.contains("upload=UPLOAD_ACK")
+                        &&health.contains("gps_duplicate=1"),"GPS ACK updates queue and receipt without another fix");
+                check(reports.contains("UPLOAD_ACK STATE=DUPLICATE COUNT=1"),"GPS duplicate ACK marker");
+            }
             check(ids.size()==2&&ids.get(0).equals(ids.get(1)),"lost ack retries stable ID");
         }
         try(Outbox db=fresh("scheduler")) {
@@ -107,6 +115,10 @@ public final class RoutebookInstrumentation extends Instrumentation {
                 try(Uploader up=new Uploader(db,config(db.device()),(cfg,bytes)->{request.countDown();return new Uploader.Response(status,"",30);},c->{})) {
                     up.kick();check(request.await(2,TimeUnit.SECONDS),"HTTP tried");Thread.sleep(100);
                     check(db.pending(true,1).size()==1,"HTTP failure retains pending "+status);
+                    String health=up.diagnostic();
+                    check(health.contains("PENDING=1 ")&&health.contains("gps_http="+status+" ")
+                            &&health.contains("gps_wait_ms="+(status==429||status>=500?30000:900000)+" "),
+                            "GPS HTTP status and wait appear with unchanged pending");
                 }
             }
         }
@@ -195,10 +207,19 @@ public final class RoutebookInstrumentation extends Instrumentation {
         }
         try(Outbox gps=fresh("power-lost");PowerOutbox power=freshPower("lost",gps.device())){
             power.insert(power(0));List<String> ids=new CopyOnWriteArrayList<>();
+            List<String> reports=new CopyOnWriteArrayList<>();
             try(PowerUploader up=new PowerUploader(power,config(gps.device()),(cfg,bytes)->{
                 Map<?,?> body=(Map<?,?>)Json.parse(new String(bytes,StandardCharsets.UTF_8));ids.add((String)((Map<?,?>)((List<?>)body.get("events")).get(0)).get("event_id"));
                 if(ids.size()==1)throw new IOException("synthetic lost response");return new Uploader.Response(200,powerAck(body,"duplicate",null),0);
-            },c->{})){up.kick();waitPowerEmpty(power);}check(ids.size()==2&&ids.get(0).equals(ids.get(1)),"power lost ACK preserves immutable event ID");
+            },reports::add)) {
+                check(up.diagnostic().contains("POWER_PENDING=1 "),"power pending reported at startup");
+                up.kick();waitPowerEmpty(power);
+                String health=up.diagnostic();
+                check(health.contains("POWER_PENDING=0 ")&&health.contains("power_upload=UPLOAD_ACK")
+                        &&health.contains("power_duplicate=1"),"power ACK updates its own counts and receipt");
+                check(reports.contains("POWER_UPLOAD_ACK STATE=DUPLICATE COUNT=1"),"power duplicate ACK marker");
+            }
+            check(ids.size()==2&&ids.get(0).equals(ids.get(1)),"power lost ACK preserves immutable event ID");
         }
         try(Outbox gps=fresh("power-fair");PowerOutbox power=freshPower("fair",gps.device())){
             for(int n=0;n<240;n++)power.insert(power(n));List<String> lanes=new CopyOnWriteArrayList<>();List<Integer> sizes=new CopyOnWriteArrayList<>();AtomicInteger count=new AtomicInteger();
@@ -253,20 +274,32 @@ public final class RoutebookInstrumentation extends Instrumentation {
             check(com.pbuchman.duduhome.automation.HomeActions.begin(),"synthetic busy lease, no external action possible");
         });
         set(service,"automation",automation.get());
+        CountDownLatch blocked=new CountDownLatch(1),release=new CountDownLatch(1);
+        ((ExecutorService)get(collector,"disk")).execute(()->{
+            blocked.countDown();
+            try {release.await(8,TimeUnit.SECONDS);}
+            catch(InterruptedException e) {Thread.currentThread().interrupt();}
+        });
+        check(blocked.await(2,TimeUnit.SECONDS),"hold disk worker before GPS callback");
         // detector stays null: disabled/missing home automation still uses the same GPS callback.
         android.location.Location first=new android.location.Location("synthetic");
         first.setTime(System.currentTimeMillis());first.setElapsedRealtimeNanos(android.os.SystemClock.elapsedRealtimeNanos());
         first.setLatitude(0);first.setLongitude(0);first.setAccuracy(5);first.setSpeed(0);
-        runOnMainSync(()->service.onLocationChanged(first));
+        try {
+            runOnMainSync(()->service.onLocationChanged(first));
+            Thread.sleep(5100);
+        } finally {release.countDown();}
         Outbox db=(Outbox)get(collector,"db");
         end=System.nanoTime()+TimeUnit.SECONDS.toNanos(3);
         while(db.pending(true,1).isEmpty()&&System.nanoTime()<end)Thread.sleep(10);
-        check(db.pending(true,1).size()==1,"finally stores while trip OFF and automation returns early");
+        check(db.pending(true,1).size()==1,"fresh callback stores despite over 5 s disk delay while trip OFF");
+        String collectionHealth=collector.diagnostic();
+        check(collectionHealth.contains("PENDING=1 ")&&collectionHealth.contains("routebook_committed=1"),
+                "committed fix is visible in queue and collector counters");
         Point firstPoint=db.pending(true,1).get(0);
         trip.command("START");while(!trip.snapshot().active())Thread.sleep(10);
         trip.command("PAUSE");while(!trip.snapshot().state().equals("PAUSED"))Thread.sleep(10);
         runOnMainSync(()->service.onProviderDisabled("gps"));
-        Thread.sleep(5100);
         android.location.Location second=new android.location.Location(first);
         second.setTime(System.currentTimeMillis());second.setElapsedRealtimeNanos(android.os.SystemClock.elapsedRealtimeNanos());
         runOnMainSync(()->service.onLocationChanged(second));
@@ -278,6 +311,38 @@ public final class RoutebookInstrumentation extends Instrumentation {
         runOnMainSync(()-> {automation.get().close();com.pbuchman.duduhome.automation.HomeActions.end();});
         ((ExecutorService)get(service,"cycleReader")).shutdownNow();collector.close();
     }
+    private void networkRecovery(File file, boolean offline) throws Exception {
+        File powerFile = new File(getTargetContext().getNoBackupFilesDir(), "routebook-power-test-restart.sqlite");
+        try (Outbox gps = new Outbox(file); PowerOutbox power = new PowerOutbox(powerFile, gps.device())) {
+            check(gps.pending(true, 1).get(0).json().equals(point(7).json()), "GPS payload survived previous process");
+            check(power.pending(true, 1).get(0).equals(power(7)), "power payload survived previous process");
+            CountDownLatch observed = new CountDownLatch(2);
+            String gpsExpected = offline ? "UPLOAD_NETWORK_RETRY" : "UPLOAD_ACK STATE=ACCEPTED";
+            String powerExpected = offline ? "POWER_UPLOAD_NETWORK_RETRY" : "POWER_UPLOAD_ACK STATE=ACCEPTED";
+            Set<String> completed = ConcurrentHashMap.newKeySet();
+            java.util.function.BiConsumer<String, String> observe = (expected, event) -> {
+                if (event.startsWith(expected) && completed.add(expected)) observed.countDown();
+            };
+            Uploader.Transport gpsAck = (cfg, body) -> new Uploader.Response(200,
+                    ack((Map<?, ?>) Json.parse(new String(body, StandardCharsets.UTF_8)), "accepted", null), 0);
+            Uploader.Transport powerAck = (cfg, body) -> new Uploader.Response(200,
+                    powerAck((Map<?, ?>) Json.parse(new String(body, StandardCharsets.UTF_8)), "accepted", null), 0);
+            try (Uploader gpsUpload = new Uploader(gps, config(gps.device()), offline ? Uploader::https : gpsAck,
+                         event -> observe.accept(gpsExpected, event));
+                 PowerUploader powerUpload = new PowerUploader(power, config(gps.device()), offline ? Uploader::https : powerAck,
+                         event -> observe.accept(powerExpected, event))) {
+                gpsUpload.kick();
+                powerUpload.kick();
+                check(observed.await(18, TimeUnit.SECONDS), "both transports emitted the expected retry or acknowledgement");
+                int expectedRows = offline ? 1 : 0;
+                check(gps.pending(true, 1).size() == expectedRows, "GPS SQLite queue matches acknowledgement");
+                check(power.pending(true, 1).size() == expectedRows, "power SQLite queue matches acknowledgement");
+                check(gpsUpload.diagnostic().contains("PENDING=" + expectedRows + " "), "reported GPS count matches SQLite");
+                check(powerUpload.diagnostic().contains("POWER_PENDING=" + expectedRows + " "), "reported power count matches SQLite");
+            }
+        }
+    }
+
     @Override public void onStart() {
         Bundle result=new Bundle();
         try {
@@ -292,6 +357,8 @@ public final class RoutebookInstrumentation extends Instrumentation {
                 try(Outbox db=new Outbox(file)) {check(db.device().equals(getTargetContext().getSharedPreferences("routebook-test",0).getString("device","")),"identity survives process restart");
                     try(PowerOutbox power=new PowerOutbox(new File(getTargetContext().getNoBackupFilesDir(),"routebook-power-test-restart.sqlite"),db.device())){check(power.pending(true,1).get(0).equals(power(7)),"power ID/epoch/sequence/raw body survive process restart");}
                     check(db.pending(true,1).get(0).json().equals(point(7).json()),"pending ID and payload survive process restart");}
+            } else if(phase.equals("networkDown") || phase.equals("networkRestored")) {
+                networkRecovery(file, phase.equals("networkDown"));
             } else if(phase.equals("integration")) integration();
             else if(phase.equals("staged")) {
                 File dir=getTargetContext().getNoBackupFilesDir();

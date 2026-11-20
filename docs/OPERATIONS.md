@@ -1,5 +1,14 @@
 # Instalacja, konfiguracja i odzyskiwanie
 
+## Ręczny test internetu
+
+W menu wybierz **Test internetu**. Pomiar korzysta z domyślnego łącza Androida.
+Przy połączeniu przez hotspot widoczny transport to Wi-Fi. Jedna próba przesyła
+maksymalnie 32 MiB danych pomiarowych, do czego operator może doliczyć narzut sieci.
+Po zmianie łącza rozpocznij nową próbę, aby uzyskać wynik dla aktualnej sieci.
+Informacja o braku dostępu przy aktywnej sieci komórkowej może pomóc w diagnostyce
+karty SIM. Stan konta i termin ważności usługi potwierdza operator.
+
 ## Read-only failure capture before opening or updating the app
 
 Resolve an owner-only `PRIVATE_DIR` outside every Git repository (0700). With the existing
@@ -11,8 +20,8 @@ python3 scripts/automation-diagnostics.py collect --serial DEVICE_SERIAL \
 python3 scripts/automation-diagnostics.py summarize "$PRIVATE_DIR/new-capture"
 ```
 
-The tool only checks the existing ADB device state, reads app-private `diagnostics.txt` and
-its previous file via `run-as`, and captures allowlisted service dump fields. It never
+The tool checks the existing ADB device state, reads app-private `diagnostics.txt` and
+up to seven retained older segments via `run-as`, and captures allowlisted service dump fields. It never
 starts/stops/installs the app or reads configuration, firmware logcat or the Routebook
 database. It creates a 0700 capture directory and 0600 journal, monitor and summary files;
 an existing output directory is rejected. Console output is category-only. Keep all captures

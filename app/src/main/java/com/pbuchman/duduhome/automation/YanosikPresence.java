@@ -12,6 +12,8 @@ import android.service.notification.StatusBarNotification;
 /** Observation only. No notification contents, persistence, actions or monitor startup. */
 public final class YanosikPresence extends NotificationListenerService {
     public enum State { WORK_DETECTED, NO_WORK_SIGNAL, UNKNOWN }
+    enum Access { GRANTED, DENIED, UNKNOWN }
+    record Observation(Access access, boolean listenerBound, State state) { }
     private static volatile YanosikPresence connected;
 
     @Override public void onListenerConnected() { connected = this; }
@@ -22,21 +24,40 @@ public final class YanosikPresence extends NotificationListenerService {
     }
 
     public static boolean accessGranted(Context context) {
+        return access(context) == Access.GRANTED;
+    }
+
+    private static Access access(Context context) {
         ComponentName component = new ComponentName(context, YanosikPresence.class);
         try {
-            if (Build.VERSION.SDK_INT >= 27)
-                return context.getSystemService(NotificationManager.class).isNotificationListenerAccessGranted(component);
+            if (Build.VERSION.SDK_INT >= 27) {
+                NotificationManager manager = context.getSystemService(NotificationManager.class);
+                if (manager == null) return Access.UNKNOWN;
+                return manager.isNotificationListenerAccessGranted(component) ? Access.GRANTED : Access.DENIED;
+            }
             String enabled = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
             if (enabled != null) for (String name : enabled.split(":"))
-                if (component.equals(ComponentName.unflattenFromString(name))) return true;
-        } catch (RuntimeException unavailable) { return false; }
-        return false;
+                if (component.equals(ComponentName.unflattenFromString(name))) return Access.GRANTED;
+        } catch (RuntimeException unavailable) { return Access.UNKNOWN; }
+        return Access.DENIED;
     }
 
     /** Read a fresh complete snapshot, including notifications posted before our process started. */
     public static State read(Context context) {
         YanosikPresence listener = connected;
         if (listener == null || !accessGranted(context)) return State.UNKNOWN;
+        return readConnected(context, listener);
+    }
+
+    /** Private presence snapshot for the bounded diagnostic worker. */
+    static Observation observe(Context context) {
+        YanosikPresence listener = connected;
+        Access access = access(context);
+        State state = listener != null && access == Access.GRANTED ? readConnected(context, listener) : State.UNKNOWN;
+        return new Observation(access, listener != null, state);
+    }
+
+    private static State readConnected(Context context, YanosikPresence listener) {
         try {
             State result = classify(listener.getActiveNotifications());
             return connected == listener && accessGranted(context) ? result : State.UNKNOWN;

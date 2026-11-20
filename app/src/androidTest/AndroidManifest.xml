@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="com.pbuchman.duduhome.speedqa.SpeedTakeoverActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    </application>
+    <!-- AGP fills the first declaration with the runner selected in defaultConfig. -->
+    <instrumentation
+        android:name="com.pbuchman.duduhome.SafetyChecks"
+        android:targetPackage="com.pbuchman.duduhome" />
+    <instrumentation
+        android:name="com.pbuchman.duduhome.speedqa.SpeedIntegrationChecks"
+        android:targetPackage="com.pbuchman.duduhome" />
+    <instrumentation
+        android:name="com.pbuchman.duduhome.ui.SpeedTileChecks"
+        android:targetPackage="com.pbuchman.duduhome" />
+</manifest>

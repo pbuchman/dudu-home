@@ -29,6 +29,7 @@ final class MonitorCycleChecks {
                 callback.invoke(old, DuduCycle.unavailable());
                 check((boolean) get(old,"cycleReady") && session.available(), "unknown completes cold-boot barrier");
                 var motion = (MotionHook) get(old,"motion");
+                motion.requireStationaryBaseline();
                 long now = SystemClock.elapsedRealtime();
                 motion.accept(new MotionDetector.Fix(now,0,0,3,2,true,0,false),false);
                 set(old,"motionOrigin",new Location("synthetic"));
@@ -37,7 +38,8 @@ final class MonitorCycleChecks {
                 set(old,"progressEpoch",epoch);
                 callback.invoke(old, FirstWakeChecks.cold());
                 check(movement.equals(motion.progress()) && get(old,"motionOrigin") != null
-                        && (long)get(old,"progressEpoch") == epoch, "late baseline preserves movement and UI");
+                        && (long)get(old,"progressEpoch") == epoch && motion.evidence().needsStop(),
+                        "late baseline preserves existing evidence and recovery protection");
                 AutomationRuntime target = new AutomationRuntime(context);
                 AutomationCoordinator queue = (AutomationCoordinator)get(target,"queue");
                 queue.enqueue(0,AutomationCoordinator.Type.SPOTIFY,null,now,0);
@@ -52,15 +54,30 @@ final class MonitorCycleChecks {
                 check(!motion.fresh(now) && get(old,"motionOrigin") == null
                         && (long)get(old,"progressEpoch") != epoch && detector.flags()==29, "wake clears evidence not flags");
                 check(session.available(), "wake rearms without dispatch");
+                check(!motion.evidence().needsStop() && motion.evidence().source() == MotionDetector.Source.VERIFIED_WAKE,
+                        "new wake opens startup motion without a stop");
+                for (int s = 1; s <= 10; s++) motion.accept(new MotionDetector.Fix(now + s * 1000, s * 2, 0, 3, 2, true, 0, false), false);
+                check(motion.evidence().state() == MotionDetector.State.CANDIDATE, "new wake still needs 10 seconds of fresh motion");
+                motion.accept(new MotionDetector.Fix(now + 11000, 22, 0, 3, 2, true, 0, false), false);
+                check(motion.evidence().state() == MotionDetector.State.CONFIRMED, "already-moving fixes qualify on a verified wake");
                 queue.enqueue(0,AutomationCoordinator.Type.SPOTIFY,null,now,0);
                 HomeMonitorService current = new HomeMonitorService(); attach.invoke(current,context);
                 set(current,"automation",target);
+                var currentMotion = (MotionHook) get(current,"motion");
+                currentMotion.requireStationaryBaseline();
                 callback.invoke(current, FirstWakeChecks.cycle(1));
+                check(currentMotion.evidence().needsStop(), "same-cycle recreation keeps recovery protection");
                 set(old,"destroyed",true);
                 var saved = new HashMap<>(prefs.getAll()); var snapshots = ProgressBus.snapshot();
                 callback.invoke(old, FirstWakeChecks.cycle(2));
                 check(saved.equals(prefs.getAll()) && snapshots.equals(ProgressBus.snapshot()), "old callback cannot affect current session");
                 check(queue.next(now,true,true)!=null,"current queue remains intact");
+                set(current,"cycleReady",false);
+                currentMotion.cancel();
+                callback.invoke(current, FirstWakeChecks.cycle(2));
+                check(currentMotion.evidence().needsStop()
+                                && currentMotion.evidence().source() == MotionDetector.Source.USER_CANCELLED,
+                        "new counter completing the first read preserves an explicit cancellation");
                 target.close();
                 // Production enqueue adapter, while a synthetic executor owns the shared lock.
                 var daily = context.getSharedPreferences("daily_cleaning", 0);

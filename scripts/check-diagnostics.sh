@@ -6,7 +6,12 @@ javac -d build/diagnostic-checks app/src/main/java/com/pbuchman/duduhome/diagnos
   app/src/main/java/com/pbuchman/duduhome/diagnostics/CategoryFormat.java \
   app/src/main/java/com/pbuchman/duduhome/diagnostics/BlockCoalescer.java \
   app/src/main/java/com/pbuchman/duduhome/diagnostics/QueueBlockers.java \
-  app/src/main/java/com/pbuchman/duduhome/diagnostics/PresentationCoalescer.java scripts/DiagnosticChecks.java
+  app/src/main/java/com/pbuchman/duduhome/diagnostics/PresentationCoalescer.java \
+  app/src/main/java/com/pbuchman/duduhome/automation/DetectionProgress.java \
+  app/src/main/java/com/pbuchman/duduhome/location/MotionDetector.java \
+  app/src/main/java/com/pbuchman/duduhome/location/GpsStartupTrace.java \
+  scripts/DiagnosticChecks.java scripts/GpsStartupChecks.java
 java -cp build/diagnostic-checks com.pbuchman.duduhome.diagnostics.DiagnosticChecks
+java -cp build/diagnostic-checks com.pbuchman.duduhome.location.GpsStartupChecks
 python3 scripts/test-diagnostics.py
 python3 scripts/test-automation-diagnostics.py

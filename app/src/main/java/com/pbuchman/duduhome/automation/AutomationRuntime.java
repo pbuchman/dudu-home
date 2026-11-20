@@ -4,9 +4,12 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import com.pbuchman.duduhome.automation.TargetAppsSnapshot.Stage;
 import com.pbuchman.duduhome.config.PrivateImport;
 import com.pbuchman.duduhome.diagnostics.Diagnostics;
 import com.pbuchman.duduhome.location.HomeDetector.GateArea;
+import java.util.EnumMap;
+import java.util.function.LongSupplier;
 import static com.pbuchman.duduhome.automation.DetectionProgress.*;
 import static com.pbuchman.duduhome.automation.AutomationCoordinator.*;
 
@@ -17,8 +20,17 @@ public final class AutomationRuntime {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final AutomationCoordinator queue = new AutomationCoordinator();
     private final YanosikLauncher yanosik;
+    private final TargetAppsSnapshot targets;
     private SpotifyController spotify;
     private long spotifyAttempt;
+    private enum MediaSource { MOTION_CONFIRMED, DEPARTURE_CONTINUATION }
+    private record MediaObservation(long id, long cycle) { }
+    private record MediaTrigger(MediaSource source, MediaObservation observation) { }
+    private final EnumMap<MediaSource, String> lastSuppression = new EnumMap<>(MediaSource.class);
+    private final long startupId;
+    private final LongSupplier wakeCounter;
+    private final LongSupplier observationId;
+    private long suppressionCycle = -1;
     private final java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome;
     private final java.util.Set<Long> mediaGroup = new java.util.LinkedHashSet<>();
     private final DepartureContinuation<JourneySession.Cycle> departure = new DepartureContinuation<>();
@@ -33,36 +45,62 @@ public final class AutomationRuntime {
     private long areaFreshUntil;
     private final java.util.function.LongFunction<Runnable> gateSuccessListener = this::gateSuccessCallback;
     private Runnable gateSuccessCallback(long attempt) {
+        long areaGeneration = gate.generation();
         Runnable success = gate.successCallback();
         long generation = queue.generation();
         JourneySession.Cycle cycle = new JourneySession(context).cycle();
+        MediaObservation observation = mediaObservation();
         var binding = departure.capture(attempt);
         boolean[] completed = {false};
         return () -> {
-            if (closed || completed[0] || queue.generation() != generation || cycle == null
-                    || !cycle.equals(new JourneySession(context).cycle()) || !ProgressBus.acceptsGateSuccess(attempt)) {
-                if (binding != null) Diagnostics.recordAttempt(context, attempt, "DEPARTURE_CONTINUATION_REJECTED");
+            String rejection = gateSuccessRejection(attempt, completed[0], generation, cycle);
+            if (rejection != null) {
+                if (binding != null) Diagnostics.record(context, "DEPARTURE_CONTINUATION_REJECTED"
+                        + mediaCorrelation(observation) + " REASON=" + rejection + " ID=" + attempt);
                 return;
             }
             completed[0] = true;
             boolean before = gate.allowsMedia();
             success.run();
+            if (gate.generation() != areaGeneration) Diagnostics.record(context, "MEDIA_GATE_RESULT"
+                    + mediaCorrelation(observation) + " REASON=AREA_CHANGED ID=" + attempt);
             if (!before && gate.allowsMedia()) Diagnostics.record(context, "MEDIA_GATE_CALL_COMPLETED");
             if (departure.succeeded(binding, generation, cycle)) {
                 enqueueCleaning();
-                boolean queued = enqueueMedia();
+                boolean queued = enqueueMedia(new MediaTrigger(MediaSource.DEPARTURE_CONTINUATION, observation));
                 Diagnostics.recordAttempt(context, attempt, "DEPARTURE_CONTINUATION_" + (queued ? "CLEANING_AND_MEDIA_QUEUED" : "CLEANING_QUEUED_MEDIA_SUPPRESSED"));
             }
             changed();
         };
+    }
+    private String gateSuccessRejection(long attempt, boolean completed, long generation, JourneySession.Cycle cycle) {
+        if (closed) return "CLOSED";
+        if (completed) return "DUPLICATE";
+        JourneySession.Cycle current = cycle == null ? null : new JourneySession(context).cycle();
+        if (current != null && !current.equals(cycle)) return "CYCLE_CHANGED";
+        if (queue.generation() != generation) return "GENERATION_CHANGED";
+        if (current == null) return "CYCLE_UNKNOWN";
+        return ProgressBus.acceptsGateSuccess(attempt) ? null : "ATTEMPT_INACTIVE";
     }
     private final Runnable drain = this::drain;
     private final Runnable listener = this::changed;
     private final Runnable configurationListener = () -> reset(Reason.CONFIGURATION);
     public AutomationRuntime(Context context) { this(context, event -> () -> true); }
     public AutomationRuntime(Context context, java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome) {
+        this(context, reserveHome, -1, new JourneySession(context)::wakeCounter);
+    }
+    public AutomationRuntime(Context context, java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome,
+                             long startupId, LongSupplier wakeCounter) {
+        this(context, reserveHome, startupId, wakeCounter, () -> -1);
+    }
+    public AutomationRuntime(Context context, java.util.function.Function<HomeEvent, java.util.function.BooleanSupplier> reserveHome,
+                             long startupId, LongSupplier wakeCounter, LongSupplier observationId) {
+        this.startupId = startupId;
+        this.wakeCounter = wakeCounter;
+        this.observationId = observationId;
         this.reserveHome = reserveHome;
         this.context = context.getApplicationContext(); yanosik = new YanosikLauncher(this.context);
+        targets = new TargetAppsSnapshot(this.context);
         HomeActions.setSchedulingListener(listener);
         HomeActions.setConfigurationListener(configurationListener);
         HomeActions.setGateSuccessListener(gateSuccessListener);
@@ -90,6 +128,28 @@ public final class AutomationRuntime {
     public boolean allowsMotionDetection() {
         return !closed && gateAllowsMedia() && HomeActions.allowsExternalLaunch();
     }
+    /** Same admission predicates as the detector uses, with the current reason for diagnostics. */
+    public String motionBlocker() {
+        if (closed) return "CLOSED";
+        if (!gate.allowsMedia()) return "GATE_AREA";
+        if (!gateAllowsMedia()) return "GATE_STALE";
+        if (HomeActions.allowsExternalLaunch()) return "NONE";
+        String blocker = HomeActions.launchBlocker(false);
+        return "NONE".equals(blocker) ? "PRESENTATION_BUSY" : blocker;
+    }
+    public void observeMotionTransition(String state) {
+        if (closed) return;
+        switch (state) {
+            case "FIRST_MOVING" -> observeTargets(Stage.FIRST_MOVING, 0);
+            case "MOTION_CONFIRMED" -> observeTargets(Stage.MOTION_CONFIRMED, 0);
+            default -> { }
+        }
+    }
+    private void observeTargets(Stage stage, long attempt) {
+        long generation = queue.generation();
+        targets.request(stage, startupId, observationId.getAsLong(), wakeCounter.getAsLong(), attempt, HomeActions.launchBlocker(true),
+                () -> !closed && queue.generation() == generation);
+    }
     public void home(HomeEvent event) {
         if (closed || !HomeActions.callsGate(event)) return;
         long id = ProgressBus.request(context, ProgressBus.kind(event));
@@ -105,25 +165,52 @@ public final class AutomationRuntime {
         enqueue(id, Type.CLEANING, null, queuedDay);
     }
     public void motion() {
-        if (!allowsMotionDetection() || PrivateImport.pending(context)) return;
+        MediaTrigger trigger = new MediaTrigger(MediaSource.MOTION_CONFIRMED, mediaObservation());
+        if (!allowsMotionDetection()) { suppressMedia(trigger, motionBlocker()); return; }
+        if (PrivateImport.pending(context)) { suppressMedia(trigger, "IMPORT_PENDING"); return; }
         departure.motionConfirmed();
-        enqueueMedia();
+        enqueueMedia(trigger);
     }
     /** Both triggers use the same per-target durable reservations at actual sending. */
-    private boolean enqueueMedia() {
-        if (closed || departure.mediaCancelled() || PrivateImport.pending(context)) return false;
+    private boolean enqueueMedia(MediaTrigger trigger) {
+        if (closed) return suppressMedia(trigger, "CLOSED");
+        if (departure.mediaCancelled()) return suppressMedia(trigger, "PREVIOUS_CANCEL");
+        if (PrivateImport.pending(context)) return suppressMedia(trigger, "IMPORT_PENDING");
         JourneySession session = new JourneySession(context);
-        if (session.manualNavigationChosen()) return false;
-        if (!mediaGroup.isEmpty()) return false;
-        if (session.available(JourneySession.Target.YANOSIK)) addMedia(Type.YANOSIK, Kind.YANOSIK, JourneySession.Target.YANOSIK);
-        if (session.available(JourneySession.Target.SPOTIFY)) addMedia(Type.SPOTIFY, Kind.SPOTIFY, JourneySession.Target.SPOTIFY);
-        return !mediaGroup.isEmpty();
+        if (session.manualNavigationChosen())
+            return suppressMedia(trigger, session.cycle() == null ? "SESSION_UNAVAILABLE" : "MANUAL_NAVIGATION");
+        if (!mediaGroup.isEmpty()) return suppressMedia(trigger, "ACTIVE_GROUP");
+        if (session.available(JourneySession.Target.YANOSIK))
+            addMedia(Type.YANOSIK, Kind.YANOSIK, JourneySession.Target.YANOSIK, trigger);
+        if (session.available(JourneySession.Target.SPOTIFY))
+            addMedia(Type.SPOTIFY, Kind.SPOTIFY, JourneySession.Target.SPOTIFY, trigger);
+        if (mediaGroup.isEmpty())
+            return suppressMedia(trigger, session.cycle() == null ? "SESSION_UNAVAILABLE" : "TARGETS_CONSUMED");
+        lastSuppression.remove(trigger.source());
+        return true;
     }
-    private void addMedia(Type type, Kind kind, JourneySession.Target target) {
+    private MediaObservation mediaObservation() {
+        return new MediaObservation(observationId.getAsLong(), wakeCounter.getAsLong());
+    }
+    private String mediaCorrelation(MediaObservation observation) {
+        return " STARTUP=" + startupId + " OBSERVATION=" + observation.id() + " CYCLE=" + observation.cycle();
+    }
+    private boolean suppressMedia(MediaTrigger trigger, String reason) {
+        long cycle = trigger.observation().cycle();
+        if (suppressionCycle != cycle) {
+            lastSuppression.clear();
+            suppressionCycle = cycle;
+        }
+        String category = "MEDIA_ENQUEUE_SUPPRESSED" + mediaCorrelation(trigger.observation())
+                + " STAGE=" + trigger.source() + " REASON=" + reason;
+        if (!category.equals(lastSuppression.put(trigger.source(), category))) Diagnostics.record(context, category);
+        return false;
+    }
+    private void addMedia(Type type, Kind kind, JourneySession.Target target, MediaTrigger trigger) {
         long id = ProgressBus.request(context, kind);
         mediaGroup.add(id);
         ProgressBus.reserveWith(id, new JourneySession(context).reservation(target));
-        enqueue(id, type, null);
+        enqueue(id, type, null, day(), trigger);
     }
     private void cancelMedia() {
         departure.cancelMedia();
@@ -151,7 +238,12 @@ public final class AutomationRuntime {
     }
     private void enqueue(long id, Type type, HomeEvent event) { enqueue(id, type, event, day()); }
     private void enqueue(long id, Type type, HomeEvent event, long queuedDay) {
+        enqueue(id, type, event, queuedDay, null);
+    }
+    private void enqueue(long id, Type type, HomeEvent event, long queuedDay, MediaTrigger media) {
         queue.enqueue(id, type, event, SystemClock.elapsedRealtime(), queuedDay);
+        if (media != null) Diagnostics.record(context, "MEDIA_ENQUEUED" + mediaCorrelation(media.observation())
+                + " STAGE=" + media.source() + " ACTION=" + type + " ID=" + id);
         long generation = queue.generation();
         JourneySession.Cycle cycle = new JourneySession(context).cycle();
         Job queued = queue.snapshot().stream().filter(j -> j.id() == id).findFirst().orElseThrow();
@@ -175,13 +267,13 @@ public final class AutomationRuntime {
         handler.removeCallbacks(drain); handler.post(drain);
     }
     private boolean mediaReady() { return gateAllowsMedia() && !new JourneySession(context).manualNavigationChosen()
-            && HomeActions.allowsMediaLaunch() && !queue.hasHomeWaiting() && !cleaningPendingOrFeedback(); }
-    private boolean cleaningPendingOrFeedback() {
-        long now = SystemClock.elapsedRealtime();
+            && HomeActions.allowsMediaLaunch() && !queue.hasHomeWaiting()
+            && cleaningBlocker(SystemClock.elapsedRealtime()) == null; }
+    private ProgressModel.State cleaningBlocker(long now) {
         var states = ProgressBus.snapshot();
         cleaningAttempts.removeIf(id -> states.stream().noneMatch(s -> s.id() == id));
-        return states.stream().anyMatch(s -> cleaningAttempts.contains(s.id())
-                && (!ProgressModel.terminal(s.phase()) || s.expiresAt() > now));
+        return states.stream().filter(s -> cleaningAttempts.contains(s.id())
+                && (!ProgressModel.terminal(s.phase()) || s.expiresAt() > now)).findFirst().orElse(null);
     }
     private long cleaningFeedbackWake() {
         return ProgressBus.snapshot().stream().filter(s -> cleaningAttempts.contains(s.id())
@@ -194,8 +286,12 @@ public final class AutomationRuntime {
         if (new JourneySession(context).manualNavigationChosen()) {
             for (Job j : queue.discardMedia()) ProgressBus.update(context, j.id(), Phase.SKIPPED, Reason.UI_BUSY);
             if (spotify != null) {
-                spotify.cancel(); spotify = null;
-                ProgressBus.update(context, spotifyAttempt, Phase.SKIPPED, Reason.UI_BUSY); spotifyAttempt = 0;
+                SpotifyController active = spotify;
+                long attempt = spotifyAttempt;
+                spotify = null;
+                spotifyAttempt = 0;
+                ProgressBus.update(context, attempt, Phase.SKIPPED, Reason.UI_BUSY);
+                active.cancel();
             }
         }
         long now = SystemClock.elapsedRealtime();
@@ -204,6 +300,7 @@ public final class AutomationRuntime {
             Diagnostics.recordAttempt(context, j.id(), "QUEUE_" + j.type() + "_EXPIRED ID=" + j.id());
             ProgressBus.update(context, j.id(), Phase.SKIPPED, Reason.EXPIRED);
         }
+        pruneMediaGroup();
         observeQueue(now);
         if (spotify != null) spotify.priorityChanged();
         boolean homeReady=HomeActions.allowsExternalLaunch()
@@ -221,11 +318,15 @@ public final class AutomationRuntime {
                 else HomeActions.dispatchReserved(context, job.event(), job.id());
             } else if (job.type() == Type.YANOSIK) {
                 ProgressBus.update(context, job.id(), Phase.STARTED, Reason.NONE);
+                observeTargets(Stage.YANOSIK_DECISION, job.id());
                 YanosikLauncher.Result result = yanosik.launchReserved(() -> ProgressBus.claimSend(context, job.id()));
                 Diagnostics.recordAttempt(context, job.id(), "YANOSIK_" + (result == YanosikLauncher.Result.REQUESTED ? "LAUNCH_REQUESTED" : result) + " ID=" + job.id());
                 if (result == YanosikLauncher.Result.FAILED)
                     Diagnostics.queueState(context,job.id(),"YANOSIK","FAILED","FAILURE",0,"NONE");
-                if (result == YanosikLauncher.Result.REQUESTED) queue.yanosikLaunched(now);
+                if (result == YanosikLauncher.Result.REQUESTED) {
+                    queue.yanosikLaunched(now);
+                    handler.postDelayed(() -> observeTargets(Stage.POST_YANOSIK, job.id()), 2500);
+                }
                 Reason reason = switch (result) {
                     case REQUESTED -> Reason.NONE;
                     case ALREADY_RUNNING -> Reason.TARGET_ALREADY_RUNNING;
@@ -235,7 +336,7 @@ public final class AutomationRuntime {
                 };
                 ProgressBus.update(context, job.id(), result == YanosikLauncher.Result.REQUESTED ? Phase.SUCCEEDED : Phase.SKIPPED, reason);
             } else startSpotify(job);
-            if (mediaGroup.stream().noneMatch(id -> queueContainsOrRunning(id))) mediaGroup.clear();
+            pruneMediaGroup();
             changed();
         } else {
             long next = Math.min(queue.nextWake(now), cleaningFeedbackWake());
@@ -244,6 +345,7 @@ public final class AutomationRuntime {
     }
     private void observeQueue(long now) {
         Job head=queue.head();
+        var cleaning = cleaningBlocker(now);
         for (Job job:queue.snapshot()) {
             boolean media=job.type()==Type.YANOSIK || job.type()==Type.SPOTIFY;
             var causes=new com.pbuchman.duduhome.diagnostics.QueueBlockers();
@@ -253,29 +355,41 @@ public final class AutomationRuntime {
             if (media && !gateAllowsMedia()) causes.add("GATE_PRECONDITION");
             if (media && spotify!=null) causes.add("ACTIVE_OPERATION");
             if (media && queue.hasHomeWaiting()) causes.add("PRIORITY");
+            if (media && cleaning != null) {
+                if (ProgressModel.terminal(cleaning.phase())) causes.add("CLEANING_FEEDBACK");
+                else if (!queue.contains(Type.CLEANING)) causes.add("ACTIVE_OPERATION");
+            }
             if (media && now<queue.mediaNotBefore()) causes.add("YANOSIK_GRACE");
             String reason=causes.reason(),blocker="NONE";
             long blockerId=0;
             if (reason.equals("RESOURCE_CLEANUP") || reason.equals("ACTIVE_OPERATION")) {
                 blockerId=HomeActions.busyAttempt();blocker=HomeActions.busyAction();
                 if (blockerId==0 && spotify!=null) { blockerId=spotifyAttempt;blocker="SPOTIFY"; }
+                if (blockerId==0 && cleaning!=null) { blockerId=cleaning.id();blocker="CLEANING"; }
             } else if (reason.equals("PRIORITY") && head!=null) { blockerId=head.id();blocker=head.type().name(); }
             else if (reason.equals("GATE_PRECONDITION")) blocker="GATE";
             else if (reason.equals("YANOSIK_GRACE")) blocker="YANOSIK";
+            else if (reason.equals("CLEANING_FEEDBACK") && cleaning != null) { blockerId=cleaning.id();blocker="CLEANING"; }
             Diagnostics.queueState(context,job.id(),job.type().name(),causes.state(),reason,blockerId,blocker,causes.mask());
         }
     }
     private boolean queueContainsOrRunning(long id) {
         return (spotify != null && spotifyAttempt == id) || ProgressBus.active(id);
     }
+    private void pruneMediaGroup() {
+        if (mediaGroup.stream().noneMatch(this::queueContainsOrRunning)) mediaGroup.clear();
+    }
     private void startSpotify(Job job) {
         spotifyAttempt = job.id();
         ProgressBus.update(context, job.id(), Phase.STARTED, Reason.NONE);
+        observeTargets(Stage.SPOTIFY_DECISION, job.id());
         spotify = new SpotifyController(context, () -> !closed && queue.current(job) && !ProgressBus.cancelled(job.id()) && mediaReady(),
                 () -> ProgressBus.claimSend(context, job.id()),
+                () -> Diagnostics.record(context, "SPOTIFY_LAUNCH_REQUESTED ID=" + job.id()),
                 () -> ProgressBus.update(context, job.id(), Phase.STARTED, Reason.RESUMING), result -> {
-                    if (!queue.current(job) || closed || ProgressBus.cancelled(job.id())) return;
+                    if (!queue.current(job) || closed || spotifyAttempt != job.id() || ProgressBus.cancelled(job.id())) return;
                     spotify = null; spotifyAttempt = 0;
+                    observeTargets(Stage.POST_SPOTIFY, job.id());
                     Diagnostics.recordAttempt(context, job.id(), "SPOTIFY_" + result + " ID=" + job.id());
                     if (result != SpotifyController.Result.PLAYING)
                         Diagnostics.queueState(context,job.id(),"SPOTIFY","FAILED","FAILURE",0,"NONE");
@@ -290,7 +404,7 @@ public final class AutomationRuntime {
                     };
                     ProgressBus.update(context, job.id(), result == SpotifyController.Result.PLAYING ? Phase.SUCCEEDED : Phase.SKIPPED, reason);
                     mediaGroup.remove(job.id());
-                    if (mediaGroup.stream().noneMatch(ProgressBus::active)) mediaGroup.clear();
+                    pruneMediaGroup();
                     changed();
                 });
         spotify.start();
@@ -308,6 +422,7 @@ public final class AutomationRuntime {
         dispatchedHomeAttempt = -1;
         mediaGroup.clear();
         cleaningAttempts.clear();
+        lastSuppression.clear();
     }
     public String diagnostic() {
         return "queue_home_waiting=" + queue.hasHomeWaiting() + " queue_generation=" + queue.generation()

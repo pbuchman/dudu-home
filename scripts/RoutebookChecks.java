@@ -28,6 +28,8 @@ public final class RoutebookChecks {
         CollectorFilter restarted=new CollectorFilter(wall+60000,CollectorFilter.DEFAULTS);
         check(restarted.accept(fix(wall+55000,1000),1000,wall+65000)==null);
         check(restarted.accept(fix(wall+65000,6000),6000,wall+65000)!=null);
+        discardedFixesDoNotAdvanceTime(wall);
+        checkCallbackAgeAndClockRecovery(wall);
         DeliverySelection select=new DeliverySelection();check(select.latest(c));select.attempted(c);check(!select.latest(a));check(!select.latest(c));check(select.latest(d));
         check(Protocol.retryMillis(1,0,0)==2000);check(Protocol.retryMillis(2,0,0)==4000);
         check(Protocol.retryMillis(20,0,.2)==144000);check(Protocol.retryMillis(1,2000,0)==900000);
@@ -59,5 +61,43 @@ public final class RoutebookChecks {
             }
         }
         System.out.println("PASS: Routebook pure policy/protocol "+assertions+" assertions");
+    }
+
+    private static void discardedFixesDoNotAdvanceTime(long wall) {
+        CollectorFilter filter=new CollectorFilter(0,CollectorFilter.DEFAULTS);
+        Point first=filter.accept(fix(wall,1000),1000,wall);
+        check(first!=null);
+        check(filter.accept(fix(wall+6000,3600000),6000,wall+6000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.FUTURE_MONOTONIC);
+        var mock=new CollectorFilter.Fix(wall+300000,7000,0,0,5,null,true);
+        check(filter.accept(mock,7000,wall+7000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.MOCK);
+        var missingAccuracy=new CollectorFilter.Fix(wall+290000,8000,0,0,Double.NaN,null,false);
+        check(filter.accept(missingAccuracy,8000,wall+8000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.MISSING_DATA);
+        var poorAccuracy=new CollectorFilter.Fix(wall+290000,9000,0,0,55,null,false);
+        check(filter.accept(poorAccuracy,9000,wall+9000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.ACCURACY);
+        long validWall=wall+5000;
+        Point next=filter.accept(fix(validWall,6000),9000,validWall+3000);
+        check(next!=null&&next.segmentId.equals(first.segmentId));
+        check(filter.accept(fix(validWall,6000),9000,validWall+3000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.DUPLICATE);
+    }
+
+    private static void checkCallbackAgeAndClockRecovery(long wall) {
+        CollectorFilter filter=new CollectorFilter(wall,CollectorFilter.DEFAULTS);
+        Point first=filter.accept(fix(wall,1000),6000,wall+5000);
+        check(first!=null);
+        check(filter.accept(fix(wall+5000,6000),11001,wall+10001)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.STALE);
+        check(filter.accept(fix(wall+1000,7000),7000,wall+4000)==null);
+        check(filter.outcome()==CollectorFilter.Outcome.CLOCK_REGRESSION);
+        Point recovered=filter.accept(fix(wall+8000,9000),9000,wall+8000);
+        check(recovered!=null&&!recovered.segmentId.equals(first.segmentId));
+        var restarted=new CollectorFilter(wall+8000,CollectorFilter.DEFAULTS);
+        check(restarted.accept(fix(wall+7000,1000),1000,wall+9000)==null);
+        check(restarted.outcome()==CollectorFilter.Outcome.CLOCK_REGRESSION);
+        check(restarted.accept(fix(wall+8000,2000),2000,wall+9000)!=null);
     }
 }

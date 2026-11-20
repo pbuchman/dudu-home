@@ -14,6 +14,18 @@ call or fresh evidence that the gate area no longer applies. No fixed delay bypa
 Spotify stays on screen; there is no additional desktop request. A manual Maps choice suppresses
 pending media startup so it cannot cover the chosen navigation.
 
+**Local candidate `1.5.1-rc2` (code 37).** Tap **Test internetu** in the shortcuts row
+to measure HTTP latency, download and upload through the radio's default network.
+A manual attempt allows up to 16 MiB of download payload and 16 MiB of upload payload.
+Cloudflare's measurement client is included in the APK. The on-screen result identifies
+the transport. Opening the test does not reserve a departure action.
+
+**Local candidate `1.5.1-rc1` (code 36).** After a verified new boot or DUDU wake,
+the first good GPS position may already be moving. Ten seconds of qualified driving can
+queue Yanosik and Spotify outside the gate area. The private journal records the wait for
+GPS, the motion decision, media requests and Routebook acknowledgements, including after
+an offline drive. [Detection rules](docs/AUTOMATION_SEQUENCE.md) · [Local export](docs/DIAGNOSTIC_JOURNALS.md).
+
 **Stable `1.5.0` (code 35).** A successful automatic departure call continues with
 Full Cleaning, Yanosik and Spotify while the car may still be waiting at the gate. No extra
 standstill or outbound checkpoint is required. The release includes reviewed street stability,
@@ -111,8 +123,9 @@ Server runtime secrets and actual recorded locations remain outside the reposito
   The departure continuation needs no new stop or movement countdown. First check its foreground-service notification.
   If work is detected, do not reopen Yanosik. Unknown state (including missing notification access)
   skips it without blocking Spotify. After a launch request allow ten seconds before Spotify;
-  gate and cleaning take precedence. No desktop request, foreground-app tracking or automatic
-  retry. A stop or process restart does not rearm a sent attempt. The DUDU ignition
+  gate and cleaning take precedence. At decision time, optional usage access identifies the
+  category of the last visible app for local diagnosis. A stop or process restart does not
+  rearm a sent attempt. The DUDU ignition
   task restarted monitoring in one real wake test. See [startup recovery](docs/STARTUP_DIAGNOSTICS.md)
   and [limitations](docs/YANOSIK.md) for the first-wake fix and pending hardware acceptance.
 - **Spotify resume:** open the radio's Spotify, then use only its unambiguous local Android

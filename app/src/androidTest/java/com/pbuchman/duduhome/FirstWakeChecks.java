@@ -19,7 +19,8 @@ final class FirstWakeChecks {
     static void run() {
         Store store = new Store();
         JourneySession first = new JourneySession(store.prefs, 42);
-        check(first.ensureBoot(), "new boot");
+        check(first.observeBoot() == JourneySession.BootResult.FIRST_OBSERVATION, "first boot is only a baseline");
+        check(first.observeBoot() == JourneySession.BootResult.CURRENT, "same boot is not new");
         var initialCycle=first.cycle();
         check(first.observeAwakeCycle(cold()) == BASELINE_ZERO, "cold baseline recorded");
         check(initialCycle.equals(first.cycle()), "first vendor baseline preserves continuation cycle");
@@ -30,12 +31,17 @@ final class FirstWakeChecks {
         check(wake.reserve() && !wake.reserve(), "one first-wake attempt");
         check(wake.observeAwakeCycle(cycle(1)) == UNCHANGED && !wake.available(), "duplicate");
         check(wake.observeAwakeCycle(cycle(0)) == UNCHANGED && !wake.available(), "rollback");
+        check(wake.wakeCounter() == 1, "rollback leaves diagnostic cycle unchanged");
         check(wake.observeAwakeCycle(cold()) == UNCHANGED && store.values.get("wake_id").equals(1L), "absent cannot replace positive");
         check(wake.observeAwakeCycle(cycle(2)) == REARMED && wake.reserve(), "second wake");
         check(!new JourneySession(store.prefs, 42).reserve(), "process recreation/update");
         check(!new JourneySession(store.prefs, 41).reserve(), "older boot");
         check(!new JourneySession(store.prefs, -1).reserve(), "unknown boot");
-        check(new JourneySession(store.prefs, 43).reserve(), "new boot once");
+        check(new JourneySession(store.prefs, 41).observeBoot() == JourneySession.BootResult.INVALID_BOOT, "boot rollback cannot prove new boot");
+        JourneySession rebooted = new JourneySession(store.prefs, 43);
+        check(rebooted.observeBoot() == JourneySession.BootResult.NEW_BOOT && rebooted.wakeCounter() == -1,
+                "newer persisted boot proves restart and clears previous vendor counter");
+        check(rebooted.reserve(), "new boot once");
         check(!new JourneySession(store.prefs, 43).reserve(), "same new boot twice");
 
         Store legacy = new Store();

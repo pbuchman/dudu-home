@@ -94,7 +94,7 @@
     <string name="success_icon_description">Sukces</string>
     <string name="error_icon_description">Błąd</string>
     <string name="error_message_format">%1$s\n\nKod: %2$s</string>
-    <string name="navigation_title">Nawigacja</string>
+    <string name="navigation_title">Skróty</string>
     <string name="navigation_go">Jedź z Google Maps</string>
     <string name="navigation_slot">Miejsce %1$d</string>
     <string name="navigation_empty">Brak konfiguracji</string>

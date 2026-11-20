@@ -211,7 +211,7 @@ public final class MainActivity extends Activity {
     }
     @Override public void onConfigurationChanged(android.content.res.Configuration config) {
         super.onConfigurationChanged(config); prepareActionTiles(); prepareActionStatus();
-        if (navigation != null) navigation.render();
+        if (navigation != null) navigation.render(config.screenWidthDp);
     }
 
     private void prepareActionStatus() {
@@ -250,6 +250,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onPause() {
         resumed = false;
+        if (navigation != null) navigation.paused();
         HomeActions.hidden(this);
         ProgressBus.presentationChanged();
         super.onPause();

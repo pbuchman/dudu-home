@@ -17,6 +17,8 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.EditText;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /** Dependency-free checks. Refuses to run on a physical radio. */
 public final class SafetyChecks extends Instrumentation {
@@ -120,6 +122,7 @@ public final class SafetyChecks extends Instrumentation {
             NavigationChecks.run(this);
             SpotifyChecks.run();
             MonitorCycleChecks.run(this);
+            com.pbuchman.duduhome.location.GpsStartupArchiveChecks.run(this);
             DepartureCycleChecks.run(this);
             GatePriorityChecks.run(this);
             DepartureMediaChecks.run(this);
@@ -135,6 +138,9 @@ public final class SafetyChecks extends Instrumentation {
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("result", "FAIL: " + error.getClass().getSimpleName() + ": " + error.getMessage());
+            StringWriter trace = new StringWriter();
+            error.printStackTrace(new PrintWriter(trace));
+            result.putString("stack", trace.toString());
             finish(Activity.RESULT_CANCELED, result);
         }
     }

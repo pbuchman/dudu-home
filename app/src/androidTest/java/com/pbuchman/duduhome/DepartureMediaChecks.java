@@ -2,6 +2,7 @@ package com.pbuchman.duduhome;
 
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
@@ -298,7 +299,7 @@ final class DepartureMediaChecks {
         final java.util.Set<Long> previousIds;
         final AutomationRuntime runtime;
         final AutomationCoordinator queue;
-        final HomeMonitorService monitor = new HomeMonitorService();
+        final HomeMonitorService monitor;
         final Consumer<ProgressModel.State> cancellation;
         int opens;
         @SuppressWarnings("unchecked") Fixture(Context context) {
@@ -311,6 +312,7 @@ final class DepartureMediaChecks {
             epoch=ProgressBus.reset(context,Reason.RESET);
             session=new JourneySession(context); check(session.ensureBoot(),"journey boot");
             runtime=new AutomationRuntime(context); queue=(AutomationCoordinator)get(runtime,"queue");
+            monitor=attachMonitor(context);
             set(monitor,"automation",runtime);
             cancellation=(Consumer<ProgressModel.State>)get(monitor,"cancellation");
             ProgressBus.setCancellationListener(cancellation);
@@ -367,6 +369,17 @@ final class DepartureMediaChecks {
             check(prefs.edit().clear().commit(),"journey fixture cleanup");
             var restore=daily.edit().clear(); if(hadDaily) restore.putLong("last_attempt_day",previousDay);
             check(restore.commit(),"daily fixture cleanup");
+        }
+    }
+    private static HomeMonitorService attachMonitor(Context context) {
+        HomeMonitorService monitor = new HomeMonitorService();
+        try {
+            var attach = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            attach.setAccessible(true);
+            attach.invoke(monitor, context);
+            return monitor;
+        } catch (ReflectiveOperationException error) {
+            throw new AssertionError("Attach synthetic monitor to the instrumentation context", error);
         }
     }
     private static MotionDetector.Fix motion(long t,double x,double speed) { return new MotionDetector.Fix(t,x,0,3,speed,true,0,false); }

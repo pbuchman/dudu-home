@@ -1,5 +1,15 @@
 # Kontrakt funkcjonalny - Dudu Home
 
+## Pierwszy ruch po wybudzeniu w 1.5.1-rc1
+
+Wzrost zapisanego licznika uruchomień Androida lub wybudzeń DUDU pozwala zacząć ocenę
+jazdy od pierwszego dobrego GPS. Poza obszarem bramy Yanosik i Spotify mogą wejść
+do kolejki po 10 s ruchu i co najmniej 15 m przemieszczenia. Bez wcześniej zaobserwowanego
+postoju odległość musi też przekraczać sumę dokładności pomiaru początkowego i końcowego.
+Pierwsza instalacja, nieznany cykl, restart w tym samym cyklu i ręczne anulowanie wymagają
+10 s postoju. Warunkiem automatycznej bramy nadal jest okazja wyjazdu z parkingu.
+[Szczegółowe progi](AUTOMATION_SEQUENCE.md) · [Diagnostyka na urządzeniu](DIAGNOSTIC_JOURNALS.md).
+
 ## Where am I (1.2 candidate)
 
 The first action row now has four tiles: gate, Full Cleaning, Full Mop and Gdzie jestem.
