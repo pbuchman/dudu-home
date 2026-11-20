@@ -123,14 +123,15 @@ public final class TripLocationCard extends PanelDragLayout {
         String first = text.substring(0, prefixEnd);
         String second = text.substring(prefixEnd).trim();
         boolean moving = !second.isEmpty() && Layout.getDesiredWidth(second, tail.getPaint()) > width;
-        if (tail.isSelected() && !moving) tail.setSelected(false);
+        // A new street or viewport restarts even when the second row's text is unchanged.
+        if (tail.isSelected()) tail.setSelected(false);
         TextUtils.TruncateAt ellipsize = moving ? TextUtils.TruncateAt.MARQUEE : null;
         if (tail.getEllipsize() != ellipsize) tail.setEllipsize(ellipsize);
         setRow(road, first);
         setRow(tail, second);
         streetRows.setVisibility(text.isEmpty() ? GONE : VISIBLE);
         // Selection drives the platform marquee without granting the floating window focus.
-        if (moving && !tail.isSelected()) tail.setSelected(true);
+        if (moving) tail.setSelected(true);
     }
 
     private int fittingPrefixEnd(String text, int width) {
