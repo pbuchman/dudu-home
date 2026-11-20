@@ -333,7 +333,7 @@ final class TripMarqueeChecks {
                 saveFrame(output, "trip-marquee-failure-last.png", last);
                 saveFrame(output, "trip-marquee-failure-max.png", highest);
                 capture(i, output, "trip-marquee-failure-screen.png");
-            } catch (IOException | RuntimeException captureFailure) {
+            } catch (IOException | RuntimeException | AssertionError captureFailure) {
                 failure.addSuppressed(captureFailure);
             }
         }
@@ -358,21 +358,27 @@ final class TripMarqueeChecks {
     private static void checkRestartOnChangedStreet(Instrumentation i, LiveOverlay overlay, TripLocationCard card,
             Fixture fixture) {
         float density = card.getResources().getDisplayMetrics().density;
-        long deadline = SystemClock.uptimeMillis() + 5000;
-        while (main(i, () -> overlay.frame(card)).tail.offset < 25 * density) {
-            check(SystemClock.uptimeMillis() < deadline, "original street is moving before the address changes");
-            SystemClock.sleep(30);
-        }
+        long started = SystemClock.elapsedRealtime();
+        Frame before;
+        do {
+            before = main(i, () -> overlay.frame(card));
+            if (before.tail.offset >= 40 * density) break;
+            check(before.elapsed - started < 12_000, "original street must move before changing address: "
+                    + before.describe(started));
+            SystemClock.sleep(40);
+        } while (true);
+
         String suffix = main(i, () -> ((TextView) card.findViewById(R.id.trip_street_tail)).getText().toString());
         String street = fixture.street.replaceFirst("Aleja", "Oleja");
-        ProgressChecks.main(i, () -> overlay.changeFixture(new Fixture(fixture.locality, street, null, null)));
-
-        boolean reset = false;
-        deadline = SystemClock.uptimeMillis() + 5000;
+        Frame current = main(i, () -> {
+            overlay.changeFixture(new Fixture(fixture.locality, street, null, null));
+            return overlay.frame(card);
+        });
+        float minimumDrop = before.tail.offset / 2f;
+        Frame reset = null;
         do {
-            Frame current = main(i, () -> overlay.frame(card));
-            if (current.tail.offset < 9 * density) reset = true;
-            if (reset && current.tail.offset > 10 * density) {
+            if (reset == null && before.tail.offset - current.tail.offset >= minimumDrop) reset = current;
+            if (reset != null && current.renders > reset.renders && current.tail.offset - reset.tail.offset >= 10 * density) {
                 boolean sameSuffix = main(i, () -> {
                     TextView road = card.findViewById(R.id.trip_street);
                     TextView tail = card.findViewById(R.id.trip_street_tail);
@@ -381,9 +387,12 @@ final class TripMarqueeChecks {
                 check(sameSuffix, "the fixed prefix changed while the continuation stayed identical");
                 return;
             }
-            SystemClock.sleep(35);
-        } while (SystemClock.uptimeMillis() < deadline);
-        throw new AssertionError("a new street with the same continuation restarts that marquee");
+            SystemClock.sleep(40);
+            current = main(i, () -> overlay.frame(card));
+        } while (current.elapsed - before.elapsed < 12_000);
+        throw new AssertionError("a new street with the same continuation must restart marquee (before=["
+                + before.describe(started) + "], last=[" + current.describe(started) + "], reset=["
+                + (reset == null ? "unobserved" : reset.describe(started)) + "])");
     }
 
     private static void openTripWithSingleTap(Instrumentation i, TripLocationCard card, int rowId) {
